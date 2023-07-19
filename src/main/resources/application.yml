@@ -1,0 +1,12 @@
+server:
+  port: 8017
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    # 应用名称
+    name: lr-data-rdcp-data-converge
+  profiles:
+    # 环境配置
+    active: local
