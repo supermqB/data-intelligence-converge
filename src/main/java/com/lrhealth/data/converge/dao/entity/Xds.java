@@ -8,7 +8,6 @@ import lombok.Data;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 /**
  * XDS信息
@@ -65,7 +64,7 @@ public class Xds implements Serializable {
      */
     private LocalDateTime dataConvergeStartTime;
     /**
-     * 汇聚开始时间
+     * 汇聚结束时间
      */
     private LocalDateTime dataConvergeEndTime;
     /**
