@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 /**
  * <p>
- * 前置机系统机构关系表
+ * 系统与前置机关联关系表
  * </p>
  *
  * @author jinmengyu
@@ -28,19 +28,19 @@ public class SysOrgFrontItem implements Serializable {
     private Long id;
 
     /**
-     * 系统ID
+     * 系统编码
      */
-    private String sourceId;
+    private String sysCode;
 
     /**
-     * 机构ID
+     * 机构编码
      */
-    private String orgId;
+    private String orgCode;
 
     /**
-     * 前置机ID
+     * 前置机编码
      */
-    private String frontendId;
+    private String frontendCode;
 
     /**
      * 上下线状态

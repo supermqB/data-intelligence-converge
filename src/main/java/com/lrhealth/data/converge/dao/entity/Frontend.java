@@ -31,7 +31,7 @@ public class Frontend implements Serializable {
     /**
      * 前置机编码
      */
-    private String frontendId;
+    private String frontendCode;
 
     /**
      * 前置机名称
@@ -41,7 +41,50 @@ public class Frontend implements Serializable {
     /**
      * 前置机ip地址
      */
-    private String fileFromIp;
+    private String frontendIp;
+
+    /**
+     * 前置机端口
+     */
+    private String frontendPort;
+
+    /**
+     * 前置机用户名
+     */
+    private String frontendUsername;
+
+    /**
+     * 前置机ip密码
+     */
+    private String frontendPwd;
+
+    /**
+     * vpn
+     */
+    private String vpn;
+
+    /**
+     * vpn-ip地址
+     */
+    private String vpnIp;
+
+
+    /**
+     * vpn-端口
+     */
+    private String vpnPort;
+
+
+    /**
+     * vpn-用户
+     */
+    private String vpnUser;
+
+
+    /**
+     * vpn-密码
+     */
+    private String vpnPwd;
 
     /**
      * 创建时间
@@ -66,7 +109,7 @@ public class Frontend implements Serializable {
     /**
      * 逻辑删除字段，0-表示有效，1-表示删除
      */
-    private Integer deleted;
+    private Integer delFlag;
 
     private String serverIp;
 }

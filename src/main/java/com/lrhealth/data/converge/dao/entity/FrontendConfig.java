@@ -25,22 +25,17 @@ public class FrontendConfig implements Serializable {
     /**
      *  前置机编码
      */
-    private String frontendId;
+    private String frontendCode;
 
     /**
-     * 收集文件类型id
+     * 采集数据类别：1-字典数据，2-基础数据，3-报告文书，4-影像文件，5-业务数据
      */
-    private String collectTypeId;
+    private String dataType;
 
     /**
-     * 采集文件类别：1-字典数据，2-基础数据，3-报告文书，4-影像文件，5-业务数据
+     * 前置机文件位置
      */
-    private String collectType;
-
-    /**
-     * 文件位置
-     */
-    private String filePath;
+    private String frontendFilePath;
 
     /**
      * 加密类型：0-不加密，1-AES，2-DES，3-RSA，4-SM2，5-SM4
@@ -66,26 +61,42 @@ public class FrontendConfig implements Serializable {
      * 定时工作流
      */
     private Long cronProcessDefinitionCode;
+    /**
+     * 数据库类型
+     */
+    private String databaseType;
+    /**
+     * 数据库名称
+     */
+    private String databaseName;
+    /**
+     * 数据库Schema
+     */
+    private String databaseSchema;
+    /**
+     * 数据汇聚模式：1-客户写文件，2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
+     */
+    private String dataConvergeModel;
 
     /**
      * 数据库IP
      */
-    private String serverIp;
+    private String databaseIp;
 
     /**
      * 数据库端口
      */
-    private String serverPort;
+    private String databasePort;
 
     /**
      * 数据库用户名
      */
-    private String serverUser;
+    private String databaseUser;
 
     /**
      * 数据库密码
      */
-    private String serverPwd;
+    private String databasePwd;
 
     /**
      * 创建时间
@@ -110,5 +121,5 @@ public class FrontendConfig implements Serializable {
     /**
      * 逻辑删除字段，0-表示有效，1-表示删除
      */
-    private Integer deleted;
+    private Integer delFlag;
 }

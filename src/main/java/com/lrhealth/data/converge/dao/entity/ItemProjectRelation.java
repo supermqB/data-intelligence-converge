@@ -25,12 +25,12 @@ public class ItemProjectRelation implements Serializable {
      * 主键id
      */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
-    private Integer id;
+    private Long id;
 
     /**
-     * 前置机系统机构关系
+     * conv_sys_org_front_item表ID
      */
-    private String itemId;
+    private Long itemId;
 
     /**
      * 项目ID
