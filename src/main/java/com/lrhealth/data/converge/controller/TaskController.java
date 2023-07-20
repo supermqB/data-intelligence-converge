@@ -1,7 +1,14 @@
 package com.lrhealth.data.converge.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
+import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.model.TaskDto;
+import com.lrhealth.data.converge.service.TaskService;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.annotation.Resource;
+
+import static cn.hutool.core.text.CharSequenceUtil.EMPTY;
 
 /**
  * <p>
@@ -13,14 +20,18 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController("/task")
 public class TaskController {
+    @Resource
+    private TaskService taskService;
+
     /**
      * 创建汇聚任务
      *
      * @return 固定字符串
      */
-    @GetMapping(value = "/create")
-    public String create() {
-        return "";
+    @PostMapping(value = "/create")
+    public String create(TaskDto dto) {
+        Xds xds = taskService.createTask(dto);
+        return xds.getId() + EMPTY;
     }
 
     /**
@@ -29,8 +40,8 @@ public class TaskController {
      *
      * @return 固定字符串
      */
-    @GetMapping(value = "/complated")
-    public String complated() {
+    @PostMapping(value = "/completed")
+    public String completed() {
         return "";
     }
 }
