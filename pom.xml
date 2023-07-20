@@ -22,23 +22,12 @@
         <java.version>1.8</java.version>
     </properties>
     <dependencies>
-        <!-- [lrhealth dependencies] -->
+        <!-- 内部项目包依赖：通用处理包 -->
         <dependency>
             <groupId>com.lrhealth</groupId>
-            <artifactId>lr-rd-rdcp-common</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <artifactId>lr-rd-rdcp-data-model</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>transmittable-thread-local</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.2</version>
-        </dependency>
+        <!-- 内部项目包依赖：通用处理包 -->
 
         <!--Spring boot 配置-->
         <dependency>
@@ -75,6 +64,9 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
+        <!--Spring boot 配置-->
+
+        <!-- 缓存组件 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
@@ -83,37 +75,34 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-undertow</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jdbc</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.ulisesbocchio</groupId>
-            <artifactId>jasypt-spring-boot-starter</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
         </dependency>
+        <!-- 缓存组件 -->
 
+        <!-- Web服务容器组件 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-undertow</artifactId>
+        </dependency>
+        <!-- Web服务容器组件 -->
+
+        <!-- 消息队列组件 -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+        <!-- 消息队列组件 -->
+
+        <!-- 配置文件用户名、密码加密组件 -->
+        <dependency>
+            <groupId>com.github.ulisesbocchio</groupId>
+            <artifactId>jasypt-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- 配置文件用户名、密码加密组件 -->
+
+        <!-- log4j日志组件 -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -130,17 +119,68 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-jcl</artifactId>
         </dependency>
+        <!-- log4j日志组件 -->
 
+        <!-- 数据库连接组件 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jdbc</artifactId>
+        </dependency>
+        <!-- 数据库连接组件 -->
+
+        <!-- 数据库驱动 -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.oceanbase</groupId>
+            <artifactId>oceanbase-client</artifactId>
+        </dependency>
+        <!-- 数据库驱动 -->
 
+        <!-- ORM:MyBatis-plus组件 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+        </dependency>
+        <!-- ORM:MyBatis-plus组件 -->
+
+        <!-- ORM:Bee组件 -->
+        <dependency>
+            <groupId>org.teasoft</groupId>
+            <artifactId>bee</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.teasoft</groupId>
+            <artifactId>honey</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.teasoft</groupId>
+            <artifactId>bee-ext</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-collections</artifactId>
+                    <groupId>commons-collections</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- ORM:Bee组件 -->
+
+        <!-- 异步线程处理 -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>transmittable-thread-local</artifactId>
+        </dependency>
+        <!-- 异步线程处理 -->
+
+        <!-- junit测试 -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- junit测试 -->
     </dependencies>
 
 
