@@ -1,5 +1,7 @@
 package com.lrhealth.data.converge.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -19,7 +21,10 @@ import java.time.LocalDateTime;
 public class DbIncrConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
+    /**
+     * 主键id
+     */
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
@@ -30,7 +35,7 @@ public class DbIncrConfig implements Serializable {
     /**
      * 系统编码
      */
-    private String systemCode;
+    private String sysCode;
 
     private String dbCode;
 

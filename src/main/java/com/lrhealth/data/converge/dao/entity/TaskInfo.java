@@ -1,5 +1,7 @@
 package com.lrhealth.data.converge.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -18,7 +20,10 @@ import java.io.Serializable;
 public class TaskInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
+    /**
+     * 主键id
+     */
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long taskId;
 
     /**
@@ -70,4 +75,8 @@ public class TaskInfo implements Serializable {
      * 机构编码
      */
     private String orgCode;
+    /**
+     * 系统编码
+     */
+    private String sysCode;
 }

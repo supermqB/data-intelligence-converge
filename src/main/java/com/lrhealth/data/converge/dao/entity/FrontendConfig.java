@@ -24,8 +24,6 @@ public class FrontendConfig implements Serializable {
 
     /**
      *  前置机编码
-
-
      */
     private String frontendId;
 
