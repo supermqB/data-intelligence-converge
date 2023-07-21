@@ -33,6 +33,11 @@ public class ConvergeConfig implements Serializable {
     private String frontendCode;
 
     /**
+     * 配置项名称
+     */
+    private String convergeName;
+
+    /**
      * 采集数据类别：1-字典数据，2-基础数据，3-报告文书，4-影像文件，5-业务数据
      *
      * @see com.lrhealth.data.common.enums.conv.CollectDataTypeEnum

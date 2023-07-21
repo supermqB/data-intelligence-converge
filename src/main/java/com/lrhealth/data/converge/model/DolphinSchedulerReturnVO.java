@@ -6,8 +6,9 @@ import lombok.NoArgsConstructor;
 
 /**
  * 队列服务http请求统一返回格式
+ *
  * @author jinmengyu
- * @date 2023-07-21
+ * @since 2023-07-21
  */
 @Data
 @NoArgsConstructor
