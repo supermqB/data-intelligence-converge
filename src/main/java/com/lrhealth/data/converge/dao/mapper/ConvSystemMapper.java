@@ -11,6 +11,6 @@ import com.lrhealth.data.converge.dao.entity.System;
  * @author jinmengyu
  * @since 2023-07-20
  */
-public interface SystemMapper extends BaseMapper<System> {
+public interface ConvSystemMapper extends BaseMapper<System> {
 
 }

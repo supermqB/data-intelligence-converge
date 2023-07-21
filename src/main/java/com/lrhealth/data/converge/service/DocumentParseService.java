@@ -1,5 +1,8 @@
 package com.lrhealth.data.converge.service;
 
+import com.alibaba.fastjson.JSONObject;
+import com.lrhealth.data.converge.dao.entity.Xds;
+
 /**
  * <p>
  * 文档解析接口
@@ -9,4 +12,11 @@ package com.lrhealth.data.converge.service;
  * @since 2023/7/19 11:47
  */
 public interface DocumentParseService {
+    /**
+     * 解析文件
+     * 目前支持的文件解析类型： json/excel
+     * @param xds 已经建立的xds信息
+     * @return JSONObject 返回json类型数据
+     */
+    JSONObject parseFileByFilePath(Xds xds);
 }
