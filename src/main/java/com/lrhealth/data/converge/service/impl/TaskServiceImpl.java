@@ -25,4 +25,14 @@ public class TaskServiceImpl implements TaskService {
     public Xds createTask(TaskDto taskDto) {
         return xdsInfoService.createXdsInfo(taskDto);
     }
+
+    @Override
+    public Xds updateTask(TaskDto taskDto) {
+        if (taskDto.isTaskStatus()){
+            xdsInfoService.updateXdsCompleted(taskDto.getXdsId());
+        }else {
+            xdsInfoService.updateXdsFailure(taskDto.getXdsId(), "dataX数据抽取失败");
+        }
+        return null;
+    }
 }
