@@ -52,9 +52,9 @@ public class Xds implements Serializable {
      */
     private String taskInstanceName;
     /**
-     * 数据汇聚模式：1-客户写文件;2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
+     * 汇聚方式：1-客户写文件;2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
      */
-    private String dataConvergeModel;
+    private String convergeMethod;
     /**
      * 数据类别：1-字典数据;2-基础数据，3-报告文书，4-影像文件，5-业务数据
      */

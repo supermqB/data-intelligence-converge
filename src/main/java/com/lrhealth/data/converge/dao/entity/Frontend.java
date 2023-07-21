@@ -19,14 +19,22 @@ import java.time.LocalDateTime;
 @Data
 @TableName("conv_frontend")
 public class Frontend implements Serializable {
-
     private static final long serialVersionUID = 1L;
-
     /**
      * 主键id
      */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
+
+    /**
+     * 系统编码
+     */
+    private String sysCode;
+
+    /**
+     * 机构编码
+     */
+    private String orgCode;
 
     /**
      * 前置机编码
@@ -111,5 +119,8 @@ public class Frontend implements Serializable {
      */
     private Integer delFlag;
 
-    private String serverIp;
+    /**
+     * 上下线状态
+     */
+    private String state;
 }

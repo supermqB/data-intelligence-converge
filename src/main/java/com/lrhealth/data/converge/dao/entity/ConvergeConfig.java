@@ -1,5 +1,7 @@
 package com.lrhealth.data.converge.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -8,18 +10,21 @@ import java.time.LocalDateTime;
 
 /**
  * <p>
- * 前置机配置信息
+ * 汇聚配置
  * </p>
  *
  * @author jinmengyu
  * @since 2023-07-20
  */
 @Data
-@TableName("conv_frontend_config")
-public class FrontendConfig implements Serializable {
+@TableName("conv_converge_config")
+public class ConvergeConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
+    /**
+     * 主键id
+     */
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
@@ -74,9 +79,13 @@ public class FrontendConfig implements Serializable {
      */
     private String databaseSchema;
     /**
-     * 数据汇聚模式：1-客户写文件，2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
+     * 汇聚方式：1-客户写文件，2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
      */
-    private String dataConvergeModel;
+    private String convergeMethod;
+    /**
+     * 汇聚模式：0-直连模式 1-前置机中转模式
+     */
+    private String convergeMode;
 
     /**
      * 数据库IP

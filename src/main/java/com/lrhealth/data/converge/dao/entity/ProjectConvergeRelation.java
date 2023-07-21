@@ -10,15 +10,15 @@ import java.time.LocalDateTime;
 
 /**
  * <p>
- * 前置机-项目关系表
+ * 项目-汇聚配置关联关系表
  * </p>
  *
  * @author jinmengyu
  * @since 2023-07-20
  */
 @Data
-@TableName("conv_item_project_relation")
-public class ItemProjectRelation implements Serializable {
+@TableName("conv_project_converge_relation")
+public class ProjectConvergeRelation implements Serializable {
 
     private static final long serialVersionUID = 1L;
     /**
@@ -28,9 +28,9 @@ public class ItemProjectRelation implements Serializable {
     private Long id;
 
     /**
-     * conv_sys_org_front_item表ID
+     * conv_converge_config表ID
      */
-    private Long itemId;
+    private Long convergeId;
 
     /**
      * 项目ID
@@ -61,5 +61,5 @@ public class ItemProjectRelation implements Serializable {
     /**
      * 逻辑删除字段，0-表示有效，1-表示删除
      */
-    private Short deleted;
+    private Integer delFlag;
 }

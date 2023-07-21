@@ -26,15 +26,16 @@ import static cn.hutool.core.text.CharSequenceUtil.EMPTY;
  */
 @Service
 public class XdsInfoServiceImpl implements XdsInfoService {
+    private static final String DEFAULT_USER = "sys";
     @Resource
     private XdsService xdsService;
 
     @Override
     public Xds createXdsInfo(TaskDto taskDto) {
         Xds xds = BeanUtil.copyProperties(taskDto, Xds.class);
-        LocalDateTime now = LocalDateTime.now();
-        xds.setCreateTime(now);
-        xds.setDataConvergeStartTime(now);
+        xds.setCreateTime(LocalDateTime.now());
+        xds.setCreateBy(DEFAULT_USER);
+        xds.setDataConvergeStartTime(taskDto.getStartTime());
         xdsService.save(xds);
         return xds;
     }
@@ -99,9 +100,9 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      * @see XdsStatusEnum
      */
     public Xds updateXds(Xds xds) {
-        LocalDateTime now = LocalDateTime.now();
-        xds.setUpdateTime(now);
-        xds.setDataConvergeEndTime(now);
+        xds.setUpdateTime(LocalDateTime.now());
+        xds.setUpdateBy(DEFAULT_USER);
+        xds.setDataConvergeEndTime(LocalDateTime.now());
         xdsService.updateById(xds);
         return getXdsInfoById(xds.getId());
     }

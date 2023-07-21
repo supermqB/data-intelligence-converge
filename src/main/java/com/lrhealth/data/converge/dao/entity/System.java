@@ -19,14 +19,20 @@ import java.time.LocalDateTime;
 @Data
 @TableName("conv_system")
 public class System implements Serializable {
-
     private static final long serialVersionUID = 1L;
-
     /**
      * 主键id
      */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
+    /**
+     * 机构ID
+     */
+    private Long orgId;
+    /**
+     * 机构编码
+     */
+    private Long orgCode;
 
     /**
      * 系统编码
@@ -62,57 +68,14 @@ public class System implements Serializable {
      * 逻辑删除字段，0-表示有效，1-表示删除
      */
     private Short delFlag;
-
-    /**
-     * 前置机交互文件类型
-     */
-    private String fileType;
-
-    /**
-     * 推送kafka主题
-     */
-    private String topic;
-
     /**
      * 使用状态
      */
     private String state;
-
-    /**
-     * 压缩方式
-     */
-    private String compressionWay;
-
-    /**
-     * 加密方式
-     */
-    private String encryptionWay;
-
-    /**
-     * 目标地址
-     */
-    private String targetAddress;
-
-    /**
-     * 汇聚类型
-     */
-    private String convergeType;
-
-    /**
-     * 采集方式
-     */
-    private String collectWay;
-
     /**
      * 系统厂商
      */
     private String systemFirm;
-
-    /**
-     * 标识是医保还是商保, 1-医保，2-商保
-     */
-    private Short sourceType;
-
     /**
      * 基础数据文件id
      */

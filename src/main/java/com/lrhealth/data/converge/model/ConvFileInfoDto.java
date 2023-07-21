@@ -53,4 +53,17 @@ public class ConvFileInfoDto implements Serializable {
      * 存储文件大小（默认单位为B）
      */
     private BigDecimal storedFileSize;
+    /**
+     * ODS数据库表名称
+     */
+    private String odsTableName;
+    /**
+     * ODS模型名称
+     */
+    private String odsModelName;
+    /**
+     * ODS数据库落库数据条数
+     */
+    private String dataCount;
+
 }
