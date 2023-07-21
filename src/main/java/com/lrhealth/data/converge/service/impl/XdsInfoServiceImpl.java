@@ -1,6 +1,8 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.enums.biz.XdsStatusEnum;
 import com.lrhealth.data.common.enums.biz.XdsStoredFileModeEnum;
 import com.lrhealth.data.common.exception.CommonException;
@@ -9,10 +11,14 @@ import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.XdsInfoService;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 
 import static cn.hutool.core.text.CharSequenceUtil.EMPTY;
 
@@ -27,8 +33,14 @@ import static cn.hutool.core.text.CharSequenceUtil.EMPTY;
 @Service
 public class XdsInfoServiceImpl implements XdsInfoService {
     private static final String DEFAULT_USER = "sys";
+
+    @Value("${spring.kafka.topic.xds}")
+    private String topic;
     @Resource
     private XdsService xdsService;
+
+    @Resource
+    private KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
     public Xds createXdsInfo(TaskDto taskDto) {
@@ -119,5 +131,17 @@ public class XdsInfoServiceImpl implements XdsInfoService {
             throw new CommonException("任务信息不存在");
         }
         return xds;
+    }
+
+
+    private void xdsSendKafka(Xds xds) {
+        Xds checkXds = xdsService.getById(xds.getId());
+        if (ObjectUtil.isNotNull(checkXds) && (!NumberUtils.INTEGER_ONE.equals(xds.getKafkaSendFlag()))) {
+            HashMap<String, Object> map = new HashMap<>();
+            map.put("id", checkXds.getId());
+            kafkaTemplate.send(topic, JSON.toJSONString(map));
+            xds.setKafkaSendFlag(1);
+            xdsService.updateById(xds);
+        }
     }
 }

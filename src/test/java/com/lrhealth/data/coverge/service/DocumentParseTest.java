@@ -25,11 +25,22 @@ public class DocumentParseTest {
     @Test
     public void ExcelParseTest(){
         Xds xds = new Xds();
+        xds.setStoredFileType("xlsx");
+        xds.setStoredFilePath("C:\\files/1607752.xlsx");
+        xds.setStoredFileName("1607752.xlsx");
+        JSONObject jsonObject = documentParseService.parseFileByFilePath(xds);
+        System.out.println(jsonObject);
+
+    }
+
+    @Test
+    public void JsonParseTest(){
+        Xds xds = new Xds();
         xds.setStoredFileType("json");
         xds.setStoredFilePath("C:\\files/kc52.json");
         xds.setStoredFileName("kc52.json");
         JSONObject jsonObject = documentParseService.parseFileByFilePath(xds);
         System.out.println(jsonObject);
-
     }
+
 }

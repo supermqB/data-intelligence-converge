@@ -70,6 +70,22 @@ spring:
     restart:
       enabled: false
 
+  # kafka 消费者设置
+  kafka:
+    bootstrap-servers: 172.16.29.48:9092
+    topic:
+      xds: gove-xds-${spring.profiles.active}
+    producer:
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
+      acks: 1
+      maxBlock: 1
+    listener:
+      type: SINGLE
+      ack-mode: MANUAL_IMMEDIATE
+
 
 # 文件上传校验
 file:
