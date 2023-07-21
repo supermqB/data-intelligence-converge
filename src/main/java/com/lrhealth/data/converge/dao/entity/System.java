@@ -66,6 +66,8 @@ public class System implements Serializable {
 
     /**
      * 逻辑删除字段，0-表示有效，1-表示删除
+     *
+     * @see com.lrhealth.data.common.enums.conv.LogicDelFlagEnum
      */
     private Short delFlag;
     /**

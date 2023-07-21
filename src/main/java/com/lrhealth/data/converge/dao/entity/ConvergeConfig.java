@@ -28,12 +28,14 @@ public class ConvergeConfig implements Serializable {
     private Long id;
 
     /**
-     *  前置机编码
+     * 前置机编码
      */
     private String frontendCode;
 
     /**
      * 采集数据类别：1-字典数据，2-基础数据，3-报告文书，4-影像文件，5-业务数据
+     *
+     * @see com.lrhealth.data.common.enums.conv.CollectDataTypeEnum
      */
     private String dataType;
 
@@ -44,11 +46,15 @@ public class ConvergeConfig implements Serializable {
 
     /**
      * 加密类型：0-不加密，1-AES，2-DES，3-RSA，4-SM2，5-SM4
+     *
+     * @see com.lrhealth.data.common.enums.conv.EncryptionWayEnum
      */
     private String encryptionWay;
 
     /**
      * 0-不压缩，1-压缩
+     *
+     * @see com.lrhealth.data.common.enums.conv.ZipFlagEnum
      */
     private String zipFlag;
 
@@ -80,10 +86,14 @@ public class ConvergeConfig implements Serializable {
     private String databaseSchema;
     /**
      * 汇聚方式：1-客户写文件，2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
+     *
+     * @see com.lrhealth.data.common.enums.conv.ConvMethodEnum
      */
     private String convergeMethod;
     /**
      * 汇聚模式：0-直连模式 1-前置机中转模式
+     *
+     * @see com.lrhealth.data.common.enums.conv.ConvModeEnum
      */
     private String convergeMode;
 
@@ -129,6 +139,8 @@ public class ConvergeConfig implements Serializable {
 
     /**
      * 逻辑删除字段，0-表示有效，1-表示删除
+     *
+     * @see com.lrhealth.data.common.enums.conv.LogicDelFlagEnum
      */
     private Integer delFlag;
 }

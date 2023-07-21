@@ -53,10 +53,14 @@ public class Xds implements Serializable {
     private String taskInstanceName;
     /**
      * 汇聚方式：1-客户写文件;2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
+     *
+     * @see com.lrhealth.data.common.enums.conv.ConvModeEnum
      */
     private String convergeMethod;
     /**
      * 数据类别：1-字典数据;2-基础数据，3-报告文书，4-影像文件，5-业务数据
+     *
+     * @see com.lrhealth.data.common.enums.conv.CollectDataTypeEnum
      */
     private String dataType;
     /**
@@ -69,6 +73,8 @@ public class Xds implements Serializable {
     private LocalDateTime dataConvergeEndTime;
     /**
      * 汇聚状态：0-初始化;1-完成 2-失败
+     *
+     * @see com.lrhealth.data.common.enums.conv.XdsStatusEnum
      */
     private Integer dataConvergeStatus;
     /**
@@ -101,6 +107,8 @@ public class Xds implements Serializable {
     private String storedFileType;
     /**
      * 存储文件方式：0-本地存储;1-Ceph存储
+     *
+     * @see com.lrhealth.data.common.enums.conv.XdsStoredFileModeEnum
      */
     private Integer storedFileMode;
     /**
@@ -113,6 +121,8 @@ public class Xds implements Serializable {
     private BigDecimal storedFileSize;
     /**
      * 发送kafka消息结果：0-未发送;1-已发送
+     *
+     * @see com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum
      */
     private Integer kafkaSendFlag;
     /**
@@ -149,6 +159,8 @@ public class Xds implements Serializable {
     private LocalDateTime updateTime;
     /**
      * 逻辑删除字段;0-表示有效，1-表示删除
+     *
+     * @see com.lrhealth.data.common.enums.conv.LogicDelFlagEnum
      */
     private Integer delFlag;
 

@@ -116,11 +116,15 @@ public class Frontend implements Serializable {
 
     /**
      * 逻辑删除字段，0-表示有效，1-表示删除
+     *
+     * @see com.lrhealth.data.common.enums.conv.LogicDelFlagEnum
      */
     private Integer delFlag;
 
     /**
      * 上下线状态
+     *
+     * @see com.lrhealth.data.common.enums.conv.OnlineStateEnum
      */
     private String state;
 }
