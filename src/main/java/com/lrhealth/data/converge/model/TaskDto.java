@@ -62,4 +62,12 @@ public class TaskDto {
      * 结束时间
      */
     private LocalDateTime endTime;
+    /**
+     * 任务状态
+     */
+    private boolean taskStatus;
+    /**
+     * xdsID
+     */
+    private Long xdsId;
 }

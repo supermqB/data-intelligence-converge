@@ -20,4 +20,11 @@ public interface TaskService {
      * @return XDS信息
      */
     Xds createTask(TaskDto taskDto);
+
+    /**
+     * 更新任务状态
+     * @param taskDto 任务信息
+     * @return XDS信息
+     */
+    Xds updateTask(TaskDto taskDto);
 }
