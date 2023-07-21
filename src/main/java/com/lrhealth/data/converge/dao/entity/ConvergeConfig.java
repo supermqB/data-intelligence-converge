@@ -40,9 +40,9 @@ public class ConvergeConfig implements Serializable {
     private String dataType;
 
     /**
-     * 前置机文件位置
+     * 文件存储位置
      */
-    private String frontendFilePath;
+    private String filePath;
 
     /**
      * 加密类型：0-不加密，1-AES，2-DES，3-RSA，4-SM2，5-SM4
@@ -59,32 +59,6 @@ public class ConvergeConfig implements Serializable {
     private String zipFlag;
 
     /**
-     * 定时策略
-     */
-    private String cron;
-
-    /**
-     * 工作流编码
-     */
-    private Long processDefinitionCode;
-
-    /**
-     * 定时工作流
-     */
-    private Long cronProcessDefinitionCode;
-    /**
-     * 数据库类型
-     */
-    private String databaseType;
-    /**
-     * 数据库名称
-     */
-    private String databaseName;
-    /**
-     * 数据库Schema
-     */
-    private String databaseSchema;
-    /**
      * 汇聚方式：1-客户写文件，2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
      *
      * @see com.lrhealth.data.common.enums.conv.ConvMethodEnum
@@ -96,26 +70,6 @@ public class ConvergeConfig implements Serializable {
      * @see com.lrhealth.data.common.enums.conv.ConvModeEnum
      */
     private String convergeMode;
-
-    /**
-     * 数据库IP
-     */
-    private String databaseIp;
-
-    /**
-     * 数据库端口
-     */
-    private String databasePort;
-
-    /**
-     * 数据库用户名
-     */
-    private String databaseUser;
-
-    /**
-     * 数据库密码
-     */
-    private String databasePwd;
 
     /**
      * 创建时间
