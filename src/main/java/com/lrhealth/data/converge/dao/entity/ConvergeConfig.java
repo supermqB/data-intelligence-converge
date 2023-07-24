@@ -54,9 +54,9 @@ public class ConvergeConfig implements Serializable {
     private String dataType;
 
     /**
-     * 文件存储位置
+     * 文件存储位置(文档解析使用)
      */
-    private String filePath;
+    private String storedFilePath;
 
     /**
      * 加密类型：0-不加密，1-AES，2-DES，3-RSA，4-SM2，5-SM4
