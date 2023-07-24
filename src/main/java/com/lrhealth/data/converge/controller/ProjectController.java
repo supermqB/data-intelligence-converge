@@ -5,10 +5,7 @@ import com.lrhealth.data.converge.common.util.DsPageInfo;
 import com.lrhealth.data.converge.common.util.DsResult;
 import com.lrhealth.data.converge.model.ConvergeConfigDto;
 import com.lrhealth.data.converge.service.ProjectService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 
@@ -20,7 +17,8 @@ import javax.annotation.Resource;
  * @author lr
  * @since 2023/7/21
  */
-@RestController("/proj")
+@RestController()
+@RequestMapping("/proj")
 public class ProjectController {
     @Resource
     private ProjectService projectService;

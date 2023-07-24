@@ -5,6 +5,8 @@ import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.TaskService;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -17,7 +19,8 @@ import javax.annotation.Resource;
  * @author lr
  * @since 2023/7/19
  */
-@RestController("/task")
+@RestController()
+@RequestMapping("/task")
 public class TaskController {
     @Resource
     private TaskService taskService;
@@ -28,7 +31,7 @@ public class TaskController {
      * @return 固定字符串
      */
     @PostMapping(value = "/create")
-    public DolphinSchedulerReturnVO create(TaskDto dto) {
+    public DolphinSchedulerReturnVO create(@RequestBody TaskDto dto) {
         Xds xds = taskService.createTask(dto);
         return new DolphinSchedulerReturnVO("200", xds);
     }
