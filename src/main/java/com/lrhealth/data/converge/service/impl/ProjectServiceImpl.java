@@ -66,7 +66,7 @@ public class ProjectServiceImpl implements ProjectService {
         // 获取系统信息
         Map<String, System> systemMap = sysService.querySysMapByOrgCode(orgCodeList);
         return configList.stream().map(
-                item -> buildDto(item, orgMap.get(item.getOrgCode()).getOrgAffiliationName(), systemMap.get(item.getSysCode()).getSystemName())
+                item -> buildDto(item, orgMap.get(item.getOrgCode()).getSourceName(), systemMap.get(item.getSysCode()).getSystemName())
         ).collect(Collectors.toList());
     }
 
