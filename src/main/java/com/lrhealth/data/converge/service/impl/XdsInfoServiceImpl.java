@@ -1,26 +1,24 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import com.alibaba.fastjson.JSON;
+import com.lrhealth.data.common.constant.CommonConstant;
+import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
+import com.lrhealth.data.common.enums.conv.LogicDelFlagIntEnum;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.common.enums.conv.XdsStoredFileModeEnum;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.XdsInfoService;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 
-import static cn.hutool.core.text.CharSequenceUtil.EMPTY;
+import static cn.hutool.core.text.CharSequenceUtil.*;
 
 /**
  * <p>
@@ -32,22 +30,13 @@ import static cn.hutool.core.text.CharSequenceUtil.EMPTY;
  */
 @Service
 public class XdsInfoServiceImpl implements XdsInfoService {
-    private static final String DEFAULT_USER = "sys";
-
-    @Value("${spring.kafka.topic.xds}")
-    private String topic;
     @Resource
     private XdsService xdsService;
 
-    @Resource
-    private KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
-    public Xds createXdsInfo(TaskDto taskDto) {
-        Xds xds = BeanUtil.copyProperties(taskDto, Xds.class);
-        xds.setCreateTime(LocalDateTime.now());
-        xds.setCreateBy(DEFAULT_USER);
-        xds.setDataConvergeStartTime(taskDto.getStartTime());
+    public Xds createXdsInfo(TaskDto taskDto, ConvergeConfig config) {
+        Xds xds = build(taskDto, config);
         xdsService.save(xds);
         return xds;
     }
@@ -56,6 +45,12 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     public Xds updateXdsCompleted(Long id) {
         Xds xds = getXdsInfoById(id);
         return updateXdsStatus(xds, XdsStatusEnum.COMPLETED.getCode(), EMPTY);
+    }
+
+    @Override
+    public Xds updateKafkaSent(Xds xds) {
+        xds.setKafkaSendFlag(KafkaSendFlagEnum.SENT.getCode());
+        return updateXds(xds);
     }
 
     @Override
@@ -76,6 +71,53 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         return updateXdsStatus(setFileInfo(xds, dto), XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
 
+    @Override
+    public Xds getById(Long id) {
+        if (null == id) {
+            throw new CommonException("参数【XDS信息主键ID】为空");
+        }
+        Xds xds = xdsService.getById(id);
+        if (null == xds) {
+            throw new CommonException(format("XDsID={}对应的XDS信息不存在", id));
+        }
+        return xds;
+    }
+
+    /**
+     * 组装XDS信息
+     *
+     * @param taskDto 请求参数
+     * @param config  配置信息
+     * @return XDS信息
+     */
+    private Xds build(TaskDto taskDto, ConvergeConfig config) {
+        return Xds.builder()
+                .convergeMethod(config.getConvergeMethod())
+//                .batchNo()
+                .dataType(config.getDataType())
+                .delFlag(LogicDelFlagIntEnum.NONE.getCode())
+                .hpsCode(taskDto.getHpsCode())
+//                .dataConvergeStatus()
+//                .dataConvergeDesc()
+                .dataCount(isNotBlank(taskDto.getCountNumber()) ? Integer.parseInt(taskDto.getCountNumber()) : 0)
+                .dataConvergeEndTime(taskDto.getEndTime())
+                .orgCode(config.getOrgCode())
+                .dataConvergeStartTime(taskDto.getStartTime())
+                .odsTableName(taskDto.getOdsTableName())
+                .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
+                .odsModelName(taskDto.getOdsTableName())
+                .createTime(LocalDateTime.now())
+                .createBy(CommonConstant.DEFAULT_USER)
+                .build();
+    }
+
+    /**
+     * 设置文件信息参数
+     *
+     * @param xds XDS信息
+     * @param dto 文件信息
+     * @return XDS信息
+     */
     private Xds setFileInfo(Xds xds, ConvFileInfoDto dto) {
         xds.setOriFileFromIp(dto.getOriFileFromIp());
         xds.setOriFileType(dto.getOriFileType());
@@ -113,7 +155,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      */
     public Xds updateXds(Xds xds) {
         xds.setUpdateTime(LocalDateTime.now());
-        xds.setUpdateBy(DEFAULT_USER);
+        xds.setUpdateBy(CommonConstant.DEFAULT_USER);
         xds.setDataConvergeEndTime(LocalDateTime.now());
         xdsService.updateById(xds);
         return getXdsInfoById(xds.getId());
@@ -134,14 +176,4 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     }
 
 
-    private void xdsSendKafka(Xds xds) {
-        Xds checkXds = xdsService.getById(xds.getId());
-        if (ObjectUtil.isNotNull(checkXds) && (!NumberUtils.INTEGER_ONE.equals(xds.getKafkaSendFlag()))) {
-            HashMap<String, Object> map = new HashMap<>();
-            map.put("id", checkXds.getId());
-            kafkaTemplate.send(topic, JSON.toJSONString(map));
-            xds.setKafkaSendFlag(1);
-            xdsService.updateById(xds);
-        }
-    }
 }

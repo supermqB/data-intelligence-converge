@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.dao.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
  * @since 2023-07-20
  */
 @Data
+@Builder
 @TableName("conv_project_converge_relation")
 public class ProjectConvergeRelation implements Serializable {
 
@@ -26,6 +28,15 @@ public class ProjectConvergeRelation implements Serializable {
      */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
+    /**
+     * 系统编码
+     */
+    private String sysCode;
+
+    /**
+     * 机构编码
+     */
+    private String orgCode;
 
     /**
      * conv_converge_config表ID

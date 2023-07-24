@@ -26,6 +26,15 @@ public class ConvergeConfig implements Serializable {
      */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
+    /**
+     * 系统编码
+     */
+    private String sysCode;
+
+    /**
+     * 机构编码
+     */
+    private String orgCode;
 
     /**
      * 前置机编码

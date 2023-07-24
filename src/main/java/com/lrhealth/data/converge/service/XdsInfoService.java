@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service;
 
+import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.TaskDto;
@@ -18,9 +19,10 @@ public interface XdsInfoService {
      * 创建XDS信息
      *
      * @param taskDto 任务信息
+     * @param config  汇聚配置信息
      * @return XDS信息
      */
-    Xds createXdsInfo(TaskDto taskDto);
+    Xds createXdsInfo(TaskDto taskDto, ConvergeConfig config);
 
     /**
      * 更新状态为完成
@@ -29,6 +31,14 @@ public interface XdsInfoService {
      * @return XDS信息
      */
     Xds updateXdsCompleted(Long id);
+
+    /**
+     * 更新Kafka发送状态
+     *
+     * @param xds Xds信息
+     * @return XDS信息
+     */
+    Xds updateKafkaSent(Xds xds);
 
     /**
      * 更新状态为完成
@@ -54,4 +64,12 @@ public interface XdsInfoService {
      * @return XDS信息
      */
     Xds updateXdsFileInfo(ConvFileInfoDto fileInfoDto);
+
+    /**
+     * 根据ID查询XDS信息
+     *
+     * @param id 主键ID
+     * @return XDS信息
+     */
+    Xds getById(Long id);
 }

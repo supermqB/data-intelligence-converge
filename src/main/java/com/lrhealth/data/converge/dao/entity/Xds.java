@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.dao.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
  * @since 2023-07-19
  */
 @Data
+@Builder
 @TableName("conv_xds")
 public class Xds implements Serializable {
     /**
