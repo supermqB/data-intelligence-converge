@@ -30,7 +30,10 @@ public class Frontend implements Serializable {
      * 系统编码
      */
     private String sysCode;
-
+    /**
+     * 文件存储地址（文件中转使用）
+     */
+    private String filePath;
     /**
      * 机构编码
      */
