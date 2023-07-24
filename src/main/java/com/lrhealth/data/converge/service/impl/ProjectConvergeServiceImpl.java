@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.LogicDelFlagIntEnum;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static cn.hutool.core.collection.CollUtil.isEmpty;
 import static cn.hutool.core.text.CharSequenceUtil.format;
@@ -40,8 +42,8 @@ public class ProjectConvergeServiceImpl implements ProjectConvergeService {
             throw new CommonException("项目ID为空");
         }
         List<ProjectConvergeRelation> list = relationService.list(new LambdaQueryWrapper<ProjectConvergeRelation>().eq(ProjectConvergeRelation::getProjectId, projectId));
-        if (list.size() > 1) {
-            relationService.remove(new LambdaQueryWrapper<ProjectConvergeRelation>().eq(ProjectConvergeRelation::getProjectId, projectId));
+        if (CollUtil.isNotEmpty(list)) {
+            relationService.removeBatchByIds(list.stream().map(ProjectConvergeRelation::getId).collect(Collectors.toList()));
         }
         ProjectConvergeRelation relation = build(projectId, configId);
         relationService.save(relation);
