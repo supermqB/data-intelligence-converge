@@ -36,6 +36,13 @@ public class ProjectConvergeServiceImpl implements ProjectConvergeService {
 
     @Override
     public Long save(String projectId, Long configId) {
+        if (isBlank(projectId)) {
+            throw new CommonException("项目ID为空");
+        }
+        List<ProjectConvergeRelation> list = relationService.list(new LambdaQueryWrapper<ProjectConvergeRelation>().eq(ProjectConvergeRelation::getProjectId, projectId));
+        if (list.size() > 1) {
+            relationService.remove(new LambdaQueryWrapper<ProjectConvergeRelation>().eq(ProjectConvergeRelation::getProjectId, projectId));
+        }
         ProjectConvergeRelation relation = build(projectId, configId);
         relationService.save(relation);
         return relation.getId();
