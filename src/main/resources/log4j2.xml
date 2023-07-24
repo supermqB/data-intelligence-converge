@@ -87,7 +87,7 @@
 
     </Appenders>
     <Loggers>
-        <AsyncRoot level="INFO" includeLocation="false" additivity="false">
+        <AsyncRoot level="DEBUG" includeLocation="false" additivity="false">
             <AppenderRef ref="SYSTEM_OUT"/>
             <AppenderRef ref="INFO_FILE"/>
             <AppenderRef ref="WARN_FILE"/>

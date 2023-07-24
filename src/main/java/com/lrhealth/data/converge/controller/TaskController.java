@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.controller;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
 import com.lrhealth.data.converge.model.TaskDto;
+import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.TaskService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +26,9 @@ public class TaskController {
     @Resource
     private TaskService taskService;
 
+    @Resource
+    private DocumentParseService documentParseService;
+
     /**
      * 创建汇聚任务
      *
@@ -43,7 +47,7 @@ public class TaskController {
      * @return 固定字符串
      */
     @PostMapping(value = "/completed")
-    public DolphinSchedulerReturnVO completed(TaskDto taskDto) {
+    public DolphinSchedulerReturnVO completed(@RequestBody TaskDto taskDto) {
         Xds xds = taskService.updateTask(taskDto);
         return new DolphinSchedulerReturnVO("200", xds);
     }

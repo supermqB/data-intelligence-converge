@@ -22,13 +22,13 @@ spring:
           database: 2
           dnsMonitoringInterval: 5000
   datasource:
-    rdcp:
+    ods:
       type: com.zaxxer.hikari.HikariDataSource
-      jdbcUrl: jdbc:oceanbase://172.16.29.14:2883/rdcp
+      jdbcUrl: jdbc:oceanbase://172.16.29.14:2883/ods
       driver-class-name: com.oceanbase.jdbc.Driver
       username: ENC(dzlQtlalf2wmim1mILlZAbaIrOABKer8)
       password: ENC(poiqgUqqGcqKD2zPoyBXC7xSR6E1XbyK)
-      pool-name: HikariCP-rdcp
+      pool-name: HikariCP-ods
       #最小空闲连接数
       minimum-idle: 10
       # 空闲连接存活最大时间，默认2分钟
