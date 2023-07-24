@@ -12,6 +12,13 @@ import com.lrhealth.data.converge.dao.entity.Xds;
  * @since 2023/7/19 11:47
  */
 public interface DocumentParseService {
+
+    /**
+     * 解析文件，然后落库
+     * @param xds 已经建立的xds信息
+     */
+    void documentParseAndSave(Xds xds);
+
     /**
      * 解析文件
      * 目前支持的文件解析类型： json/excel

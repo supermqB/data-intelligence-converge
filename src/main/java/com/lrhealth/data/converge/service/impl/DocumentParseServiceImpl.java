@@ -5,15 +5,24 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.util.FileToJsonUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static cn.hutool.core.text.StrPool.UNDERLINE;
 
 /**
  * <p>
@@ -30,26 +39,55 @@ import java.nio.file.Paths;
 @Slf4j
 public class DocumentParseServiceImpl implements DocumentParseService {
 
+    @Resource
+    private BeeBaseRepository beeBaseRepository;
+
+    @Override
+    public void documentParseAndSave(Xds xds) {
+        checkParam(xds);
+        JSONObject parseData = parseFileByFilePath(xds);
+        jsonDataSave(parseData, xds.getOrgCode());
+    }
+
     @Override
     public JSONObject parseFileByFilePath(Xds xds) {
         JSONObject result = new JSONObject();
-        if (CharSequenceUtil.isBlank(xds.getStoredFilePath())) {
-            log.error("collectFilePath is null");
-        }
+        InputStream fileStream = null;
         try {
-            InputStream fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath()));
-            result = fileToJson(fileStream, xds);
+            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath()));
+            result = fileToJson(fileStream, xds.getStoredFileType(), xds.getStoredFileName());
         }catch (Exception e){
             e.getStackTrace();
+        }finally {
+            if (fileStream != null) {
+                try {
+                    fileStream.close();
+                } catch (IOException e) {
+                    log.error("excel文件流关闭异常:", e);
+                }
+            }
         }
         return result;
     }
 
-    private JSONObject fileToJson(InputStream in, Xds xds) {
+    public void jsonDataSave(JSONObject jsonObject, String orgCode){
+        Set<String> odsTableNames = jsonObject.keySet();
+        for (String odsTableName : odsTableNames) {
+            try {
+                String tableName = orgCode + UNDERLINE + odsTableName;
+                List<Map<String, Object>> odsDataList = (List<Map<String, Object>>) jsonObject.get(odsTableName);
+                beeBaseRepository.insertBatch(tableName, odsDataList);
+            }catch (Exception e) {
+                log.error("(eventLink)dwd data to db sql exception,{}", ExceptionUtils.getStackTrace(e));
+            }
+        }
+
+    }
+
+    private JSONObject fileToJson(InputStream in, String fileType, String fileName) {
         try {
             //根据文件类型处理流，输出json对象，json结构待定
             JSONObject odsAllJsonData = new JSONObject();
-            String fileType = xds.getStoredFileType();
 
             switch (fileType) {
                 case "json":
@@ -57,7 +95,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
                     break;
                 case "xls":
                 case "xlsx":
-                    odsAllJsonData = FileToJsonUtil.excelToJsonByali(in, xds.getStoredFileName());
+                    odsAllJsonData = FileToJsonUtil.excelToJsonByali(in, fileName);
                     break;
                 default:
             }
@@ -68,6 +106,17 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         } catch (Exception e) {
             log.error("文件解析异常:", e);
             throw new CommonException("文件解析异常:{}", ExceptionUtil.getMessage(e));
+        }
+    }
+
+    private void checkParam(Xds xds){
+        if (CharSequenceUtil.isNotBlank(xds.getStoredFilePath()) || CharSequenceUtil.isNotBlank(xds.getStoredFileType())
+        || CharSequenceUtil.isNotBlank(xds.getStoredFileName())){
+            log.error("文档解析必须字段缺失，filePath:{} fileType:{} fileName:{}", xds.getStoredFilePath(),
+                     xds.getStoredFileType(), xds.getStoredFileName());
+        }
+        if (CharSequenceUtil.isNotBlank(xds.getOrgCode())){
+            log.error("机构编码缺失");
         }
     }
 }

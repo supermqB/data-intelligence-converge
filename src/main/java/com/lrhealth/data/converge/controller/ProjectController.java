@@ -30,7 +30,7 @@ public class ProjectController {
      * @param pageNo   分页-当前页
      * @return 汇聚配置信息
      */
-    @GetMapping
+    @GetMapping(value = "page")
     public DsResult<DsPageInfo<ConvergeConfigDto>> listConvConfig(@RequestParam("pageSize") Integer pageSize,
                                                                   @RequestParam("pageNo") Integer pageNo) {
         DsResult<DsPageInfo<ConvergeConfigDto>> result = new DsResult<>();

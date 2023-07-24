@@ -13,6 +13,7 @@ import com.lrhealth.data.converge.service.XdsInfoService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
@@ -39,7 +40,7 @@ public class TaskServiceImpl implements TaskService {
     private ConvergeConfigService configService;
 
     @Override
-    public Xds createTask(TaskDto taskDto) {
+    public Xds createTask(@RequestBody TaskDto taskDto) {
         ConvergeConfig config = getConfig(taskDto.getProjectId());
         return xdsInfoService.createXdsInfo(taskDto, config);
     }

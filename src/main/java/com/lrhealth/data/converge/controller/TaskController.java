@@ -51,4 +51,9 @@ public class TaskController {
         Xds xds = taskService.updateTask(taskDto);
         return new DolphinSchedulerReturnVO("200", xds);
     }
+
+    @PostMapping(value = "/fileSave")
+    public void fileDocumentAndSave(Xds xds){
+        documentParseService.documentParseAndSave(xds);
+    }
 }

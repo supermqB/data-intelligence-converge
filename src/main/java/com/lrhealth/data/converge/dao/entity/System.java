@@ -32,7 +32,7 @@ public class System implements Serializable {
     /**
      * 机构编码
      */
-    private Long orgCode;
+    private String orgCode;
 
     /**
      * 系统编码
@@ -78,21 +78,6 @@ public class System implements Serializable {
      * 系统厂商
      */
     private String systemFirm;
-    /**
-     * 基础数据文件id
-     */
-    private Long baseDataId;
-
-    /**
-     * 结构文档文件id
-     */
-    private Long structureDocId;
-
-    /**
-     * 样例数据文件id
-     */
-    private Long sampleDataId;
-
     /**
      * 一级分类
      */

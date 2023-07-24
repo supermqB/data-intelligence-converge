@@ -99,14 +99,9 @@ public class FileToJsonUtil {
         InputStream streamCache1 = null;
         try {
             streamCache1 = streamCacher.getInputStream();
-//            sheet.setHeadRowNumber(1);
             List<Object> dataList = EasyExcelFactory.read(streamCache1).sheet(sheet.getSheetNo()).headRowNumber(0).doReadSync();
             JSONArray dataArray = JSON.parseArray(JSON.toJSONString(dataList));
             JSONObject header = dataArray.getJSONObject(0);
-//            header = JSON.parseArray("[" + dataArray.getJSONObject(0).toString() + "]");
-//            header.getJSONObject(0).size()
-//            JSONObject jsonString = dataArray.getJSONObject(0);
-//            header.add(jsonString);
             JSONArray result = new JSONArray();
             for (int i = 1; i < dataArray.size(); i++) {
                 JSONObject temp = dataArray.getJSONObject(i);
