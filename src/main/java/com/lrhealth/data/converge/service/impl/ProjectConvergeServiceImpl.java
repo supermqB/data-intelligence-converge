@@ -65,6 +65,22 @@ public class ProjectConvergeServiceImpl implements ProjectConvergeService {
         return list.get(0);
     }
 
+    @Override
+    public boolean delete(String projectId) {
+        boolean deleteFlag = false;
+        if (isBlank(projectId)) {
+            throw new CommonException("项目ID为空");
+        }
+        List<ProjectConvergeRelation> list = relationService.list(new LambdaQueryWrapper<ProjectConvergeRelation>().eq(ProjectConvergeRelation::getProjectId, projectId));
+        if (isEmpty(list)) {
+            throw new CommonException(format("项目ID={}的汇聚配置不存在", projectId));
+        }
+        if (CollUtil.isNotEmpty(list)) {
+            deleteFlag =  relationService.removeBatchByIds(list.stream().map(ProjectConvergeRelation::getId).collect(Collectors.toList()));
+        }
+        return deleteFlag;
+    }
+
     /**
      * 构建关联关系
      *

@@ -94,10 +94,10 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private Xds build(TaskDto taskDto, ConvergeConfig config) {
         return Xds.builder()
                 .convergeMethod(config.getConvergeMethod())
-//                .batchNo()
+                .batchNo(taskDto.getBatchNo())
                 .dataType(config.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
-                .hpsCode(taskDto.getHpsCode())
+//                .hpsCode(taskDto.getHpsCode())
 //                .dataConvergeStatus()
 //                .dataConvergeDesc()
                 .dataCount(isNotBlank(taskDto.getCountNumber()) ? Integer.parseInt(taskDto.getCountNumber()) : 0)

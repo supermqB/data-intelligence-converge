@@ -19,7 +19,7 @@ public interface ProjectConvergeService {
      * @param configId  配置ID
      * @return 关联关系ID
      */
-    Long save(String projectId, Long configId);
+    Long  save(String projectId, Long configId);
 
     /**
      * 根据项目ID查询关联选系
@@ -28,4 +28,12 @@ public interface ProjectConvergeService {
      * @return 关联关系
      */
     ProjectConvergeRelation getByProjId(String projectId);
+
+    /**
+     * 删除项目-配置项关联关系
+     *
+     * @param projectId 项目ID
+     * @return
+     */
+    boolean delete(String projectId);
 }
