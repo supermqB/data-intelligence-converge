@@ -30,25 +30,13 @@ public class Xds implements Serializable {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
-     * 业务流水号
-     */
-    private String serialNum;
-    /**
      * 机构编码
      */
     private String orgCode;
     /**
-     * 机构名称
-     */
-    private String orgName;
-    /**
      * 系统编码
      */
     private String sysCode;
-    /**
-     * 医院编码（发生地编码）
-     */
-    private String hpsCode;
     /**
      * 任务实例ID（任务队列系统）
      */
