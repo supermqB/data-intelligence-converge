@@ -2,11 +2,13 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.util.FileToJsonUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -40,13 +42,17 @@ import static cn.hutool.core.text.StrPool.UNDERLINE;
 public class DocumentParseServiceImpl implements DocumentParseService {
 
     @Resource
+    private XdsService xdsService;
+
+    @Resource
     private BeeBaseRepository beeBaseRepository;
 
     @Override
-    public void documentParseAndSave(Xds xds) {
+    public void documentParseAndSave(Long id) {
+        Xds xds = xdsService.getById(id);
         checkParam(xds);
         JSONObject parseData = parseFileByFilePath(xds);
-        jsonDataSave(parseData, xds.getOrgCode());
+        jsonDataSave(parseData, xds.getSysCode());
     }
 
     @Override
@@ -54,7 +60,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         JSONObject result = new JSONObject();
         InputStream fileStream = null;
         try {
-            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath()));
+            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath() + "/" + xds.getStoredFileName()));
             result = fileToJson(fileStream, xds.getStoredFileType(), xds.getStoredFileName());
         }catch (Exception e){
             e.getStackTrace();
@@ -76,9 +82,11 @@ public class DocumentParseServiceImpl implements DocumentParseService {
             try {
                 String tableName = orgCode + UNDERLINE + odsTableName;
                 List<Map<String, Object>> odsDataList = (List<Map<String, Object>>) jsonObject.get(odsTableName);
+                String batchNo = IdUtil.randomUUID();
+                odsDataList.forEach(map -> map.put("batch_no", batchNo));
                 beeBaseRepository.insertBatch(tableName, odsDataList);
             }catch (Exception e) {
-                log.error("(eventLink)dwd data to db sql exception,{}", ExceptionUtils.getStackTrace(e));
+                log.error("file data to db sql exception,{}", ExceptionUtils.getStackTrace(e));
             }
         }
 

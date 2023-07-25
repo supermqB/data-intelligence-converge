@@ -1,14 +1,12 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.TaskService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 
@@ -28,6 +26,9 @@ public class TaskController {
 
     @Resource
     private DocumentParseService documentParseService;
+
+    @Resource
+    private XdsService xdsService;
 
     /**
      * 创建汇聚任务
@@ -53,7 +54,7 @@ public class TaskController {
     }
 
     @PostMapping(value = "/fileSave")
-    public void fileDocumentAndSave(Xds xds){
-        documentParseService.documentParseAndSave(xds);
+    public void fileDocumentAndSave(@RequestParam(value = "id") Long id){
+        documentParseService.documentParseAndSave(id);
     }
 }
