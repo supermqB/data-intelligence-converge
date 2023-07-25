@@ -48,10 +48,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Override
     public Xds createXdsInfo(TaskDto taskDto, ConvergeConfig config) {
         Xds xds = build(taskDto, config);
-        Institution institution = institutionService.getOne(new LambdaQueryWrapper<Institution>().eq(isNotBlank(xds.getOrgCode()), Institution::getSourceCode, xds.getOrgCode()));
-        if (ObjectUtil.isNotEmpty(institution) && "1".equals(institution.getSourceCode())){
-            xds.setHpsCode(institution.getSourceCode());
-        }
         xdsService.save(xds);
         return xds;
     }
@@ -114,7 +110,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         return Xds.builder()
                 .convergeMethod(config.getConvergeMethod())
                 .batchNo(taskDto.getBatchNo())
-                .serialNum(DateUtil.today() + IdUtil.randomUUID())
                 .dataType(config.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
 //                .hpsCode(taskDto.getHpsCode())
