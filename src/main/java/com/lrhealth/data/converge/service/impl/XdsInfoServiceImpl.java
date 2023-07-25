@@ -1,11 +1,7 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.ObjectUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
 import com.lrhealth.data.common.enums.conv.LogicDelFlagIntEnum;
@@ -14,7 +10,6 @@ import com.lrhealth.data.common.enums.conv.XdsStoredFileModeEnum;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
-import com.lrhealth.data.converge.dao.entity.Institution;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.InstitutionService;
 import com.lrhealth.data.converge.dao.service.XdsService;
@@ -120,7 +115,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .dataConvergeStartTime(taskDto.getStartTime())
                 .odsTableName(taskDto.getOdsTableName())
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
-                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName()))
+                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName().toUpperCase()))
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
                 .build();
