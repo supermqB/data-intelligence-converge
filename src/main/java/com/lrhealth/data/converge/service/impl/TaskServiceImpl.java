@@ -49,7 +49,7 @@ public class TaskServiceImpl implements TaskService {
     public Xds updateTask(TaskDto taskDto) {
         Xds xds;
         if (taskDto.isTaskStatus()) {
-            xds = xdsInfoService.updateXdsCompleted(taskDto.getXdsId());
+            xds = xdsInfoService.updateXdsCompleted(taskDto);
         } else {
             xds = xdsInfoService.updateXdsFailure(taskDto.getXdsId(), "dataX数据抽取失败");
         }

@@ -43,8 +43,10 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     }
 
     @Override
-    public Xds updateXdsCompleted(Long id) {
-        Xds xds = getXdsInfoById(id);
+    public Xds updateXdsCompleted(TaskDto taskDto) {
+        Xds xds = getXdsInfoById(taskDto.getXdsId());
+        xds.setBatchNo(taskDto.getBatchNo());
+        xds.setDataConvergeEndTime(taskDto.getEndTime());
         return updateXdsStatus(xds, XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
 
@@ -157,7 +159,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     public Xds updateXds(Xds xds) {
         xds.setUpdateTime(LocalDateTime.now());
         xds.setUpdateBy(CommonConstant.DEFAULT_USER);
-        xds.setDataConvergeEndTime(LocalDateTime.now());
+//        xds.setDataConvergeEndTime(LocalDateTime.now());
         xdsService.updateById(xds);
         return getXdsInfoById(xds.getId());
     }

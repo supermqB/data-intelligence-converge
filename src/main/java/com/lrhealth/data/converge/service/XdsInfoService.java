@@ -27,10 +27,10 @@ public interface XdsInfoService {
     /**
      * 更新状态为完成
      *
-     * @param id 主键ID
+     * @param taskDto 主键ID
      * @return XDS信息
      */
-    Xds updateXdsCompleted(Long id);
+    Xds updateXdsCompleted(TaskDto taskDto);
 
     /**
      * 更新Kafka发送状态
