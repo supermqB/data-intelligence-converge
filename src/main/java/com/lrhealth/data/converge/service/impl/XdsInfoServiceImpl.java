@@ -7,6 +7,7 @@ import com.lrhealth.data.common.enums.conv.LogicDelFlagIntEnum;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.common.enums.conv.XdsStoredFileModeEnum;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
@@ -105,7 +106,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .dataConvergeStartTime(taskDto.getStartTime())
                 .odsTableName(taskDto.getOdsTableName())
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
-                .odsModelName(taskDto.getOdsTableName())
+                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName()))
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
                 .build();
