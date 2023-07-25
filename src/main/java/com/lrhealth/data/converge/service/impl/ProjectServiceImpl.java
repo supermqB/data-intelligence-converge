@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.DsPageInfo;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Institution;
@@ -39,10 +39,10 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public DsPageInfo<ConvergeConfigDto> queryConvConfigPage(Integer pageSize, Integer pageNo) {
         DsPageInfo<ConvergeConfigDto> pageInfo = new DsPageInfo<>(pageNo, pageSize);
-        Page<ConvergeConfig> configPage = configService.queryPage(pageSize, pageNo);
+        List<ConvergeConfig> configPage = configService.queryListByPage(pageNo, pageSize);
 
-        pageInfo.setTotal((int) configPage.getTotal());
-        pageInfo.setTotalList(buildResultList(configPage.getRecords()));
+        pageInfo.setTotal(configPage.size());
+        pageInfo.setTotalList(buildResultList(configPage));
 
         return pageInfo;
     }
@@ -50,6 +50,14 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public Long bindProjectAndConvConfig( String projectId,Long convConfigId) {
         return projectConvergeService.save(projectId,convConfigId);
+    }
+
+    @Override
+    public void deleteProjectConvRelation(String projectId) {
+         boolean deleted = projectConvergeService.delete(projectId);
+         if (!deleted){
+             throw new CommonException("没有数据删除");
+         }
     }
 
     /**

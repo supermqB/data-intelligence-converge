@@ -31,4 +31,11 @@ public interface ProjectService {
      */
     Long bindProjectAndConvConfig(String projectId, Long convConfigId);
 
+    /**
+     * 删除项目-配置绑定关系
+     *
+     * @param projectId 队列服务项目ID
+     */
+    void deleteProjectConvRelation(String projectId);
+
 }

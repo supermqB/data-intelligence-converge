@@ -62,4 +62,9 @@ public class ProjectController {
         }
         return result;
     }
+
+    @PostMapping("delete")
+    public void deleteProjectConvergeRelation(String projectId){
+        projectService.deleteProjectConvRelation(projectId);
+    }
 }
