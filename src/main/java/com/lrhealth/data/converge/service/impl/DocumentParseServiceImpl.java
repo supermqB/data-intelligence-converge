@@ -2,14 +2,15 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
+import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
+import com.lrhealth.data.converge.service.XdsInfoService;
 import com.lrhealth.data.converge.util.FileToJsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,12 +49,16 @@ public class DocumentParseServiceImpl implements DocumentParseService {
     @Resource
     private BeeBaseRepository beeBaseRepository;
 
+    @Resource
+    private XdsInfoService xdsInfoService;
+
     @Override
     public void documentParseAndSave(Long id) {
         Xds xds = xdsService.getById(id);
         checkParam(xds);
         JSONObject parseData = parseFileByFilePath(xds);
-        jsonDataSave(parseData, xds.getSysCode());
+        Integer dataCount = jsonDataSave(parseData, xds);
+        xdsInfoService.updateXdsCompleted(setTaskDto(xds, dataCount));
     }
 
     @Override
@@ -76,19 +82,21 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         return result;
     }
 
-    public void jsonDataSave(JSONObject jsonObject, String orgCode){
+    private Integer jsonDataSave(JSONObject jsonObject, Xds xds){
         Set<String> odsTableNames = jsonObject.keySet();
+        int countNumber = 0;
         for (String odsTableName : odsTableNames) {
             try {
-                String tableName = orgCode + UNDERLINE + odsTableName;
+                String tableName = xds.getSysCode() + UNDERLINE + odsTableName;
                 List<Map<String, Object>> odsDataList = (List<Map<String, Object>>) jsonObject.get(odsTableName);
-                String batchNo = IdUtil.randomUUID();
-                odsDataList.forEach(map -> map.put("batch_no", batchNo));
+                odsDataList.forEach(map -> map.put("batch_no", xds.getId()));
                 beeBaseRepository.insertBatch(tableName, odsDataList);
+                countNumber += odsDataList.size();
             }catch (Exception e) {
                 log.error("file data to db sql exception,{}", ExceptionUtils.getStackTrace(e));
             }
         }
+        return countNumber;
 
     }
 
@@ -126,5 +134,13 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         if (CharSequenceUtil.isNotBlank(xds.getOrgCode())){
             log.error("机构编码缺失");
         }
+    }
+
+    private TaskDto setTaskDto(Xds xds, Integer dataCount){
+        TaskDto taskDto = new TaskDto();
+        taskDto.setBatchNo(String.valueOf(xds.getId()));
+        taskDto.setEndTime(LocalDateTime.now());
+        taskDto.setCountNumber(String.valueOf(dataCount));
+        return taskDto;
     }
 }

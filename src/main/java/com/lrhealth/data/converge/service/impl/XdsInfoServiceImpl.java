@@ -11,7 +11,6 @@ import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.dao.service.InstitutionService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.TaskDto;
@@ -35,9 +34,6 @@ import static cn.hutool.core.text.CharSequenceUtil.*;
 public class XdsInfoServiceImpl implements XdsInfoService {
     @Resource
     private XdsService xdsService;
-
-    @Resource
-    private InstitutionService institutionService;
 
 
     @Override
@@ -104,12 +100,9 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private Xds build(TaskDto taskDto, ConvergeConfig config) {
         return Xds.builder()
                 .convergeMethod(config.getConvergeMethod())
-                .batchNo(taskDto.getBatchNo())
                 .dataType(config.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
-//                .hpsCode(taskDto.getHpsCode())
                 .dataCount(isNotBlank(taskDto.getCountNumber()) ? Integer.parseInt(taskDto.getCountNumber()) : 0)
-//                .dataConvergeEndTime(taskDto.getEndTime())
                 .orgCode(config.getOrgCode())
                 .sysCode(config.getSysCode())
                 .dataConvergeStartTime(taskDto.getStartTime())
