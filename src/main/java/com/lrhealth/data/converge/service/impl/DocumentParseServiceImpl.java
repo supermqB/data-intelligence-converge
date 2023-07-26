@@ -15,6 +15,7 @@ import com.lrhealth.data.converge.util.FileToJsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.IOException;
@@ -53,12 +54,14 @@ public class DocumentParseServiceImpl implements DocumentParseService {
     private XdsInfoService xdsInfoService;
 
     @Override
-    public void documentParseAndSave(Long id) {
+    @Transactional(rollbackFor = Exception.class)
+    public Xds documentParseAndSave(Long id) {
         Xds xds = xdsService.getById(id);
         checkParam(xds);
-        JSONObject parseData = parseFileByFilePath(xds);
-        Integer dataCount = jsonDataSave(parseData, xds);
-        xdsInfoService.updateXdsCompleted(setTaskDto(xds, dataCount));
+//        JSONObject parseData = parseFileByFilePath(xds);
+//        Integer dataCount = jsonDataSave(parseData, xds);
+        Integer dataCount = 10;
+        return xdsInfoService.updateXdsCompleted(setTaskDto(xds, dataCount));
     }
 
     @Override
@@ -126,18 +129,19 @@ public class DocumentParseServiceImpl implements DocumentParseService {
     }
 
     private void checkParam(Xds xds){
-        if (CharSequenceUtil.isNotBlank(xds.getStoredFilePath()) || CharSequenceUtil.isNotBlank(xds.getStoredFileType())
-        || CharSequenceUtil.isNotBlank(xds.getStoredFileName())){
+        if (CharSequenceUtil.isBlank(xds.getStoredFilePath()) || CharSequenceUtil.isBlank(xds.getStoredFileType())
+        || CharSequenceUtil.isBlank(xds.getStoredFileName())){
             log.error("文档解析必须字段缺失，filePath:{} fileType:{} fileName:{}", xds.getStoredFilePath(),
                      xds.getStoredFileType(), xds.getStoredFileName());
         }
-        if (CharSequenceUtil.isNotBlank(xds.getOrgCode())){
+        if (CharSequenceUtil.isBlank(xds.getOrgCode())){
             log.error("机构编码缺失");
         }
     }
 
     private TaskDto setTaskDto(Xds xds, Integer dataCount){
         TaskDto taskDto = new TaskDto();
+        taskDto.setXdsId(xds.getId());
         taskDto.setBatchNo(String.valueOf(xds.getId()));
         taskDto.setEndTime(LocalDateTime.now());
         taskDto.setCountNumber(String.valueOf(dataCount));

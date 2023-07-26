@@ -17,7 +17,7 @@ public interface DocumentParseService {
      * 解析文件，然后落库
      * @param id 已经建立的xds信息id
      */
-    void documentParseAndSave(Long id);
+    Xds documentParseAndSave(Long id);
 
     /**
      * 解析文件
