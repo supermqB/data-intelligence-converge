@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
@@ -91,7 +92,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
             try {
                 String tableName = xds.getSysCode() + UNDERLINE + odsTableName;
                 List<Map<String, Object>> odsDataList = (List<Map<String, Object>>) jsonObject.get(odsTableName);
-                odsDataList.forEach(map -> map.put("batch_no", xds.getId()));
+                odsDataList.forEach(map -> map.put("xds_id", xds.getId()));
                 beeBaseRepository.insertBatch(tableName, odsDataList);
                 countNumber += odsDataList.size();
             }catch (Exception e) {
@@ -141,7 +142,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
     private TaskDto setTaskDto(Xds xds, Integer dataCount){
         TaskDto taskDto = new TaskDto();
         taskDto.setXdsId(xds.getId());
-        taskDto.setBatchNo(String.valueOf(xds.getId()));
+        taskDto.setBatchNo(IdUtil.randomUUID());
         taskDto.setEndTime(LocalDateTime.now());
         taskDto.setCountNumber(String.valueOf(dataCount));
         return taskDto;
