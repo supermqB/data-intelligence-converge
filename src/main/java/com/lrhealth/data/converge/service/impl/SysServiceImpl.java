@@ -47,7 +47,7 @@ public class SysServiceImpl implements SysService {
         if (isEmpty(orgCodeList)) {
             return CollUtil.newArrayList();
         }
-        List<System> result = service.list(new LambdaQueryWrapper<System>().in(System::getOrgCode, orgCodeList));
+        List<System> result = service.list(new LambdaQueryWrapper<System>().in(System::getSourceCode, orgCodeList));
         return isEmpty(result) ? CollUtil.newArrayList() : result;
     }
 
