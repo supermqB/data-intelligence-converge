@@ -28,11 +28,11 @@ public class System implements Serializable {
     /**
      * 机构ID
      */
-    private Long orgId;
+    private Long institutionId;
     /**
      * 机构编码
      */
-    private String orgCode;
+    private String sourceCode;
 
     /**
      * 系统编码
