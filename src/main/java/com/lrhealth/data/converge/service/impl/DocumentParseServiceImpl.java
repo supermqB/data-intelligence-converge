@@ -58,9 +58,8 @@ public class DocumentParseServiceImpl implements DocumentParseService {
     public Xds documentParseAndSave(Long id) {
         Xds xds = xdsService.getById(id);
         checkParam(xds);
-//        JSONObject parseData = parseFileByFilePath(xds);
-//        Integer dataCount = jsonDataSave(parseData, xds);
-        Integer dataCount = 10;
+        JSONObject parseData = parseFileByFilePath(xds);
+        Integer dataCount = jsonDataSave(parseData, xds);
         return xdsInfoService.updateXdsCompleted(setTaskDto(xds, dataCount));
     }
 

@@ -50,7 +50,9 @@ public class TaskController {
     }
 
     @PostMapping(value = "/fileSave")
-    public void fileDocumentAndSave(@RequestParam(value = "id") Long id){
-        documentParseService.documentParseAndSave(id);
+    public DolphinSchedulerReturnVO fileDocumentAndSave(@RequestParam(value = "id") Long id){
+        Xds xds = documentParseService.documentParseAndSave(id);
+        return new DolphinSchedulerReturnVO("200", xds);
+
     }
 }
