@@ -50,7 +50,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Override
     public Xds updateXdsCompleted(TaskDto taskDto) {
         Xds xds = getXdsInfoById(taskDto.getXdsId());
-        xds.setBatchNo(taskDto.getBatchNo());
+        xds.setBatchNo(String.valueOf(taskDto.getXdsId()));
         xds.setDataConvergeEndTime(taskDto.getEndTime());
         if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())){
             xds.setDataCount(Integer.valueOf(taskDto.getCountNumber()));

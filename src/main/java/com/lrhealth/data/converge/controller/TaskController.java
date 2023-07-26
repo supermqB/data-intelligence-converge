@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
@@ -26,9 +25,6 @@ public class TaskController {
 
     @Resource
     private DocumentParseService documentParseService;
-
-    @Resource
-    private XdsService xdsService;
 
     /**
      * 创建汇聚任务
