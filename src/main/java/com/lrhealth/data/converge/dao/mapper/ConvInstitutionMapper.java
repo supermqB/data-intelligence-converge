@@ -13,6 +13,6 @@ import org.apache.ibatis.annotations.Mapper;
  * @since 2023-07-20
  */
 @Mapper
-public interface InstitutionMapper extends BaseMapper<Institution> {
+public interface ConvInstitutionMapper extends BaseMapper<Institution> {
 
 }
