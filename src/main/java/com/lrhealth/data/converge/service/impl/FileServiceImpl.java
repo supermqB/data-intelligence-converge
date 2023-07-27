@@ -1,6 +1,5 @@
 package com.lrhealth.data.converge.service.impl;
 
-import cn.hutool.core.net.NetUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
 import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +36,8 @@ public class FileServiceImpl implements FileService {
 
         File file = new File(localPath);
         String filename = file.getName();
-        Path targetUrl = Paths.get( NetUtil.getLocalhostStr() + convergeConfig.getStoredFilePath() + "/" + filename);
+        Path targetUrl = Paths.get( convergeConfig.getStoredFilePath() + "/" + filename);
+        log.info("源文件目录: {} ---> 上传文件目录: {}", localPath, targetUrl);
 
         try (InputStream inputStream = Files.newInputStream(Paths.get(localPath))) {
             Files.copy(inputStream, targetUrl, StandardCopyOption.REPLACE_EXISTING);
