@@ -2,12 +2,14 @@ package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
+import com.lrhealth.data.converge.model.FepFileInfoVo;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.TaskService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * <p>
@@ -53,6 +55,17 @@ public class TaskController {
     public DolphinSchedulerReturnVO fileDocumentAndSave(@RequestParam(value = "id") Long id){
         Xds xds = documentParseService.documentParseAndSave(id);
         return new DolphinSchedulerReturnVO("200", xds);
-
     }
+
+    @PostMapping(value = "/file")
+    public DolphinSchedulerReturnVO fileConverge(@RequestParam(value = "projectId") String projectId){
+        List<FepFileInfoVo> fepFileInfoVos = taskService.fileConverge(projectId);
+        return new DolphinSchedulerReturnVO("200", fepFileInfoVos);
+    }
+
+    @PostMapping(value = "/localFile")
+    public void localFileParse(@RequestParam(value = "projectId") String projectId){
+        taskService.localFileParse(projectId);
+    }
+
 }
