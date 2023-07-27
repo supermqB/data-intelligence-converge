@@ -1,11 +1,7 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.ObjectUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
 import com.lrhealth.data.common.enums.conv.LogicDelFlagIntEnum;
@@ -14,9 +10,7 @@ import com.lrhealth.data.common.enums.conv.XdsStoredFileModeEnum;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
-import com.lrhealth.data.converge.dao.entity.Institution;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.dao.service.InstitutionService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.TaskDto;
@@ -41,9 +35,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Resource
     private XdsService xdsService;
 
-    @Resource
-    private InstitutionService institutionService;
-
 
     @Override
     public Xds createXdsInfo(TaskDto taskDto, ConvergeConfig config) {
@@ -55,7 +46,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Override
     public Xds updateXdsCompleted(TaskDto taskDto) {
         Xds xds = getXdsInfoById(taskDto.getXdsId());
-        xds.setBatchNo(taskDto.getBatchNo());
+        xds.setBatchNo(String.valueOf(taskDto.getXdsId()));
         xds.setDataConvergeEndTime(taskDto.getEndTime());
         if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())){
             xds.setDataCount(Integer.valueOf(taskDto.getCountNumber()));
@@ -109,18 +100,15 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private Xds build(TaskDto taskDto, ConvergeConfig config) {
         return Xds.builder()
                 .convergeMethod(config.getConvergeMethod())
-                .batchNo(taskDto.getBatchNo())
                 .dataType(config.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
-//                .hpsCode(taskDto.getHpsCode())
                 .dataCount(isNotBlank(taskDto.getCountNumber()) ? Integer.parseInt(taskDto.getCountNumber()) : 0)
-//                .dataConvergeEndTime(taskDto.getEndTime())
                 .orgCode(config.getOrgCode())
                 .sysCode(config.getSysCode())
                 .dataConvergeStartTime(taskDto.getStartTime())
                 .odsTableName(taskDto.getOdsTableName())
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
-                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName()))
+                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName().toUpperCase()))
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
                 .build();

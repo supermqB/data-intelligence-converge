@@ -2,22 +2,28 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.XdsService;
+import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
+import com.lrhealth.data.converge.service.XdsInfoService;
 import com.lrhealth.data.converge.util.FileToJsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,13 +46,22 @@ import static cn.hutool.core.text.StrPool.UNDERLINE;
 public class DocumentParseServiceImpl implements DocumentParseService {
 
     @Resource
+    private XdsService xdsService;
+
+    @Resource
     private BeeBaseRepository beeBaseRepository;
 
+    @Resource
+    private XdsInfoService xdsInfoService;
+
     @Override
-    public void documentParseAndSave(Xds xds) {
+    @Transactional(rollbackFor = Exception.class)
+    public Xds documentParseAndSave(Long id) {
+        Xds xds = xdsService.getById(id);
         checkParam(xds);
         JSONObject parseData = parseFileByFilePath(xds);
-        jsonDataSave(parseData, xds.getOrgCode());
+        Integer dataCount = jsonDataSave(parseData, xds);
+        return xdsInfoService.updateXdsCompleted(setTaskDto(xds, dataCount));
     }
 
     @Override
@@ -54,7 +69,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         JSONObject result = new JSONObject();
         InputStream fileStream = null;
         try {
-            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath()));
+            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath() + "/" + xds.getStoredFileName()));
             result = fileToJson(fileStream, xds.getStoredFileType(), xds.getStoredFileName());
         }catch (Exception e){
             e.getStackTrace();
@@ -70,17 +85,21 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         return result;
     }
 
-    public void jsonDataSave(JSONObject jsonObject, String orgCode){
+    private Integer jsonDataSave(JSONObject jsonObject, Xds xds){
         Set<String> odsTableNames = jsonObject.keySet();
+        int countNumber = 0;
         for (String odsTableName : odsTableNames) {
             try {
-                String tableName = orgCode + UNDERLINE + odsTableName;
+                String tableName = xds.getSysCode() + UNDERLINE + odsTableName;
                 List<Map<String, Object>> odsDataList = (List<Map<String, Object>>) jsonObject.get(odsTableName);
+                odsDataList.forEach(map -> map.put("xds_id", xds.getId()));
                 beeBaseRepository.insertBatch(tableName, odsDataList);
+                countNumber += odsDataList.size();
             }catch (Exception e) {
-                log.error("(eventLink)dwd data to db sql exception,{}", ExceptionUtils.getStackTrace(e));
+                log.error("file data to db sql exception,{}", ExceptionUtils.getStackTrace(e));
             }
         }
+        return countNumber;
 
     }
 
@@ -110,13 +129,22 @@ public class DocumentParseServiceImpl implements DocumentParseService {
     }
 
     private void checkParam(Xds xds){
-        if (CharSequenceUtil.isNotBlank(xds.getStoredFilePath()) || CharSequenceUtil.isNotBlank(xds.getStoredFileType())
-        || CharSequenceUtil.isNotBlank(xds.getStoredFileName())){
+        if (CharSequenceUtil.isBlank(xds.getStoredFilePath()) || CharSequenceUtil.isBlank(xds.getStoredFileType())
+        || CharSequenceUtil.isBlank(xds.getStoredFileName())){
             log.error("文档解析必须字段缺失，filePath:{} fileType:{} fileName:{}", xds.getStoredFilePath(),
                      xds.getStoredFileType(), xds.getStoredFileName());
         }
-        if (CharSequenceUtil.isNotBlank(xds.getOrgCode())){
+        if (CharSequenceUtil.isBlank(xds.getOrgCode())){
             log.error("机构编码缺失");
         }
+    }
+
+    private TaskDto setTaskDto(Xds xds, Integer dataCount){
+        TaskDto taskDto = new TaskDto();
+        taskDto.setXdsId(xds.getId());
+        taskDto.setBatchNo(IdUtil.randomUUID());
+        taskDto.setEndTime(LocalDateTime.now());
+        taskDto.setCountNumber(String.valueOf(dataCount));
+        return taskDto;
     }
 }

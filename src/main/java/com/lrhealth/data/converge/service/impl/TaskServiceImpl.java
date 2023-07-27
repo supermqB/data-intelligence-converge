@@ -50,6 +50,7 @@ public class TaskServiceImpl implements TaskService {
         Xds xds;
         if (taskDto.isTaskStatus()) {
             xds = xdsInfoService.updateXdsCompleted(taskDto);
+            xdsSendKafka(xds);
         } else {
             xds = xdsInfoService.updateXdsFailure(taskDto.getXdsId(), "dataX数据抽取失败");
         }
