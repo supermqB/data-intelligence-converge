@@ -8,7 +8,7 @@ import java.io.FileWriter;
 import java.io.InputStream;
 import java.util.List;
 
-import static cn.hutool.core.text.CharSequenceUtil.EMPTY;
+import static cn.hutool.core.text.CharSequenceUtil.*;
 import static cn.hutool.core.util.PrimitiveArrayUtil.isEmpty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -57,7 +57,7 @@ public class ShellUtil {
      * @return 执行结果
      */
     public static String execCommand(List<String> pathOrCommand) {
-        log.info("####### start exec command:{}", pathOrCommand);
+        log.info("start exec command:{}", String.join(SPACE, pathOrCommand));
         String line = EMPTY;
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
@@ -68,16 +68,22 @@ public class ShellUtil {
             while (inputStream.read(bytes) != -1) {
                 line = isEmpty(bytes) ? EMPTY : new String(bytes, UTF_8);
             }
-            log.info("####### exec command log:{}", line);
+            line = replace(line, "\0", EMPTY);
+            log.info("exec command log:{}", line);
             inputStream.close();
 
             // 接收脚本echo最后一次打印的数据,正常数据
             InputStream errorStream = ps.getErrorStream();
-            bytes = new byte[1024];
-            while (errorStream.read(bytes) != -1) {
-                line = isEmpty(bytes) ? EMPTY : new String(bytes, UTF_8);
+            byte[] errorBytes = new byte[1024];
+            String errorLine = EMPTY;
+            while (errorStream.read(errorBytes) != -1) {
+                errorLine = isEmpty(errorBytes) ? EMPTY : new String(errorBytes, UTF_8);
             }
-            log.error("####### exec command eroor log:{}", line);
+            errorLine = replace(errorLine, "\0", EMPTY);
+            if (isNotBlank(errorLine)) {
+                log.error("exec command eroor log:{}", errorLine);
+                line = errorLine;
+            }
             errorStream.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -85,5 +91,9 @@ public class ShellUtil {
             return e.getMessage();
         }
         return line;
+    }
+
+    public static void main(String[] args) {
+        String s = "#### cp lr-rd-rdcp-data-converge.jar sucess ";
     }
 }
