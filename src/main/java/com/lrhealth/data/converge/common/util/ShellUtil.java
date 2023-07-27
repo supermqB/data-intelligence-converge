@@ -81,7 +81,7 @@ public class ShellUtil {
             }
             errorLine = replace(errorLine, "\0", EMPTY);
             if (isNotBlank(errorLine)) {
-                log.error("exec command eroor log:{}", errorLine);
+                log.error("exec command error log:{}", errorLine);
                 line = errorLine;
             }
             errorStream.close();
@@ -91,9 +91,5 @@ public class ShellUtil {
             return e.getMessage();
         }
         return line;
-    }
-
-    public static void main(String[] args) {
-        String s = "#### cp lr-rd-rdcp-data-converge.jar sucess ";
     }
 }
