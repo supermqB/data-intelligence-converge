@@ -2,6 +2,8 @@ package com.lrhealth.data.converge.model;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * <p>
  * shell脚本执行
@@ -15,5 +17,13 @@ public class ShellCommandDto {
     /**
      * 命令行
      */
-    private String command;
+    private List<String> command;
+    /**
+     * 文件路径
+     */
+    private String filePath;
+    /**
+     * 文件名称
+     */
+    private String fileName;
 }
