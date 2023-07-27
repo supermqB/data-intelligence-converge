@@ -2,14 +2,13 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
-import com.lrhealth.data.converge.model.TaskDto;
+import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import com.lrhealth.data.converge.util.FileToJsonUtil;
@@ -23,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,7 +59,11 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         checkParam(xds);
         JSONObject parseData = parseFileByFilePath(xds);
         Integer dataCount = jsonDataSave(parseData, xds);
-        return xdsInfoService.updateXdsCompleted(setTaskDto(xds, dataCount));
+        Set<String> odsTableNames = parseData.keySet();
+        String odsTableName = odsTableNames.stream().findFirst().toString();
+        xds.setOdsTableName(xds.getSysCode() + UNDERLINE + odsTableName);
+        xds.setOdsModelName(odsTableName);
+        return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
     }
 
     @Override
@@ -139,12 +141,12 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         }
     }
 
-    private TaskDto setTaskDto(Xds xds, Integer dataCount){
-        TaskDto taskDto = new TaskDto();
-        taskDto.setXdsId(xds.getId());
-        taskDto.setBatchNo(IdUtil.randomUUID());
-        taskDto.setEndTime(LocalDateTime.now());
-        taskDto.setCountNumber(String.valueOf(dataCount));
-        return taskDto;
+    private ConvFileInfoDto setConvFileInfoDto(Xds xds, Integer dataCount){
+        ConvFileInfoDto convFileInfoDto = new ConvFileInfoDto();
+        convFileInfoDto.setId(xds.getId());
+        convFileInfoDto.setDataCount(String.valueOf(dataCount));
+        convFileInfoDto.setOdsModelName(xds.getOdsModelName());
+        convFileInfoDto.setOdsTableName(xds.getOdsTableName());
+        return convFileInfoDto;
     }
 }

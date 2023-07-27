@@ -1,5 +1,9 @@
 package com.lrhealth.data.converge.service;
 
+import com.lrhealth.data.converge.model.FileInfo;
+
+import java.util.List;
+
 /**
  * <p>
  * 前置机处理接口
@@ -10,4 +14,5 @@ package com.lrhealth.data.converge.service;
  */
 public interface FepService {
 
+    List<FileInfo> getFepFileList(String oriFilePath);
 }

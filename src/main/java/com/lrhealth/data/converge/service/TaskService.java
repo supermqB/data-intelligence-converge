@@ -1,7 +1,10 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.model.FepFileInfoVo;
 import com.lrhealth.data.converge.model.TaskDto;
+
+import java.util.List;
 
 /**
  * <p>
@@ -27,4 +30,14 @@ public interface TaskService {
      * @return XDS信息
      */
     Xds updateTask(TaskDto taskDto);
+
+    /**
+     * 文件汇聚流程
+     */
+    List<FepFileInfoVo> fileConverge(String projectId);
+
+    /**
+     * 文件存储在本地服务器，汇聚项目直接进行搬运->解析->落库
+     */
+    void localFileParse(String projectId);
 }

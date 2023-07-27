@@ -1,22 +1,27 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
+import com.lrhealth.data.converge.common.util.ShellUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
+import com.lrhealth.data.converge.dao.entity.Frontend;
 import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
-import com.lrhealth.data.converge.model.TaskDto;
-import com.lrhealth.data.converge.service.ProjectConvergeService;
-import com.lrhealth.data.converge.service.TaskService;
-import com.lrhealth.data.converge.service.XdsInfoService;
+import com.lrhealth.data.converge.dao.service.FrontendService;
+import com.lrhealth.data.converge.model.*;
+import com.lrhealth.data.converge.service.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * <p>
@@ -38,6 +43,14 @@ public class TaskServiceImpl implements TaskService {
     private ProjectConvergeService proConvService;
     @Resource
     private ConvergeConfigService configService;
+    @Resource
+    private FepService fepService;
+
+    @Resource
+    private FrontendService frontendService;
+
+    @Resource
+    private DocumentParseService documentParseService;
 
     @Override
     public Xds createTask(@RequestBody TaskDto taskDto) {
@@ -55,6 +68,37 @@ public class TaskServiceImpl implements TaskService {
             xds = xdsInfoService.updateXdsFailure(taskDto.getXdsId(), "dataX数据抽取失败");
         }
         return xds;
+    }
+
+    @Override
+    public List<FepFileInfoVo> fileConverge(String projectId) {
+        FepFileInfoVo frontendRelation = getFrontendRelation(projectId);
+        List<FileInfo> fepFileList = fepService.getFepFileList(frontendRelation.getOriFileFromPath());
+        List<FepFileInfoVo> fepFileInfoVos = new ArrayList<>();
+        fepFileList.forEach(fileInfo -> {
+            FepFileInfoVo fepFileInfoVo = new FepFileInfoVo();
+            BeanUtil.copyProperties(frontendRelation, fepFileInfoVo);
+            fepFileInfoVo.setOriFileName(fileInfo.getFileName());
+            fepFileInfoVo.setOriFileSize(BigDecimal.valueOf(fileInfo.getFileSize()));
+            fepFileInfoVos.add(fepFileInfoVo);
+        });
+        return fepFileInfoVos;
+    }
+
+    @Override
+    public void localFileParse(String projectId) {
+        List<FepFileInfoVo> fepFileInfoVos = fileConverge(projectId);
+        fepFileInfoVos.forEach(fepFileInfoVo -> {
+            String storedFileName = execShell(fepFileInfoVo);
+            Xds fileXds = xdsInfoService.createFileXds(projectId, fepFileInfoVo);
+            ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
+                    .oriFileName(fepFileInfoVo.getOriFileName()).oriFileFromIp(fepFileInfoVo.getFrontendIp())
+                    .id(fileXds.getId()).storedFileName(storedFileName).storedFilePath(fepFileInfoVo.getStoredFilePath())
+                    .storedFileType(storedFileName.substring(storedFileName.lastIndexOf(".") + 1))
+                    .oriFileType(fepFileInfoVo.getOriFileName().substring(fepFileInfoVo.getOriFileName().lastIndexOf(".") + 1)).build();
+            Xds xds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
+            documentParseService.documentParseAndSave(xds.getId());
+        });
     }
 
 
@@ -83,4 +127,28 @@ public class TaskServiceImpl implements TaskService {
         ProjectConvergeRelation relation = proConvService.getByProjId(projId);
         return configService.getById(relation.getConvergeId());
     }
+
+    /**
+     * 关联前置机和配置信息
+     */
+    private FepFileInfoVo getFrontendRelation(String projId){
+        ConvergeConfig convergeConfig = getConfig(projId);
+        Frontend frontendConfig = frontendService.getByFrontenfCode(convergeConfig.getFrontendCode());
+        return FepFileInfoVo.builder().frontendIp(frontendConfig.getFrontendIp())
+                .frontendPort(frontendConfig.getFrontendPort()).frontendPwd(frontendConfig.getFrontendPwd())
+                .frontendUsername(frontendConfig.getFrontendUsername()).encryptionWay(convergeConfig.getEncryptionWay())
+                .zipFlag(convergeConfig.getZipFlag()).oriFileFromPath(frontendConfig.getFilePath())
+                .storedFilePath(convergeConfig.getStoredFilePath()).sysCode(convergeConfig.getSysCode()).orgCode(convergeConfig.getOrgCode())
+                .convergeMethod(convergeConfig.getConvergeMethod()).dataType(convergeConfig.getDataType()).build();
+    }
+
+    private String execShell(FepFileInfoVo fepFileInfoVo){
+        List<String> command = new ArrayList<>();
+        command.add("cp");
+        command.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
+        command.add(fepFileInfoVo.getStoredFilePath() + "/" + fepFileInfoVo.getOriFileName());
+        ShellUtil.execCommand(command);
+        return fepFileInfoVo.getOriFileName();
+    }
+
 }

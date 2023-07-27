@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.IdUtil;
 import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
 import com.lrhealth.data.common.enums.conv.LogicDelFlagIntEnum;
@@ -13,6 +14,7 @@ import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
+import com.lrhealth.data.converge.model.FepFileInfoVo;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import org.springframework.stereotype.Service;
@@ -75,6 +77,8 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Override
     public Xds updateXdsCompleted(ConvFileInfoDto dto) {
         Xds xds = getXdsInfoById(dto.getId());
+        xds.setBatchNo(IdUtil.randomUUID());
+        xds.setDataConvergeEndTime(LocalDateTime.now());
         return updateXdsStatus(setFileInfo(xds, dto), XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
 
@@ -87,6 +91,23 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         if (null == xds) {
             throw new CommonException(format("XDsID={}对应的XDS信息不存在", id));
         }
+        return xds;
+    }
+
+    @Override
+    public Xds createFileXds(String projectId, FepFileInfoVo fepFileInfoVo) {
+        Xds xds = Xds.builder()
+                .convergeMethod(fepFileInfoVo.getConvergeMethod())
+                .dataType(fepFileInfoVo.getDataType())
+                .delFlag(LogicDelFlagIntEnum.NONE.getCode())
+                .orgCode(fepFileInfoVo.getOrgCode())
+                .sysCode(fepFileInfoVo.getSysCode())
+                .dataConvergeStartTime(LocalDateTime.now())
+                .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
+                .createTime(LocalDateTime.now())
+                .createBy(CommonConstant.DEFAULT_USER)
+                .build();
+        xdsService.save(xds);
         return xds;
     }
 

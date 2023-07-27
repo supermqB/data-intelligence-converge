@@ -1,6 +1,9 @@
 package com.lrhealth.data.converge.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -12,6 +15,9 @@ import java.math.BigDecimal;
  * @since 2023-07-19
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ConvFileInfoDto implements Serializable {
     /**
      * 主键id

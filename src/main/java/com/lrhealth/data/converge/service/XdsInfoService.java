@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.service;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
+import com.lrhealth.data.converge.model.FepFileInfoVo;
 import com.lrhealth.data.converge.model.TaskDto;
 
 /**
@@ -72,4 +73,9 @@ public interface XdsInfoService {
      * @return XDS信息
      */
     Xds getById(Long id);
+
+    /**
+     * 文件采集新增XDS，填充基本信息
+     */
+    Xds createFileXds(String projectId, FepFileInfoVo fepFileInfoVo);
 }

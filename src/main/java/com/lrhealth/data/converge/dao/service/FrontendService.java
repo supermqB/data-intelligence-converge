@@ -13,4 +13,6 @@ import com.lrhealth.data.converge.dao.entity.Frontend;
  */
 public interface FrontendService extends IService<Frontend> {
 
+    Frontend getByFrontenfCode(String frontendCode);
+
 }
