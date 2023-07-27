@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
 import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
+import com.lrhealth.data.converge.dao.service.FrontendService;
 import com.lrhealth.data.converge.service.FileService;
 import com.lrhealth.data.converge.service.ProjectConvergeService;
 import lombok.extern.slf4j.Slf4j;
@@ -29,14 +30,16 @@ public class FileServiceImpl implements FileService {
 
     @Resource
     private ConvergeConfigService configService;
+    @Resource
+    private FrontendService frontendService;
 
     @Override
     public void uploadFile(String localPath, String projectId) {
-        ConvergeConfig convergeConfig = getConfig(projectId);
+        String oriFilePath = getConfig(projectId);
 
         File file = new File(localPath);
         String filename = file.getName();
-        Path targetUrl = Paths.get( convergeConfig.getStoredFilePath() + "/" + filename);
+        Path targetUrl = Paths.get( oriFilePath + "/" + filename);
         log.info("源文件目录: {} ---> 上传文件目录: {}", localPath, targetUrl);
 
         try (InputStream inputStream = Files.newInputStream(Paths.get(localPath))) {
@@ -52,8 +55,9 @@ public class FileServiceImpl implements FileService {
      * @param projId 项目ID
      * @return 配置信息
      */
-    private ConvergeConfig getConfig(String projId) {
+    private String getConfig(String projId) {
         ProjectConvergeRelation relation = projectConvergeService.getByProjId(projId);
-        return configService.getById(relation.getConvergeId());
+        ConvergeConfig convergeConfig =  configService.getById(relation.getConvergeId());
+        return frontendService.getByFrontenfCode(convergeConfig.getFrontendCode()).getFilePath();
     }
 }
