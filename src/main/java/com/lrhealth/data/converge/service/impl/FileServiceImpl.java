@@ -9,9 +9,9 @@ import com.lrhealth.data.converge.service.FileService;
 import com.lrhealth.data.converge.service.ProjectConvergeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,15 +35,14 @@ public class FileServiceImpl implements FileService {
     private FrontendService frontendService;
 
     @Override
-    public void uploadFile(String localPath, String projectId) {
+    public void uploadFile(MultipartFile file, String projectId) {
         String oriFilePath = getConfig(projectId);
 
-        File file = new File(localPath);
         String filename = file.getName();
         Path targetUrl = Paths.get( oriFilePath + "/" + filename);
-        log.info("源文件目录: {} ---> 上传文件目录: {}", localPath, targetUrl);
+        log.info("源文件名称: {} ---> 上传文件目录: {}", file.getName(), targetUrl);
 
-        try (InputStream inputStream = Files.newInputStream(Paths.get(localPath))) {
+        try (InputStream inputStream = file.getInputStream()) {
             Files.copy(inputStream, targetUrl, StandardCopyOption.REPLACE_EXISTING);
         }catch (Exception e){
             log.error(ExceptionUtil.stacktraceToString(e));

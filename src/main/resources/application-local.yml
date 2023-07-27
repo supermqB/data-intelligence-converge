@@ -85,6 +85,16 @@ spring:
       type: SINGLE
       ack-mode: MANUAL_IMMEDIATE
 
+  servlet:
+    multipart:
+      # 文件最大限制
+      max-file-size: 1024MB
+      # 请求最大限制
+      max-request-size: 1024MB
+      enabled: true
+      # 设置文件缓存的临界点,超过则先保存到临时目录,默认为0,所有文件都会进行缓存
+      file-size-threshold: 0
+
 
 discleartable: '{"JC_JIANCHABG": "JIBINGZDMC"}'
 
