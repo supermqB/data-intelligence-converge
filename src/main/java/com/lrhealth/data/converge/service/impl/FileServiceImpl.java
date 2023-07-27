@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.exceptions.ExceptionUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
 import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
@@ -45,7 +46,7 @@ public class FileServiceImpl implements FileService {
         try (InputStream inputStream = Files.newInputStream(Paths.get(localPath))) {
             Files.copy(inputStream, targetUrl, StandardCopyOption.REPLACE_EXISTING);
         }catch (Exception e){
-            log.error(e.getMessage());
+            log.error(ExceptionUtil.stacktraceToString(e));
         }
     }
 
