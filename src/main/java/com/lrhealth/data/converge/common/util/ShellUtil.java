@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import static cn.hutool.core.text.CharSequenceUtil.EMPTY;
+import static cn.hutool.core.util.PrimitiveArrayUtil.isEmpty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -56,6 +57,7 @@ public class ShellUtil {
      * @return 执行结果
      */
     public static String execCommand(List<String> pathOrCommand) {
+        log.info("####### start exec command:{}", pathOrCommand);
         String line = EMPTY;
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
@@ -64,16 +66,18 @@ public class ShellUtil {
             InputStream inputStream = ps.getInputStream();
             byte[] bytes = new byte[1024];
             while (inputStream.read(bytes) != -1) {
-                line = new String(bytes, UTF_8);
+                line = isEmpty(bytes) ? EMPTY : new String(bytes, UTF_8);
             }
+            log.info("####### exec command log:{}", line);
             inputStream.close();
 
             // 接收脚本echo最后一次打印的数据,正常数据
             InputStream errorStream = ps.getErrorStream();
             bytes = new byte[1024];
             while (errorStream.read(bytes) != -1) {
-                line = new String(bytes, UTF_8);
+                line = isEmpty(bytes) ? EMPTY : new String(bytes, UTF_8);
             }
+            log.error("####### exec command eroor log:{}", line);
             errorStream.close();
         } catch (Exception e) {
             e.printStackTrace();
