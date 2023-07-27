@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +61,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         JSONObject parseData = parseFileByFilePath(xds);
         Integer dataCount = jsonDataSave(parseData, xds);
         Set<String> odsTableNames = parseData.keySet();
-        String odsTableName = odsTableNames.stream().findFirst().toString();
+        String odsTableName = new ArrayList<>(odsTableNames).get(0);
         xds.setOdsTableName(xds.getSysCode() + UNDERLINE + odsTableName);
         xds.setOdsModelName(odsTableName);
         return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
