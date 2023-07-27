@@ -69,6 +69,7 @@ public class ShellUtil {
                 line = isEmpty(bytes) ? EMPTY : new String(bytes, UTF_8);
             }
             line = replace(line, "\0", EMPTY);
+            line = replace(line, "\n", EMPTY);
             log.info("exec command log:{}", line);
             inputStream.close();
 
@@ -80,6 +81,7 @@ public class ShellUtil {
                 errorLine = isEmpty(errorBytes) ? EMPTY : new String(errorBytes, UTF_8);
             }
             errorLine = replace(errorLine, "\0", EMPTY);
+            errorLine = replace(errorLine, "\n", EMPTY);
             if (isNotBlank(errorLine)) {
                 log.error("exec command error log:{}", errorLine);
                 line = errorLine;
