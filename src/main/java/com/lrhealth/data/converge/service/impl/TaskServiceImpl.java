@@ -146,16 +146,18 @@ public class TaskServiceImpl implements TaskService {
 
     private String execShell(FepFileInfoVo fepFileInfoVo, Xds fileXds){
         List<String> command = new ArrayList<>();
-        String storedFileName = fileXds.getId() + fepFileInfoVo.getOriFileType();
+        String storedFileName = fileXds.getId() + "." + fepFileInfoVo.getOriFileType();
         command.add("cp");
         command.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
         command.add(fepFileInfoVo.getStoredFilePath()
                 + "/" + fepFileInfoVo.getOrgCode() + "/" +  fepFileInfoVo.getSysCode()
                 + "/" + storedFileName);
-        command.add("mv");
-        command.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
-        command.add("/tmp/file/backup");
         ShellUtil.execCommand(command);
+        List<String> mvCommand = new ArrayList<>();
+        mvCommand.add("mv");
+        mvCommand.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
+        mvCommand.add("/tmp/file/backup");
+        ShellUtil.execCommand(mvCommand);
         return storedFileName;
     }
 
