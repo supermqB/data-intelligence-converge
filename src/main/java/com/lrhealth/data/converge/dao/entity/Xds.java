@@ -1,7 +1,5 @@
 package com.lrhealth.data.converge.dao.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,7 +25,7 @@ public class Xds implements Serializable {
     /**
      * 主键id
      */
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+//    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 机构编码
