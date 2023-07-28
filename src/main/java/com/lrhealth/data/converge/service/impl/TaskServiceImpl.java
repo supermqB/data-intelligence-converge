@@ -106,6 +106,12 @@ public class TaskServiceImpl implements TaskService {
         });
     }
 
+    @Override
+    public Xds flinkCreateXds(FlinkTaskDto flinkTaskDto) {
+        ConvergeConfig config = configService.getById(flinkTaskDto.getConvergeConfigId());
+        return xdsInfoService.createFlinkXds(config, flinkTaskDto);
+    }
+
 
     /**
      * 发送kafka消息

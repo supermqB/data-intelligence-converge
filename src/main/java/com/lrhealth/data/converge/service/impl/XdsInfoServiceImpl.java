@@ -15,12 +15,15 @@ import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.FepFileInfoVo;
+import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static cn.hutool.core.text.CharSequenceUtil.*;
 
@@ -97,6 +100,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Override
     public Xds createFileXds(String projectId, FepFileInfoVo fepFileInfoVo) {
         Xds xds = Xds.builder()
+                .id(IdUtil.getSnowflakeNextId())
                 .convergeMethod(fepFileInfoVo.getConvergeMethod())
                 .dataType(fepFileInfoVo.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
@@ -113,6 +117,27 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         return xds;
     }
 
+    @Override
+    public Xds createFlinkXds(ConvergeConfig config, FlinkTaskDto dto) {
+        LocalDateTime convergeEndTime = Instant.ofEpochMilli(dto.getConvergeTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        Xds xds = Xds.builder()
+                .id(dto.getXdsId())
+                .convergeMethod(config.getConvergeMethod())
+                .dataType(config.getDataType())
+                .delFlag(LogicDelFlagIntEnum.NONE.getCode())
+                .orgCode(config.getOrgCode())
+                .sysCode(config.getSysCode())
+                .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
+                .createTime(LocalDateTime.now())
+                .createBy(CommonConstant.DEFAULT_USER)
+                .dataConvergeEndTime(convergeEndTime)
+                .build();
+        xdsService.save(xds);
+        return xds;
+    }
+
     /**
      * 组装XDS信息
      *
@@ -122,6 +147,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      */
     private Xds build(TaskDto taskDto, ConvergeConfig config) {
         return Xds.builder()
+                .id(IdUtil.getSnowflakeNextId())
                 .convergeMethod(config.getConvergeMethod())
                 .dataType(config.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
@@ -182,7 +208,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     public Xds updateXds(Xds xds) {
         xds.setUpdateTime(LocalDateTime.now());
         xds.setUpdateBy(CommonConstant.DEFAULT_USER);
-//        xds.setDataConvergeEndTime(LocalDateTime.now());
         xdsService.updateById(xds);
         return getXdsInfoById(xds.getId());
     }

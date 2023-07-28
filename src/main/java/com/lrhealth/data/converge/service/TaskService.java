@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.FepFileInfoVo;
+import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
 
 import java.util.List;
@@ -40,4 +41,6 @@ public interface TaskService {
      * 文件存储在本地服务器，汇聚项目直接进行搬运->解析->落库
      */
     void localFileParse(String projectId);
+
+    Xds flinkCreateXds(FlinkTaskDto flinkTaskDto);
 }

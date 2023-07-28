@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.controller;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
 import com.lrhealth.data.converge.model.FepFileInfoVo;
+import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.TaskService;
@@ -37,6 +38,11 @@ public class TaskController {
     public DolphinSchedulerReturnVO create(@RequestBody TaskDto dto) {
         Xds xds = taskService.createTask(dto);
         return new DolphinSchedulerReturnVO("200", xds);
+    }
+
+    @PostMapping(value = "/flink/xds")
+    public Xds flinkXdsCreate(@RequestBody FlinkTaskDto flinkTaskDto){
+        return taskService.flinkCreateXds(flinkTaskDto);
     }
 
     /**
