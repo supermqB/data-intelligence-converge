@@ -91,10 +91,13 @@ public class TaskServiceImpl implements TaskService {
         List<FepFileInfoVo> fepFileInfoVos = fileConverge(projectId);
         fepFileInfoVos.forEach(fepFileInfoVo -> {
             Xds fileXds = xdsInfoService.createFileXds(projectId, fepFileInfoVo);
+            fileXds.setStoredFilePath(fepFileInfoVo.getStoredFilePath()
+                    + "/" + fepFileInfoVo.getOrgCode() + "/" +  fepFileInfoVo.getSysCode());
             String storedFileName = execShell(fepFileInfoVo, fileXds);
             ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
                     .oriFileName(fepFileInfoVo.getOriFileName()).oriFileFromIp(fepFileInfoVo.getFrontendIp())
-                    .id(fileXds.getId()).storedFileName(storedFileName).storedFilePath(fepFileInfoVo.getStoredFilePath())
+                    .id(fileXds.getId()).storedFileName(storedFileName)
+                    .storedFilePath(fileXds.getStoredFilePath())
                     .storedFileType(fepFileInfoVo.getOriFileType())
                     .oriFileType(fepFileInfoVo.getOriFileType()).build();
             Xds xds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
@@ -149,9 +152,7 @@ public class TaskServiceImpl implements TaskService {
         String storedFileName = fileXds.getId() + "." + fepFileInfoVo.getOriFileType();
         command.add("cp");
         command.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
-        command.add(fepFileInfoVo.getStoredFilePath()
-                + "/" + fepFileInfoVo.getOrgCode() + "/" +  fepFileInfoVo.getSysCode()
-                + "/" + storedFileName);
+        command.add(fileXds.getStoredFilePath() + "/" + storedFileName);
         ShellUtil.execCommand(command);
         List<String> mvCommand = new ArrayList<>();
         mvCommand.add("mv");
