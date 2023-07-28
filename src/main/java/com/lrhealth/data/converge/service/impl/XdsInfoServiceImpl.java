@@ -106,6 +106,8 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
+                .oriFileName(fepFileInfoVo.getOriFileName())
+                .oriFileType(fepFileInfoVo.getOriFileName())
                 .build();
         xdsService.save(xds);
         return xds;

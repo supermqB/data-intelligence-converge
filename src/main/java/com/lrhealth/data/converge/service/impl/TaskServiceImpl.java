@@ -79,6 +79,7 @@ public class TaskServiceImpl implements TaskService {
             FepFileInfoVo fepFileInfoVo = new FepFileInfoVo();
             BeanUtil.copyProperties(frontendRelation, fepFileInfoVo);
             fepFileInfoVo.setOriFileName(fileInfo.getFileName());
+            fepFileInfoVo.setOriFileType(fileInfo.getFileName().substring(fileInfo.getFileName().lastIndexOf(".") + 1));
             fepFileInfoVo.setOriFileSize(BigDecimal.valueOf(fileInfo.getFileSize()));
             fepFileInfoVos.add(fepFileInfoVo);
         });
@@ -89,15 +90,16 @@ public class TaskServiceImpl implements TaskService {
     public void localFileParse(String projectId) {
         List<FepFileInfoVo> fepFileInfoVos = fileConverge(projectId);
         fepFileInfoVos.forEach(fepFileInfoVo -> {
-            String storedFileName = execShell(fepFileInfoVo);
             Xds fileXds = xdsInfoService.createFileXds(projectId, fepFileInfoVo);
+            String storedFileName = execShell(fepFileInfoVo, fileXds);
             ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
                     .oriFileName(fepFileInfoVo.getOriFileName()).oriFileFromIp(fepFileInfoVo.getFrontendIp())
                     .id(fileXds.getId()).storedFileName(storedFileName).storedFilePath(fepFileInfoVo.getStoredFilePath())
-                    .storedFileType(storedFileName.substring(storedFileName.lastIndexOf(".") + 1))
-                    .oriFileType(fepFileInfoVo.getOriFileName().substring(fepFileInfoVo.getOriFileName().lastIndexOf(".") + 1)).build();
+                    .storedFileType(fepFileInfoVo.getOriFileType())
+                    .oriFileType(fepFileInfoVo.getOriFileType()).build();
             Xds xds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
             documentParseService.documentParseAndSave(xds.getId());
+            xdsSendKafka(xds);
         });
     }
 
@@ -142,13 +144,19 @@ public class TaskServiceImpl implements TaskService {
                 .convergeMethod(convergeConfig.getConvergeMethod()).dataType(convergeConfig.getDataType()).build();
     }
 
-    private String execShell(FepFileInfoVo fepFileInfoVo){
+    private String execShell(FepFileInfoVo fepFileInfoVo, Xds fileXds){
         List<String> command = new ArrayList<>();
+        String storedFileName = fileXds.getId() + fepFileInfoVo.getOriFileType();
         command.add("cp");
         command.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
-        command.add(fepFileInfoVo.getStoredFilePath() + "/" + fepFileInfoVo.getOriFileName());
+        command.add(fepFileInfoVo.getStoredFilePath()
+                + "/" + fepFileInfoVo.getOrgCode() + "/" +  fepFileInfoVo.getSysCode()
+                + "/" + storedFileName);
+        command.add("mv");
+        command.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
+        command.add("/tmp/file/backup");
         ShellUtil.execCommand(command);
-        return fepFileInfoVo.getOriFileName();
+        return storedFileName;
     }
 
 }
