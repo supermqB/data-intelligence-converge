@@ -3,7 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
-import com.lrhealth.data.converge.common.util.ShellUtil;
+import com.lrhealth.data.converge.common.enums.ConvergeType;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Frontend;
 import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
@@ -15,6 +15,7 @@ import com.lrhealth.data.converge.service.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.annotation.Resource;
@@ -35,6 +36,8 @@ import java.util.List;
 public class TaskServiceImpl implements TaskService {
     @Value("${spring.kafka.topic.xds}")
     private String topic;
+    @Value("${converge.filepath}")
+    private String storedFilePath;
     @Resource
     private XdsInfoService xdsInfoService;
     @Resource
@@ -45,12 +48,14 @@ public class TaskServiceImpl implements TaskService {
     private ConvergeConfigService configService;
     @Resource
     private FepService fepService;
-
     @Resource
     private FrontendService frontendService;
-
     @Resource
     private DocumentParseService documentParseService;
+    @Resource
+    private FlinkService flinkService;
+    @Resource
+    private ShellService shellService;
 
     @Override
     public Xds createTask(@RequestBody TaskDto taskDto) {
@@ -91,15 +96,11 @@ public class TaskServiceImpl implements TaskService {
         List<FepFileInfoVo> fepFileInfoVos = fileConverge(projectId);
         fepFileInfoVos.forEach(fepFileInfoVo -> {
             Xds fileXds = xdsInfoService.createFileXds(projectId, fepFileInfoVo);
-            fileXds.setStoredFilePath(fepFileInfoVo.getStoredFilePath()
-                    + "/" + fepFileInfoVo.getOrgCode() + "/" +  fepFileInfoVo.getSysCode());
-            String storedFileName = execShell(fepFileInfoVo, fileXds);
+            fileXds.setStoredFilePath(storedFilePath + "/" + fepFileInfoVo.getOrgCode() + "/" +  fepFileInfoVo.getSysCode());
+            String storedFileName = shellService.execShell(fileXds);
             ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
-                    .oriFileName(fepFileInfoVo.getOriFileName()).oriFileFromIp(fepFileInfoVo.getFrontendIp())
                     .id(fileXds.getId()).storedFileName(storedFileName)
-                    .storedFilePath(fileXds.getStoredFilePath())
-                    .storedFileType(fepFileInfoVo.getOriFileType())
-                    .oriFileType(fepFileInfoVo.getOriFileType()).build();
+                    .storedFileType(fepFileInfoVo.getOriFileType()).build();
             Xds xds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
             documentParseService.documentParseAndSave(xds.getId());
             xdsSendKafka(xds);
@@ -107,9 +108,19 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Xds flinkCreateXds(FlinkTaskDto flinkTaskDto) {
-        ConvergeConfig config = configService.getById(flinkTaskDto.getConvergeConfigId());
-        return xdsInfoService.createFlinkXds(config, flinkTaskDto);
+    @Transactional(rollbackFor = Exception.class)
+    public Xds flinkConverge(FlinkTaskDto flinkTaskDto) {
+        Xds flinkXds = xdsInfoService.createFlinkXds(flinkTaskDto);
+        String convergeType = ConvergeType.getConvergeType(flinkTaskDto.getType());
+        switch (convergeType){
+            case "db":
+                return flinkService.database(flinkXds);
+            case "file":
+                flinkXds.setStoredFilePath(storedFilePath + "/" + flinkXds.getOrgCode() + "/" + flinkXds.getSysCode());
+                return flinkService.file(flinkXds);
+            default:
+                return null;
+        }
     }
 
 
@@ -151,21 +162,6 @@ public class TaskServiceImpl implements TaskService {
                 .zipFlag(convergeConfig.getZipFlag()).oriFileFromPath(frontendConfig.getFilePath())
                 .storedFilePath(convergeConfig.getStoredFilePath()).sysCode(convergeConfig.getSysCode()).orgCode(convergeConfig.getOrgCode())
                 .convergeMethod(convergeConfig.getConvergeMethod()).dataType(convergeConfig.getDataType()).build();
-    }
-
-    private String execShell(FepFileInfoVo fepFileInfoVo, Xds fileXds){
-        List<String> command = new ArrayList<>();
-        String storedFileName = fileXds.getId() + "." + fepFileInfoVo.getOriFileType();
-        command.add("cp");
-        command.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
-        command.add(fileXds.getStoredFilePath() + "/" + storedFileName);
-        ShellUtil.execCommand(command);
-        List<String> mvCommand = new ArrayList<>();
-        mvCommand.add("mv");
-        mvCommand.add(fepFileInfoVo.getOriFileFromPath() + "/" + fepFileInfoVo.getOriFileName());
-        mvCommand.add("/tmp/file/backup");
-        ShellUtil.execCommand(mvCommand);
-        return storedFileName;
     }
 
 }

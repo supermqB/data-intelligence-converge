@@ -42,5 +42,10 @@ public interface TaskService {
      */
     void localFileParse(String projectId);
 
-    Xds flinkCreateXds(FlinkTaskDto flinkTaskDto);
+    /**
+     * f
+     * @param flinkTaskDto
+     * @return
+     */
+    Xds flinkConverge(FlinkTaskDto flinkTaskDto);
 }

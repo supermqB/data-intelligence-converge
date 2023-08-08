@@ -3,7 +3,10 @@ package com.lrhealth.data.converge.dao.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,6 +20,9 @@ import java.time.LocalDateTime;
  * @since 2023-07-20
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @TableName("conv_converge_config")
 public class ConvergeConfig implements Serializable {
 
@@ -54,7 +60,7 @@ public class ConvergeConfig implements Serializable {
     private String dataType;
 
     /**
-     * 文件存储位置(文档解析使用)
+     * 前置机文件存储位置(文档解析使用)
      */
     private String storedFilePath;
 

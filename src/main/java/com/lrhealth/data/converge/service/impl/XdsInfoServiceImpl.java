@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
 import com.lrhealth.data.common.enums.conv.LogicDelFlagIntEnum;
@@ -12,6 +13,7 @@ import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.FepFileInfoVo;
@@ -40,6 +42,9 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Resource
     private XdsService xdsService;
 
+    @Resource
+    private ConvergeConfigService configService;
+
 
     @Override
     public Xds createXdsInfo(TaskDto taskDto, ConvergeConfig config) {
@@ -53,6 +58,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         Xds xds = getXdsInfoById(taskDto.getXdsId());
         xds.setBatchNo(String.valueOf(taskDto.getXdsId()));
         xds.setDataConvergeEndTime(taskDto.getEndTime());
+        xds.setOdsModelName(OdsModelUtil.getModelName(xds.getSysCode(), xds.getOdsTableName().toUpperCase()));
         if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())){
             xds.setDataCount(Integer.valueOf(taskDto.getCountNumber()));
         }
@@ -112,18 +118,23 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .createBy(CommonConstant.DEFAULT_USER)
                 .oriFileName(fepFileInfoVo.getOriFileName())
                 .oriFileType(fepFileInfoVo.getOriFileName())
+                .oriFileFromIp(fepFileInfoVo.getOriFileFromPath())
                 .build();
         xdsService.save(xds);
         return xds;
     }
 
     @Override
-    public Xds createFlinkXds(ConvergeConfig config, FlinkTaskDto dto) {
+    public Xds createFlinkXds(FlinkTaskDto dto) {
         LocalDateTime convergeEndTime = Instant.ofEpochMilli(dto.getConvergeTime())
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
+        ConvergeConfig config = configService.getOne(new LambdaQueryWrapper<ConvergeConfig>().eq(isNotBlank(dto.getSourceId()), ConvergeConfig::getSysCode, dto.getSourceId()));
         Xds xds = Xds.builder()
                 .id(dto.getXdsId())
+                .dataConvergeEndTime(convergeEndTime)
+                .odsTableName(dto.getTableName())
+                .taskInstanceName(dto.getJobName())
                 .convergeMethod(config.getConvergeMethod())
                 .dataType(config.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
@@ -132,8 +143,14 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
-                .dataConvergeEndTime(convergeEndTime)
                 .build();
+        if (dto.getType() == 1){
+            // 传入参数为文件的完整路径， 进行处理，获取目录和表名
+            String filePath = CharSequenceUtil.isBlank(dto.getFilePath()) ? null : dto.getFilePath().substring(0, dto.getFilePath().length() - ("/" + dto.getXdsId()).length() -1);
+            xds.setOriFileFromIp(filePath);
+            xds.setOriFileName(dto.getXdsId() + ".json");
+            xds.setOriFileType("json");
+        }
         xdsService.save(xds);
         return xds;
     }
@@ -157,7 +174,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .dataConvergeStartTime(taskDto.getStartTime())
                 .odsTableName(taskDto.getOdsTableName())
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
-                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName().toUpperCase()))
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
                 .build();
@@ -171,12 +187,12 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      * @return XDS信息
      */
     private Xds setFileInfo(Xds xds, ConvFileInfoDto dto) {
-        xds.setOriFileFromIp(dto.getOriFileFromIp());
-        xds.setOriFileType(dto.getOriFileType());
-        xds.setOriFileSize(dto.getOriFileSize());
-        xds.setOriFileName(dto.getOriFileName());
+//        xds.setOriFileFromIp(dto.getOriFileFromIp());
+//        xds.setOriFileType(dto.getOriFileType());
+//        xds.setOriFileSize(dto.getOriFileSize());
+//        xds.setOriFileName(dto.getOriFileName());
         xds.setStoredFileMode(dto.getStoredFileMode() == null ? XdsStoredFileModeEnum.LOCAL.getCode() : dto.getStoredFileMode());
-        xds.setStoredFilePath(dto.getStoredFilePath());
+//        xds.setStoredFilePath(dto.getStoredFilePath());
         xds.setStoredFileName(dto.getStoredFileName());
         xds.setStoredFileType(dto.getStoredFileType());
         xds.setStoredFileSize(dto.getStoredFileSize());

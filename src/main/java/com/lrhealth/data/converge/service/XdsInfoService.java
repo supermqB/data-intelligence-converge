@@ -82,9 +82,8 @@ public interface XdsInfoService {
 
     /**
      * flinkCDC采集过程新建xds
-     * @param config flink配置信息
      * @param dto flink采集信息
      * @return xds
      */
-    Xds createFlinkXds(ConvergeConfig config, FlinkTaskDto dto);
+    Xds createFlinkXds(FlinkTaskDto dto);
 }

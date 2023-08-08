@@ -25,7 +25,6 @@ public class Xds implements Serializable {
     /**
      * 主键id
      */
-//    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /**
      * 机构编码
