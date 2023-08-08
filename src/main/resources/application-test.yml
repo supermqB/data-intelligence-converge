@@ -129,5 +129,9 @@ jasypt:
       # 算法识别后缀
       suffix: )
 
+converge:
+  filepath: /tmp/file/converge
+  backup: /tmp/file/backup
+
 
 

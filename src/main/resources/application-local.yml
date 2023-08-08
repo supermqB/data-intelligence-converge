@@ -96,8 +96,6 @@ spring:
       file-size-threshold: 0
 
 
-discleartable: '{"JC_JIANCHABG": "JIBINGZDMC"}'
-
 # 文件上传校验
 file:
   upload:
@@ -129,3 +127,8 @@ jasypt:
       prefix: ENC(
       # 算法识别后缀
       suffix: )
+
+
+converge:
+  filepath: /tmp/file/converge
+  backup: /tmp/file/backup
