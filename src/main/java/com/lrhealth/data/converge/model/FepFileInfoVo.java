@@ -93,7 +93,7 @@ public class FepFileInfoVo {
     private String dataType;
 
     /**
-     * 汇聚方式：1-客户写文件，2-客户掉接口，3-平台调接口，4-平台读队列，5-平台读视图，6-平台读库表，7-自主模式
+     * 汇聚方式：1-接口模式，2-文件模式，3-队列模式，4-日志模式，5-视图模式，6-库表模式，7-自主模式
      *
      * @see com.lrhealth.data.common.enums.conv.ConvMethodEnum
      */
