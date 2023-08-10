@@ -63,7 +63,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         Set<String> odsTableNames = parseData.keySet();
         String odsTableName = new ArrayList<>(odsTableNames).get(0);
         xds.setOdsTableName(xds.getSysCode() + UNDERLINE + odsTableName);
-        xds.setOdsModelName(odsTableName);
+        xds.setOdsModelName(odsTableName.toUpperCase());
         return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
     }
 
