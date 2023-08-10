@@ -117,7 +117,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
                 .oriFileName(fepFileInfoVo.getOriFileName())
-                .oriFileType(fepFileInfoVo.getOriFileName())
+                .oriFileType(fepFileInfoVo.getOriFileType())
                 .oriFileFromIp(fepFileInfoVo.getOriFileFromPath())
                 .build();
         xdsService.save(xds);
