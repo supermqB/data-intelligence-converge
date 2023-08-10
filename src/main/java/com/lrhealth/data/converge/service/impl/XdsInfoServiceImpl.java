@@ -89,6 +89,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         Xds xds = getXdsInfoById(dto.getId());
         xds.setBatchNo(IdUtil.randomUUID());
         xds.setDataConvergeEndTime(LocalDateTime.now());
+        xds.setDataCount(Integer.valueOf(dto.getDataCount()));
         return updateXdsStatus(setFileInfo(xds, dto), XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
 
@@ -151,9 +152,9 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .build();
         if (dto.getType() == 1){
             // 传入参数为文件的完整路径， 进行处理，获取目录和表名
-            String filePath = CharSequenceUtil.isBlank(dto.getFilePath()) ? null : dto.getFilePath().substring(0, dto.getFilePath().length() - (dto.getXdsId() + ".json").length() -1);
+            String filePath = CharSequenceUtil.isBlank(dto.getFilePath()) ? null : dto.getFilePath().substring(0, dto.getFilePath().length() - String.valueOf(dto.getXdsId()).length() -1);
             xds.setOriFileFromIp(filePath);
-            xds.setOriFileName(dto.getXdsId() + ".json");
+            xds.setOriFileName(String.valueOf(dto.getXdsId()));
             xds.setOriFileType("json");
         }
         xdsService.save(xds);
