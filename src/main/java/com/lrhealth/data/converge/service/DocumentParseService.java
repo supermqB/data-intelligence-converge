@@ -17,7 +17,7 @@ public interface DocumentParseService {
      * 解析文件，然后落库
      * @param id 已经建立的xds信息id
      */
-    Xds documentParseAndSave(Long id);
+    Xds fileParseAndSave(Long id);
 
     /**
      * 解析文件
@@ -26,4 +26,6 @@ public interface DocumentParseService {
      * @return JSONObject 返回json类型数据
      */
     JSONObject parseFileByFilePath(Xds xds);
+
+    Xds flinkFileParseAndSave(Xds xds);
 }

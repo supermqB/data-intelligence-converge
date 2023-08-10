@@ -8,6 +8,7 @@ import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.FlinkService;
 import com.lrhealth.data.converge.service.ShellService;
 import com.lrhealth.data.converge.service.XdsInfoService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -19,6 +20,7 @@ import java.util.Map;
  * @date 2023-08-08
  */
 @Service
+@Slf4j
 public class FlinkServiceImpl implements FlinkService {
     @Resource
     private BeeBaseRepository beeBaseRepository;
@@ -46,9 +48,11 @@ public class FlinkServiceImpl implements FlinkService {
         String storedFileName = shellService.execShell(xds);
         ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
                 .id(xds.getId()).storedFileName(storedFileName)
-                .storedFileType(xds.getOriFileType()).build();
+                .storedFileType(xds.getOriFileType()).storedFilePath(xds.getStoredFilePath()).build();
         Xds updatedFileXds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
-        return documentParseService.documentParseAndSave(updatedFileXds.getId());
+        return documentParseService.flinkFileParseAndSave(updatedFileXds);
     }
+
+
 
 }

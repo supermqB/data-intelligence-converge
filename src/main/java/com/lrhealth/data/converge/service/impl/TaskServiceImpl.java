@@ -2,8 +2,8 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.fastjson.JSON;
+import com.lrhealth.data.common.enums.conv.FlinkTypeEnum;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
-import com.lrhealth.data.converge.common.enums.ConvergeType;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Frontend;
 import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
@@ -103,7 +103,7 @@ public class TaskServiceImpl implements TaskService {
                     .storedFileType(fepFileInfoVo.getOriFileType())
                     .storedFilePath(fileXds.getStoredFilePath()).build();
             Xds xds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
-            documentParseService.documentParseAndSave(xds.getId());
+            documentParseService.fileParseAndSave(xds.getId());
             xdsSendKafka(xds);
         });
     }
@@ -112,16 +112,13 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(rollbackFor = Exception.class)
     public Xds flinkConverge(FlinkTaskDto flinkTaskDto) {
         Xds flinkXds = xdsInfoService.createFlinkXds(flinkTaskDto);
-        String convergeType = ConvergeType.getConvergeType(flinkTaskDto.getType());
-        switch (convergeType){
-            case "db":
-                return flinkService.database(flinkXds);
-            case "file":
-                flinkXds.setStoredFilePath(storedFilePath + "/" + flinkXds.getOrgCode() + "/" + flinkXds.getSysCode());
-                return flinkService.file(flinkXds);
-            default:
-                return null;
+        if (FlinkTypeEnum.isDataBase(flinkTaskDto.getType())){
+            return flinkService.database(flinkXds);
+        }else if (FlinkTypeEnum.isFile(flinkTaskDto.getType())){
+            flinkXds.setStoredFilePath(storedFilePath + "/" + flinkXds.getOrgCode() + "/" + flinkXds.getSysCode());
+            return flinkService.file(flinkXds);
         }
+        return null;
     }
 
 

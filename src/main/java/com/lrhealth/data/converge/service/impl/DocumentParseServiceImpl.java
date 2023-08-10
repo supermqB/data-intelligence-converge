@@ -3,6 +3,8 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -55,15 +59,20 @@ public class DocumentParseServiceImpl implements DocumentParseService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Xds documentParseAndSave(Long id) {
+    public Xds fileParseAndSave(Long id) {
         Xds xds = xdsService.getById(id);
         checkParam(xds);
         JSONObject parseData = parseFileByFilePath(xds);
-        Integer dataCount = jsonDataSave(parseData, xds);
-        Set<String> odsTableNames = parseData.keySet();
-        String odsTableName = new ArrayList<>(odsTableNames).get(0);
+        List<String> odsTableNames = new ArrayList<>(parseData.keySet());
+        if (odsTableNames.size() != 1){
+            // 目前excel只能使用一个sheet页，生成一条xds
+            log.error("odsTable size is not allowed, data: {}", odsTableNames);
+            throw new CommonException("原始文件不符合解析要求");
+        }
+        String odsTableName = odsTableNames.get(0);
         xds.setOdsTableName(xds.getSysCode() + UNDERLINE + odsTableName);
         xds.setOdsModelName(odsTableName.toUpperCase());
+        Integer dataCount = jsonDataSave(parseData, xds);
         return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
     }
 
@@ -88,18 +97,25 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         return result;
     }
 
+    @Override
+    public Xds flinkFileParseAndSave(Xds xds) {
+        JSONObject parseData = parseFlinkFile(xds);
+        Integer dataCount = jsonDataSave(parseData, xds);
+        return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
+    }
+
     private Integer jsonDataSave(JSONObject jsonObject, Xds xds){
         Set<String> odsTableNames = jsonObject.keySet();
         int countNumber = 0;
         for (String odsTableName : odsTableNames) {
             try {
-                String tableName = xds.getSysCode() + UNDERLINE + odsTableName;
                 List<Map<String, Object>> odsDataList = (List<Map<String, Object>>) jsonObject.get(odsTableName);
                 odsDataList.forEach(map -> map.put("xds_id", xds.getId()));
-                beeBaseRepository.insertBatch(tableName, odsDataList);
+                beeBaseRepository.insertBatch(xds.getOdsTableName(), odsDataList);
                 countNumber += odsDataList.size();
             }catch (Exception e) {
                 log.error("file data to db sql exception,{}", ExceptionUtils.getStackTrace(e));
+                throw new CommonException("数据插入异常, xdsId: {}", String.valueOf(xds.getId()));
             }
         }
         return countNumber;
@@ -149,5 +165,41 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         convFileInfoDto.setOdsModelName(xds.getOdsModelName());
         convFileInfoDto.setOdsTableName(xds.getOdsTableName());
         return convFileInfoDto;
+    }
+
+
+    private JSONObject parseFlinkFile(Xds xds){
+        JSONObject result = new JSONObject();
+        BufferedReader reader = null;
+        try {
+            StringBuilder content = new StringBuilder();
+            reader = new BufferedReader(new FileReader(xds.getStoredFilePath() + "/" + xds.getStoredFileName()));
+            String line;
+            JSONArray jsonArray = new JSONArray();
+            while ((line = reader.readLine()) != null) {
+                content.append(line);
+            }
+            String[] objectString = content.toString().split("}(?=\\{)");
+            for (int i = 0; i < objectString.length; i++){
+                if (i != objectString.length - 1){
+                    objectString[i] += "}";
+                }
+                JSONObject jsonObject = JSON.parseObject(objectString[i]);
+                jsonArray.add(jsonObject);
+            }
+            result.put(xds.getOdsModelName(), jsonArray);
+        }catch (Exception e){
+            log.error("flink文件读取异常: {}", ExceptionUtils.getStackTrace(e));
+            throw new CommonException("文件读取异常: {}", ExceptionUtils.getStackTrace(e));
+        }finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    log.error("excel文件流关闭异常:", e);
+                }
+            }
+        }
+        return result;
     }
 }

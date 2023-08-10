@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
@@ -130,10 +131,14 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
         ConvergeConfig config = configService.getOne(new LambdaQueryWrapper<ConvergeConfig>().eq(isNotBlank(dto.getSourceId()), ConvergeConfig::getSysCode, dto.getSourceId()));
+        if (ObjectUtil.isEmpty(config)){
+            throw new CommonException("flink关联配置为空");
+        }
         Xds xds = Xds.builder()
                 .id(dto.getXdsId())
                 .dataConvergeEndTime(convergeEndTime)
                 .odsTableName(dto.getTableName())
+                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), dto.getTableName().toUpperCase()))
                 .taskInstanceName(dto.getJobName())
                 .convergeMethod(config.getConvergeMethod())
                 .dataType(config.getDataType())
@@ -146,7 +151,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .build();
         if (dto.getType() == 1){
             // 传入参数为文件的完整路径， 进行处理，获取目录和表名
-            String filePath = CharSequenceUtil.isBlank(dto.getFilePath()) ? null : dto.getFilePath().substring(0, dto.getFilePath().length() - ("/" + dto.getXdsId()).length() -1);
+            String filePath = CharSequenceUtil.isBlank(dto.getFilePath()) ? null : dto.getFilePath().substring(0, dto.getFilePath().length() - (dto.getXdsId() + ".json").length() -1);
             xds.setOriFileFromIp(filePath);
             xds.setOriFileName(dto.getXdsId() + ".json");
             xds.setOriFileType("json");
@@ -187,10 +192,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      * @return XDS信息
      */
     private Xds setFileInfo(Xds xds, ConvFileInfoDto dto) {
-//        xds.setOriFileFromIp(dto.getOriFileFromIp());
-//        xds.setOriFileType(dto.getOriFileType());
-//        xds.setOriFileSize(dto.getOriFileSize());
-//        xds.setOriFileName(dto.getOriFileName());
         xds.setStoredFileMode(dto.getStoredFileMode() == null ? XdsStoredFileModeEnum.LOCAL.getCode() : dto.getStoredFileMode());
         xds.setStoredFilePath(dto.getStoredFilePath());
         xds.setStoredFileName(dto.getStoredFileName());
