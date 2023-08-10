@@ -100,7 +100,8 @@ public class TaskServiceImpl implements TaskService {
             String storedFileName = shellService.execShell(fileXds);
             ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
                     .id(fileXds.getId()).storedFileName(storedFileName)
-                    .storedFileType(fepFileInfoVo.getOriFileType()).build();
+                    .storedFileType(fepFileInfoVo.getOriFileType())
+                    .storedFilePath(fileXds.getStoredFilePath()).build();
             Xds xds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
             documentParseService.documentParseAndSave(xds.getId());
             xdsSendKafka(xds);
