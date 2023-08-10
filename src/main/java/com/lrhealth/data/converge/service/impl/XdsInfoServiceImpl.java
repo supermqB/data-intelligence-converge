@@ -192,7 +192,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
 //        xds.setOriFileSize(dto.getOriFileSize());
 //        xds.setOriFileName(dto.getOriFileName());
         xds.setStoredFileMode(dto.getStoredFileMode() == null ? XdsStoredFileModeEnum.LOCAL.getCode() : dto.getStoredFileMode());
-//        xds.setStoredFilePath(dto.getStoredFilePath());
+        xds.setStoredFilePath(dto.getStoredFilePath());
         xds.setStoredFileName(dto.getStoredFileName());
         xds.setStoredFileType(dto.getStoredFileType());
         xds.setStoredFileSize(dto.getStoredFileSize());
