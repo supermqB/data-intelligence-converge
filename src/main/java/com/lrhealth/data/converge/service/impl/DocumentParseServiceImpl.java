@@ -7,13 +7,13 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.common.util.file.FileToJsonUtil;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.XdsInfoService;
-import com.lrhealth.data.converge.util.FileToJsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
@@ -77,6 +77,13 @@ public class DocumentParseServiceImpl implements DocumentParseService {
     }
 
     @Override
+    public Xds flinkFileParseAndSave(Xds xds) {
+        JSONObject parseData = parseFlinkFile(xds);
+        Integer dataCount = jsonDataSave(parseData, xds);
+        return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
+    }
+
+    @Override
     public JSONObject parseFileByFilePath(Xds xds) {
         JSONObject result = new JSONObject();
         InputStream fileStream = null;
@@ -95,13 +102,6 @@ public class DocumentParseServiceImpl implements DocumentParseService {
             }
         }
         return result;
-    }
-
-    @Override
-    public Xds flinkFileParseAndSave(Xds xds) {
-        JSONObject parseData = parseFlinkFile(xds);
-        Integer dataCount = jsonDataSave(parseData, xds);
-        return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
     }
 
     private Integer jsonDataSave(JSONObject jsonObject, Xds xds){

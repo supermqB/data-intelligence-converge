@@ -1,9 +1,11 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.enums.conv.FlinkTypeEnum;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
+import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Frontend;
 import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
@@ -12,6 +14,7 @@ import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
 import com.lrhealth.data.converge.dao.service.FrontendService;
 import com.lrhealth.data.converge.model.*;
 import com.lrhealth.data.converge.service.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ import java.util.List;
  * @since 2023/7/19
  */
 @Service
+@Slf4j
 public class TaskServiceImpl implements TaskService {
     @Value("${spring.kafka.topic.xds}")
     private String topic;
@@ -66,6 +70,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Xds updateTask(TaskDto taskDto) {
         Xds xds;
+        //TODO: 目前任务状态在调度中写死TRUE,后续应该通过读取datax配置得到数据抽取结果
         if (taskDto.isTaskStatus()) {
             xds = xdsInfoService.updateXdsCompleted(taskDto);
             xdsSendKafka(xds);
@@ -75,23 +80,9 @@ public class TaskServiceImpl implements TaskService {
         return xds;
     }
 
-    @Override
-    public List<FepFileInfoVo> fileConverge(String projectId) {
-        FepFileInfoVo frontendRelation = getFrontendRelation(projectId);
-        List<FileInfo> fepFileList = fepService.getFepFileList(frontendRelation.getOriFileFromPath());
-        List<FepFileInfoVo> fepFileInfoVos = new ArrayList<>();
-        fepFileList.forEach(fileInfo -> {
-            FepFileInfoVo fepFileInfoVo = new FepFileInfoVo();
-            BeanUtil.copyProperties(frontendRelation, fepFileInfoVo);
-            fepFileInfoVo.setOriFileName(fileInfo.getFileName());
-            fepFileInfoVo.setOriFileType(fileInfo.getFileName().substring(fileInfo.getFileName().lastIndexOf(".") + 1));
-            fepFileInfoVo.setOriFileSize(BigDecimal.valueOf(fileInfo.getFileSize()));
-            fepFileInfoVos.add(fepFileInfoVo);
-        });
-        return fepFileInfoVos;
-    }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void localFileParse(String projectId) {
         List<FepFileInfoVo> fepFileInfoVos = fileConverge(projectId);
         fepFileInfoVos.forEach(fepFileInfoVo -> {
@@ -111,14 +102,37 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Xds flinkConverge(FlinkTaskDto flinkTaskDto) {
+        Xds result = null;
         Xds flinkXds = xdsInfoService.createFlinkXds(flinkTaskDto);
         if (FlinkTypeEnum.isDataBase(flinkTaskDto.getType())){
-            return flinkService.database(flinkXds);
+            result = flinkService.database(flinkXds);
         }else if (FlinkTypeEnum.isFile(flinkTaskDto.getType())){
             flinkXds.setStoredFilePath(storedFilePath + "/" + flinkXds.getOrgCode() + "/" + flinkXds.getSysCode());
-            return flinkService.file(flinkXds);
+            result =  flinkService.file(flinkXds);
         }
-        return null;
+        xdsSendKafka(result == null ? new Xds() : result);
+        return result;
+    }
+
+
+    /**
+     * 组装文件与配置信息
+     * @param projectId 项目ID
+     * @return 前置机文件及信息
+     */
+    private List<FepFileInfoVo> fileConverge(String projectId) {
+        FepFileInfoVo frontendRelation = getFrontendRelation(projectId);
+        List<FileInfo> fepFileList = fepService.getFepFileList(frontendRelation.getOriFileFromPath());
+        List<FepFileInfoVo> fepFileInfoVos = new ArrayList<>();
+        fepFileList.forEach(fileInfo -> {
+            FepFileInfoVo fepFileInfoVo = new FepFileInfoVo();
+            BeanUtil.copyProperties(frontendRelation, fepFileInfoVo);
+            fepFileInfoVo.setOriFileName(fileInfo.getFileName());
+            fepFileInfoVo.setOriFileType(fileInfo.getFileName().substring(fileInfo.getFileName().lastIndexOf(".") + 1));
+            fepFileInfoVo.setOriFileSize(BigDecimal.valueOf(fileInfo.getFileSize()));
+            fepFileInfoVos.add(fepFileInfoVo);
+        });
+        return fepFileInfoVos;
     }
 
 
@@ -128,6 +142,9 @@ public class TaskServiceImpl implements TaskService {
      * @param xds XDS信息
      */
     private void xdsSendKafka(Xds xds) {
+        if (ObjectUtil.isNull(xds)){
+            throw new CommonException("kafka send xds is null");
+        }
         Xds checkXds = xdsInfoService.getById(xds.getId());
         if (!KafkaSendFlagEnum.isSent(xds.getKafkaSendFlag())) {
             HashMap<String, Object> map = new HashMap<>();

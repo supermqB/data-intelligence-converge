@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.util;
+package com.lrhealth.data.converge.common.util.file;
 
 import lombok.Cleanup;
 import lombok.NonNull;

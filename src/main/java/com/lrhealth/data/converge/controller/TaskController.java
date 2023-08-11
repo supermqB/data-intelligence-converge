@@ -2,14 +2,11 @@ package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
-import com.lrhealth.data.converge.model.FepFileInfoVo;
 import com.lrhealth.data.converge.model.TaskDto;
-import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.TaskService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.List;
 
 /**
  * <p>
@@ -25,11 +22,9 @@ public class TaskController {
     @Resource
     private TaskService taskService;
 
-    @Resource
-    private DocumentParseService documentParseService;
-
     /**
      * 创建汇聚任务
+     * 任务调度中datax方式创建xds调用
      *
      * @return 固定字符串
      */
@@ -43,6 +38,7 @@ public class TaskController {
     /**
      * 完成汇聚任务
      * 主要用于更新状态
+     * 任务调度中datax方式更新xds调用
      *
      * @return 固定字符串
      */
@@ -52,18 +48,15 @@ public class TaskController {
         return new DolphinSchedulerReturnVO("200", xds);
     }
 
-    @PostMapping(value = "/fileSave")
-    public DolphinSchedulerReturnVO fileDocumentAndSave(@RequestParam(value = "id") Long id){
-        Xds xds = documentParseService.fileParseAndSave(id);
-        return new DolphinSchedulerReturnVO("200", xds);
-    }
 
-    @PostMapping(value = "/file")
-    public DolphinSchedulerReturnVO fileConverge(@RequestParam(value = "projectId") String projectId){
-        List<FepFileInfoVo> fepFileInfoVos = taskService.fileConverge(projectId);
-        return new DolphinSchedulerReturnVO("200", fepFileInfoVos);
-    }
-
+    /**
+     * 本地文件存储
+     * 文件解析和前置机存储在同一服务器下
+     * 当两者存储的服务器不同时，需要修改shell脚本，目前尚未适配
+     * 任务调度中定时触发
+     *
+     * @param projectId 项目ID
+     */
     @PostMapping(value = "/localFile")
     public void localFileParse(@RequestParam(value = "projectId") String projectId){
         taskService.localFileParse(projectId);
