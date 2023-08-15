@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.controller;
 
+import com.lrhealth.data.converge.model.FileInfo;
 import com.lrhealth.data.converge.service.FepService;
 import com.lrhealth.data.converge.service.FileService;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * 文件处理
@@ -30,7 +32,8 @@ public class FileController {
     }
 
     @GetMapping("/fep")
-    public void testFep(@RequestParam(value = "filePath") String filePath){
-        fepService.fepFileList(filePath);
+    public List<FileInfo> testFep(@RequestParam(value = "filePath") String filePath){
+        List<FileInfo> fileInfoList =  fepService.fepFileList(filePath);
+        return fileInfoList;
     }
 }

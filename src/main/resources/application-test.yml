@@ -136,4 +136,5 @@ converge:
 fep:
   ip: 172.16.29.13
   port: 18081
+  fileScan: /file/scan
 

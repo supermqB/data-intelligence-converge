@@ -38,6 +38,9 @@ public class FepServiceImpl implements FepService {
     @Value("${fep.port}")
     private String frontendPort;
 
+    @Value("${fep.fileScan}")
+    private String fileScan;
+
     @Override
     public List<FileInfo> getFepFileList(String oriFilePath) {
         return scanFiles(oriFilePath);
@@ -47,8 +50,9 @@ public class FepServiceImpl implements FepService {
     public List<FileInfo> fepFileList(String filePath) {
         Map<String, Object> jsonMap = new HashMap<>();
         jsonMap.put("filePath", filePath);
-        String responseData = HttpUtil.get(  "http://" + frontendIp + "/" + frontendPort + "/file/scan", jsonMap);
+        String responseData = HttpUtil.get(  "http://" + frontendIp + ":" + frontendPort + fileScan, jsonMap);
         ResultBase<List<FileInfo>> resultBase = JSON.toJavaObject(JSON.parseObject(responseData), ResultBase.class);
+        log.info("扫描目录结果: {}", resultBase.getValue());
         return resultBase.getValue();
     }
 
