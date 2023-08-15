@@ -27,6 +27,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static cn.hutool.core.text.StrPool.DOT;
+import static cn.hutool.core.text.StrPool.SLASH;
+
 /**
  * <p>
  * 任务接口实现类
@@ -87,7 +90,7 @@ public class TaskServiceImpl implements TaskService {
         List<FepFileInfoVo> fepFileInfoVos = fileConverge(projectId);
         fepFileInfoVos.forEach(fepFileInfoVo -> {
             Xds fileXds = xdsInfoService.createFileXds(projectId, fepFileInfoVo);
-            fileXds.setStoredFilePath(storedFilePath + "/" + fepFileInfoVo.getOrgCode() + "/" +  fepFileInfoVo.getSysCode());
+            fileXds.setStoredFilePath(storedFilePath + SLASH + fepFileInfoVo.getOrgCode() + SLASH +  fepFileInfoVo.getSysCode());
             String storedFileName = shellService.execShell(fileXds);
             ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
                     .id(fileXds.getId()).storedFileName(storedFileName)
@@ -107,7 +110,7 @@ public class TaskServiceImpl implements TaskService {
         if (FlinkTypeEnum.isDataBase(flinkTaskDto.getType())){
             result = flinkService.database(flinkXds);
         }else if (FlinkTypeEnum.isFile(flinkTaskDto.getType())){
-            flinkXds.setStoredFilePath(storedFilePath + "/" + flinkXds.getOrgCode() + "/" + flinkXds.getSysCode());
+            flinkXds.setStoredFilePath(storedFilePath + SLASH + flinkXds.getOrgCode() + SLASH + flinkXds.getSysCode());
             result =  flinkService.file(flinkXds);
         }
         xdsSendKafka(result == null ? new Xds() : result);
@@ -128,7 +131,7 @@ public class TaskServiceImpl implements TaskService {
             FepFileInfoVo fepFileInfoVo = new FepFileInfoVo();
             BeanUtil.copyProperties(frontendRelation, fepFileInfoVo);
             fepFileInfoVo.setOriFileName(fileInfo.getFileName());
-            fepFileInfoVo.setOriFileType(fileInfo.getFileName().substring(fileInfo.getFileName().lastIndexOf(".") + 1));
+            fepFileInfoVo.setOriFileType(fileInfo.getFileName().substring(fileInfo.getFileName().lastIndexOf(DOT) + 1));
             fepFileInfoVo.setOriFileSize(BigDecimal.valueOf(fileInfo.getFileSize()));
             fepFileInfoVos.add(fepFileInfoVo);
         });

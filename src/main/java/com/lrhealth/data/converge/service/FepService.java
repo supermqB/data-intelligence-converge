@@ -14,5 +14,12 @@ import java.util.List;
  */
 public interface FepService {
 
+    /**
+     * 文件扫描，文件存储在与converge同一服务器
+     * @param oriFilePath
+     * @return
+     */
     List<FileInfo> getFepFileList(String oriFilePath);
+
+    List<FileInfo> fepFileList(String filePath);
 }

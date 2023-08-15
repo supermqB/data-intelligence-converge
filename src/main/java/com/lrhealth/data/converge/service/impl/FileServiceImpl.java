@@ -18,6 +18,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import static cn.hutool.core.text.StrPool.SLASH;
+
 /**
  * @author jinmengyu
  * @date 2023-07-27
@@ -39,7 +41,7 @@ public class FileServiceImpl implements FileService {
         String oriFilePath = getConfig(projectId);
 
         String filename = file.getOriginalFilename();
-        Path targetUrl = Paths.get( oriFilePath + "/" + filename);
+        Path targetUrl = Paths.get( oriFilePath + SLASH + filename);
         log.info("源文件名称: {} ---> 上传文件目录: {}", file.getName(), targetUrl);
 
         try (InputStream inputStream = file.getInputStream()) {

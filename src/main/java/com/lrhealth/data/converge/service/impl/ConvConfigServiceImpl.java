@@ -44,7 +44,6 @@ public class ConvConfigServiceImpl implements ConvConfigService {
         List<ConvergeConfig> convergeConfigs = configService.list();
         List<Long> bindedConvergeConfigs = relationService.list().stream().distinct().map(ProjectConvergeRelation::getConvergeId).collect(Collectors.toList());
         List<ConvergeConfig> filteredConfigs = convergeConfigs.stream().filter(convergeConfig -> !bindedConvergeConfigs.contains(convergeConfig.getId())).collect(Collectors.toList());
-//        Page<ConvergeConfig> page = queryPage(pageSize, pageNo);
         return isEmpty(filteredConfigs) ? CollUtil.newArrayList() : filteredConfigs;
     }
 

@@ -2,15 +2,21 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.model.FileInfo;
 import com.lrhealth.data.converge.service.FepService;
 import com.lrhealth.data.model.enums.ResultEnum;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static cn.hutool.core.text.CharSequenceUtil.isBlank;
 
@@ -26,9 +32,24 @@ import static cn.hutool.core.text.CharSequenceUtil.isBlank;
 @Slf4j
 public class FepServiceImpl implements FepService {
 
+    @Value("${fep.ip}")
+    private String frontendIp;
+
+    @Value("${fep.port}")
+    private String frontendPort;
+
     @Override
     public List<FileInfo> getFepFileList(String oriFilePath) {
         return scanFiles(oriFilePath);
+    }
+
+    @Override
+    public List<FileInfo> fepFileList(String filePath) {
+        Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put("filePath", filePath);
+        String responseData = HttpUtil.get(  "http://" + frontendIp + "/" + frontendPort + "/file/scan", jsonMap);
+        ResultBase<List<FileInfo>> resultBase = JSON.toJavaObject(JSON.parseObject(responseData), ResultBase.class);
+        return resultBase.getValue();
     }
 
 

@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+import static cn.hutool.core.text.CharPool.DOT;
+import static cn.hutool.core.text.StrPool.SLASH;
+
 /**
  * @author jinmengyu
  * @date 2023-08-08
@@ -23,14 +26,14 @@ public class ShellServiceImpl implements ShellService {
     @Override
     public String execShell(Xds fileXds){
         List<String> command = new ArrayList<>();
-        String storedFileName = fileXds.getId() + "." + fileXds.getOriFileType();
+        String storedFileName = fileXds.getId() + DOT + fileXds.getOriFileType();
         command.add("cp");
-        command.add(fileXds.getOriFileFromIp() + "/" + fileXds.getOriFileName());
-        command.add(fileXds.getStoredFilePath() + "/" + storedFileName);
+        command.add(fileXds.getOriFileFromIp() + SLASH + fileXds.getOriFileName());
+        command.add(fileXds.getStoredFilePath() + SLASH + storedFileName);
         ShellUtil.execCommand(command);
         List<String> mvCommand = new ArrayList<>();
         mvCommand.add("mv");
-        mvCommand.add(fileXds.getOriFileFromIp() + "/" + fileXds.getOriFileName());
+        mvCommand.add(fileXds.getOriFileFromIp() + SLASH + fileXds.getOriFileName());
         mvCommand.add(backupFilePath);
         ShellUtil.execCommand(mvCommand);
         return storedFileName;

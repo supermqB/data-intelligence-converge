@@ -24,6 +24,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static cn.hutool.core.text.StrPool.DOT;
+
 /**
  * 直接操作数据库，并返回结果.在该类中的sql字符串要是DB能识别的SQL语句
  * Directly operate the database and return the result. 
@@ -1095,7 +1097,7 @@ public class SqlLib extends AbstractBase implements BeeSql, Serializable {
 							columnName=_toColumnName(fields2[i].getName(),subEntityFieldClass[1]);
 							//get v2
 							if(isConfuseDuplicateFieldDB()){
-								dulField=dulSubFieldMap.get(subUseTable[1]+"."+columnName);
+								dulField=dulSubFieldMap.get(subUseTable[1]+DOT+columnName);
 								if(dulField!=null){
 									isDul=true;  //set true first
 									v2 = rs.getObject(dulField);
@@ -1103,7 +1105,7 @@ public class SqlLib extends AbstractBase implements BeeSql, Serializable {
 									v2= rs.getObject(columnName);
 								}
 							} else {
-								v2= rs.getObject(subUseTable[1] + "." + columnName);
+								v2= rs.getObject(subUseTable[1] + DOT + columnName);
 							}
 							
 							boolean processAsJson = false;
@@ -1214,7 +1216,7 @@ public class SqlLib extends AbstractBase implements BeeSql, Serializable {
 						String columnName = _toColumnName(fields1[i].getName(), subEntityFieldClass[0]);
 						//get v1
 						if (isConfuseDuplicateFieldDB()) {
-							dulField = dulSubFieldMap.get(subUseTable[0] + "." + columnName);
+							dulField = dulSubFieldMap.get(subUseTable[0] + DOT + columnName);
 							if (dulField != null) {
 								isDul = true; //fixed bug.  need set true before fields1[i].set(  )
 								v1 = rs.getObject(dulField);
@@ -1222,7 +1224,7 @@ public class SqlLib extends AbstractBase implements BeeSql, Serializable {
 								v1 = rs.getObject(columnName);
 							}
 						} else {
-							v1 = rs.getObject(subUseTable[0] + "." + columnName);
+							v1 = rs.getObject(subUseTable[0] + DOT + columnName);
 						}
 						
 						boolean processAsJson = false;
@@ -1327,7 +1329,7 @@ public class SqlLib extends AbstractBase implements BeeSql, Serializable {
 						if (isConfuseDuplicateFieldDB()) {
 							v = rs.getObject(_toColumnName(field[i].getName(), entity.getClass()));
 						} else {
-							v = rs.getObject(tableName + "."+ _toColumnName(field[i].getName(), entity.getClass()));
+							v = rs.getObject(tableName + DOT+ _toColumnName(field[i].getName(), entity.getClass()));
 						}
 						
 						boolean processAsJson = false;
@@ -1488,14 +1490,14 @@ public class SqlLib extends AbstractBase implements BeeSql, Serializable {
 		if (isConfuseDuplicateFieldDB()) {//主表时会用到
 			return HoneyUtil.getResultObject(rs, field.getType().getName(), _toColumnName(field.getName(),entityClass));
 		} else {
-			return HoneyUtil.getResultObject(rs, field.getType().getName(), tableName + "." + _toColumnName(field.getName(),entityClass));
+			return HoneyUtil.getResultObject(rs, field.getType().getName(), tableName + DOT + _toColumnName(field.getName(),entityClass));
 		}
 	}
 	
 	// not  oracle,SQLite
 	@SuppressWarnings("rawtypes")
 	private Object _getObjectForMoreTable_NoConfuse(ResultSet rs, String tableName, Field field,Class entityClass) throws SQLException {
-		return HoneyUtil.getResultObject(rs, field.getType().getName(), tableName + "." + _toColumnName(field.getName(),entityClass));
+		return HoneyUtil.getResultObject(rs, field.getType().getName(), tableName + DOT + _toColumnName(field.getName(),entityClass));
 	}
 	
 	//oracle,SQLite

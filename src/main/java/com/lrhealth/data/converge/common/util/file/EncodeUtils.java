@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.util.BitSet;
 
+import static cn.hutool.core.text.StrPool.SLASH;
+
 /**
  * 编码工具类，主要用于识别UTF8、UTF8 BOM、GBK
  * 2022/08/18
@@ -218,7 +220,7 @@ public class EncodeUtils {
                 content.append(System.getProperty("line.separator"));
             }
             newFullFileName = newFullFileName.replace("\\", "/");
-            File dir = new File(newFullFileName.substring(0, newFullFileName.lastIndexOf("/")));
+            File dir = new File(newFullFileName.substring(0, newFullFileName.lastIndexOf(SLASH)));
             if (!dir.exists()) {
                 dir.mkdirs();
             }

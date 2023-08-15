@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.common.util;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -77,7 +76,7 @@ public class RedisClient {
      */
     public void deletePrexKeys(String prexKey) {
         Set<String> keys = redisTemplate.keys(prexKey + "*");
-        if (CollectionUtil.isNotEmpty(keys)) {
+        if (CollUtil.isNotEmpty(keys)) {
             redisTemplate.delete(keys);
         }
     }

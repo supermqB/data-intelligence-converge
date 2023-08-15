@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static cn.hutool.core.text.StrPool.UNDERLINE;
+import static cn.hutool.core.text.StrPool.*;
 
 /**
  * <p>
@@ -88,7 +88,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         JSONObject result = new JSONObject();
         InputStream fileStream = null;
         try {
-            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath() + "/" + xds.getStoredFileName()));
+            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath() + SLASH + xds.getStoredFileName()));
             result = fileToJson(fileStream, xds.getStoredFileType(), xds.getStoredFileName());
         }catch (Exception e){
             e.getStackTrace();
@@ -173,7 +173,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         BufferedReader reader = null;
         try {
             StringBuilder content = new StringBuilder();
-            reader = new BufferedReader(new FileReader(xds.getStoredFilePath() + "/" + xds.getStoredFileName()));
+            reader = new BufferedReader(new FileReader(xds.getStoredFilePath() + SLASH + xds.getStoredFileName()));
             String line;
             JSONArray jsonArray = new JSONArray();
             while ((line = reader.readLine()) != null) {
@@ -182,7 +182,7 @@ public class DocumentParseServiceImpl implements DocumentParseService {
             String[] objectString = content.toString().split("}(?=\\{)");
             for (int i = 0; i < objectString.length; i++){
                 if (i != objectString.length - 1){
-                    objectString[i] += "}";
+                    objectString[i] += DELIM_END;
                 }
                 JSONObject jsonObject = JSON.parseObject(objectString[i]);
                 jsonArray.add(jsonObject);
