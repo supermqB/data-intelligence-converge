@@ -1,6 +1,6 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.model.FepFileInfoVo;
 
 /**
  * @author jinmengyu
@@ -8,6 +8,6 @@ import com.lrhealth.data.converge.dao.entity.Xds;
  */
 public interface ShellService {
 
-    String execShell(Xds fileXds);
+    String execShell(FepFileInfoVo fepFileInfoVo);
 
 }

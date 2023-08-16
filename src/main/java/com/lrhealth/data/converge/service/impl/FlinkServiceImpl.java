@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
+import com.lrhealth.data.converge.model.FepFileInfoVo;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DocumentParseService;
 import com.lrhealth.data.converge.service.FlinkService;
@@ -44,11 +45,12 @@ public class FlinkServiceImpl implements FlinkService {
     }
 
     @Override
-    public Xds file(Xds xds){
-        String storedFileName = shellService.execShell(xds);
+    public Xds file(FepFileInfoVo fileInfoVo){
+        String storedFileName = shellService.execShell(fileInfoVo);
         ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
-                .id(xds.getId()).storedFileName(storedFileName)
-                .storedFileType(xds.getOriFileType()).storedFilePath(xds.getStoredFilePath()).build();
+                .id(fileInfoVo.getXdsId()).oriFileName(fileInfoVo.getOriFileName())
+                .oriFileFromIp(fileInfoVo.getFrontendIp()).oriFileType(fileInfoVo.getOriFileType()).storedFileName(storedFileName)
+                .storedFileType(fileInfoVo.getOriFileType()).storedFilePath(fileInfoVo.getStoredFilePath()).build();
         Xds updatedFileXds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
         return documentParseService.flinkFileParseAndSave(updatedFileXds);
     }

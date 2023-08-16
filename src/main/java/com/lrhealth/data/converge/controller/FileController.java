@@ -1,14 +1,15 @@
 package com.lrhealth.data.converge.controller;
 
-import com.lrhealth.data.converge.model.FileInfo;
 import com.lrhealth.data.converge.service.FepService;
 import com.lrhealth.data.converge.service.FileService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.util.List;
 
 /**
  * 文件处理
@@ -31,9 +32,4 @@ public class FileController {
         fileService.uploadFile(file, projectId);
     }
 
-    @GetMapping("/fep")
-    public List<FileInfo> testFep(@RequestParam(value = "filePath") String filePath){
-        List<FileInfo> fileInfoList =  fepService.fepFileList(filePath);
-        return fileInfoList;
-    }
 }

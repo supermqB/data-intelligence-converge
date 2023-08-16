@@ -25,6 +25,7 @@ public class FepFileInfoVo {
 
     /**
      * 前置机ip地址
+     * 与oriFileFromIp相同
      */
     private String frontendIp;
 
@@ -98,4 +99,6 @@ public class FepFileInfoVo {
      * @see com.lrhealth.data.common.enums.conv.ConvMethodEnum
      */
     private String convergeMethod;
+
+    private Long xdsId;
 }

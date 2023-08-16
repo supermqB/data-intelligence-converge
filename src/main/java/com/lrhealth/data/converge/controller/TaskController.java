@@ -50,16 +50,13 @@ public class TaskController {
 
 
     /**
-     * 本地文件存储
-     * 文件解析和前置机存储在同一服务器下
-     * 当两者存储的服务器不同时，需要修改shell脚本，目前尚未适配
-     * 任务调度中定时触发
+     * 前置机文件模式
      *
      * @param projectId 项目ID
      */
     @PostMapping(value = "/localFile")
-    public void localFileParse(@RequestParam(value = "projectId") String projectId){
-        taskService.localFileParse(projectId);
+    public void fepFileModel(@RequestParam(value = "projectId") String projectId){
+        taskService.fepConverge(projectId);
     }
 
 }

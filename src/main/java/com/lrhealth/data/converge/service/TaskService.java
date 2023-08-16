@@ -30,14 +30,14 @@ public interface TaskService {
     Xds updateTask(TaskDto taskDto);
 
     /**
-     * 文件存储在本地服务器，汇聚项目直接进行搬运->解析->落库
+     * 前置机文件模式
+     * 1.调用前置机接口获得指定目录下的文件列表
+     * 2.生成xds后进行解析落库
      */
-    void localFileParse(String projectId);
+    void fepConverge(String projectId);
 
     /**
-     *  flink汇聚流程，包含库表采集和文件采集
-     * @param flinkTaskDto flink服务提供的参数
-     * @return xds
+     *  flink汇聚模式，包含库表采集和文件采集
      */
     Xds flinkConverge(FlinkTaskDto flinkTaskDto);
 }

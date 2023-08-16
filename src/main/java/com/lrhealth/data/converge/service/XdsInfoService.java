@@ -78,12 +78,12 @@ public interface XdsInfoService {
     /**
      * 文件采集新增XDS，填充基本信息
      */
-    Xds createFileXds(String projectId, FepFileInfoVo fepFileInfoVo);
+    Xds createFileXds(FepFileInfoVo fepFileInfoVo);
 
     /**
      * flinkCDC采集过程新建xds
      * @param dto flink采集信息
      * @return xds
      */
-    Xds createFlinkXds(FlinkTaskDto dto);
+    Xds createFlinkXds(FlinkTaskDto dto, ConvergeConfig config);
 }

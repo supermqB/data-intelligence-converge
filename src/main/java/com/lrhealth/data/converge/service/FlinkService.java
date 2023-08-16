@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.model.FepFileInfoVo;
 
 /**
  * @author jinmengyu
@@ -10,5 +11,5 @@ public interface FlinkService {
 
     Xds database(Xds xds);
 
-    Xds file(Xds xds);
+    Xds file(FepFileInfoVo fileInfoVo);
 }

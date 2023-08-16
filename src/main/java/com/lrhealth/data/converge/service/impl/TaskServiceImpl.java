@@ -1,8 +1,10 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.enums.conv.FlinkTypeEnum;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
 import com.lrhealth.data.common.exception.CommonException;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static cn.hutool.core.text.CharSequenceUtil.isNotBlank;
 import static cn.hutool.core.text.StrPool.DOT;
 import static cn.hutool.core.text.StrPool.SLASH;
 
@@ -86,32 +89,50 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void localFileParse(String projectId) {
+    public void fepConverge(String projectId) {
+        // 获得文件列表
         List<FepFileInfoVo> fepFileInfoVos = fileConverge(projectId);
         fepFileInfoVos.forEach(fepFileInfoVo -> {
-            Xds fileXds = xdsInfoService.createFileXds(projectId, fepFileInfoVo);
-            fileXds.setStoredFilePath(storedFilePath + SLASH + fepFileInfoVo.getOrgCode() + SLASH +  fepFileInfoVo.getSysCode());
-            String storedFileName = shellService.execShell(fileXds);
-            ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
-                    .id(fileXds.getId()).storedFileName(storedFileName)
-                    .storedFileType(fepFileInfoVo.getOriFileType())
-                    .storedFilePath(fileXds.getStoredFilePath()).build();
+            // 新建xds
+            Xds fileXds = xdsInfoService.createFileXds(fepFileInfoVo);
+            // 文件搬运
+            fepFileInfoVo.setStoredFilePath(fepFileInfoVo.getStoredFilePath() + SLASH + fepFileInfoVo.getOrgCode() + SLASH +  fepFileInfoVo.getSysCode());
+            fepFileInfoVo.setXdsId(fileXds.getId());
+            String storedFileName = shellService.execShell(fepFileInfoVo);
+            ConvFileInfoDto convFileInfoDto =  ConvFileInfoDto.builder()
+                    .id(fepFileInfoVo.getXdsId()).oriFileName(fepFileInfoVo.getOriFileName()).oriFileSize(fepFileInfoVo.getOriFileSize())
+                    .oriFileFromIp(fepFileInfoVo.getFrontendIp()).oriFileType(fepFileInfoVo.getOriFileType())
+                    .storedFileName(storedFileName).storedFileType(fepFileInfoVo.getOriFileType())
+                    .storedFilePath(fepFileInfoVo.getStoredFilePath()).build();
+            // 更新xds文件信息
             Xds xds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
+            // 数据解析落库
             documentParseService.fileParseAndSave(xds.getId());
+            // 发送kafka
             xdsSendKafka(xds);
         });
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Xds flinkConverge(FlinkTaskDto flinkTaskDto) {
+    public Xds flinkConverge(FlinkTaskDto dto) {
         Xds result = null;
-        Xds flinkXds = xdsInfoService.createFlinkXds(flinkTaskDto);
-        if (FlinkTypeEnum.isDataBase(flinkTaskDto.getType())){
+        ConvergeConfig config = configService.getOne(new LambdaQueryWrapper<ConvergeConfig>().eq(isNotBlank(dto.getSourceId()), ConvergeConfig::getSysCode, dto.getSourceId()));
+        if (ObjectUtil.isEmpty(config)){
+            throw new CommonException("flink关联配置为空");
+        }
+        Xds flinkXds = xdsInfoService.createFlinkXds(dto, config);
+        if (FlinkTypeEnum.isDataBase(dto.getType())){
             result = flinkService.database(flinkXds);
-        }else if (FlinkTypeEnum.isFile(flinkTaskDto.getType())){
-            flinkXds.setStoredFilePath(storedFilePath + SLASH + flinkXds.getOrgCode() + SLASH + flinkXds.getSysCode());
-            result =  flinkService.file(flinkXds);
+        }else if (FlinkTypeEnum.isFile(dto.getType())){
+            FepFileInfoVo fileInfoVo = getFrontendRelation(config);
+            String filePath = CharSequenceUtil.isBlank(dto.getFilePath()) ? null : dto.getFilePath().substring(0, dto.getFilePath().length() - String.valueOf(dto.getXdsId()).length() -1);
+            fileInfoVo.setOriFileFromPath(filePath);
+            fileInfoVo.setOriFileType("json");
+            fileInfoVo.setOriFileName(String.valueOf(dto.getXdsId()));
+            fileInfoVo.setStoredFilePath(fileInfoVo.getStoredFilePath() + SLASH + flinkXds.getOrgCode() + SLASH + flinkXds.getSysCode());
+            fileInfoVo.setXdsId(flinkXds.getId());
+            result = flinkService.file(fileInfoVo);
         }
         xdsSendKafka(result == null ? new Xds() : result);
         return result;
@@ -124,8 +145,11 @@ public class TaskServiceImpl implements TaskService {
      * @return 前置机文件及信息
      */
     private List<FepFileInfoVo> fileConverge(String projectId) {
-        FepFileInfoVo frontendRelation = getFrontendRelation(projectId);
-        List<FileInfo> fepFileList = fepService.getFepFileList(frontendRelation.getOriFileFromPath());
+        // 项目配置项，以及与前置机的关联
+        ConvergeConfig convergeConfig = getConfig(projectId);
+        FepFileInfoVo frontendRelation = getFrontendRelation(convergeConfig);
+        // 调用前置机接口
+        List<FileInfo> fepFileList = fepService.fepFileList(frontendRelation.getOriFileFromPath());
         List<FepFileInfoVo> fepFileInfoVos = new ArrayList<>();
         fepFileList.forEach(fileInfo -> {
             FepFileInfoVo fepFileInfoVo = new FepFileInfoVo();
@@ -171,8 +195,7 @@ public class TaskServiceImpl implements TaskService {
     /**
      * 关联前置机和配置信息
      */
-    private FepFileInfoVo getFrontendRelation(String projId){
-        ConvergeConfig convergeConfig = getConfig(projId);
+    private FepFileInfoVo getFrontendRelation(ConvergeConfig convergeConfig){
         Frontend frontendConfig = frontendService.getByFrontenfCode(convergeConfig.getFrontendCode());
         return FepFileInfoVo.builder().frontendIp(frontendConfig.getFrontendIp())
                 .frontendPort(frontendConfig.getFrontendPort()).frontendPwd(frontendConfig.getFrontendPwd())
