@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-import static cn.hutool.core.text.CharPool.DOT;
 import static cn.hutool.core.text.StrPool.SLASH;
 
 /**
@@ -26,7 +25,7 @@ public class ShellServiceImpl implements ShellService {
 
     @Override
     public String execShell(FepFileInfoVo fepFileInfoVo) {
-        String storedFileName = fepFileInfoVo.getXdsId() + DOT + fepFileInfoVo.getOriFileType();
+        String storedFileName = fepFileInfoVo.getXdsId() + "." + fepFileInfoVo.getOriFileType();
         String oriFilePath = fepFileInfoVo.getOriFileFromPath() + SLASH + fepFileInfoVo.getOriFileName();
         String storedFilePath = fepFileInfoVo.getStoredFilePath() + SLASH + storedFileName;
         if (fepFileInfoVo.getFrontendIp().equals(NetUtil.getLocalhostStr())){
