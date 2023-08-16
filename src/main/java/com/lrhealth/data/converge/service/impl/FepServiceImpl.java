@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.model.FileInfo;
 import com.lrhealth.data.converge.service.FepService;
@@ -39,9 +40,10 @@ public class FepServiceImpl implements FepService {
         Map<String, Object> jsonMap = new HashMap<>();
         jsonMap.put("filePath", filePath);
         String responseData = HttpUtil.get(  "http://" + frontendIp + ":" + frontendPort + fileScan, jsonMap);
-        ResultBase<List<FileInfo>> resultBase = JSON.toJavaObject(JSON.parseObject(responseData), ResultBase.class);
+        ResultBase resultBase = JSON.toJavaObject(JSON.parseObject(responseData), ResultBase.class);
         log.info("扫描目录结果: {}", resultBase.getValue());
-        return resultBase.getValue();
+        JSONArray jsonArray = (JSONArray) resultBase.getValue();
+        return jsonArray.toJavaList(FileInfo.class);
     }
 
 }
