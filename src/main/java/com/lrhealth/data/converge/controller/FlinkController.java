@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.controller;
 
+import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.service.TaskService;
@@ -25,7 +26,11 @@ public class FlinkController {
     private TaskService taskService;
 
     @PostMapping(value = "/xds")
-    public Xds flinkConverge(@RequestBody FlinkTaskDto flinkTaskDto){
-        return taskService.flinkConverge(flinkTaskDto);
+    public ResultBase<Xds> flinkConverge(@RequestBody FlinkTaskDto flinkTaskDto){
+        try {
+            return ResultBase.success(taskService.flinkConverge(flinkTaskDto));
+        } catch (Exception e) {
+            return ResultBase.fail(e.getMessage());
+        }
     }
 }

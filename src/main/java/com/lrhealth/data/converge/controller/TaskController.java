@@ -54,7 +54,7 @@ public class TaskController {
      *
      * @param projectId 项目ID
      */
-    @PostMapping(value = "/localFile")
+    @PostMapping(value = "/fep")
     public void fepFileModel(@RequestParam(value = "projectId") String projectId){
         taskService.fepConverge(projectId);
     }
