@@ -26,17 +26,16 @@ public class FileToJsonUtil {
     /**
      * Json输入流，输出json
      *
-     * @param inputStream 文件输入流
+     * @param file 待处理文件
      * @return JSONObject
      */
-    public static JSONObject jsonToJson(InputStream inputStream) {
-
-        JSONObject result;
+    public static JSONObject jsonToJson(ProcessedFile file) {
+        JSONObject result = new JSONObject();
+        InputStream inputStream = file.getInputStream();
         try {
             result = JSON.parseObject(IOUtils.toString(inputStream).trim(), Feature.OrderedField);
         } catch (Exception e) {
-            log.error("转换json文件错误:", e);
-            return new JSONObject();
+            log.error("[JSON] {}解析异常:{}", file.getFileName(), e.getMessage());
         } finally {
             if (inputStream != null) {
                 try {
@@ -52,54 +51,34 @@ public class FileToJsonUtil {
     /**
      * excel输入流，输出json
      *
-     * @param inputStream excel输入流
+     * @param file 待处理文件
      * @return JSONObject对象
      */
-    public static JSONObject excelToJsonByali(InputStream inputStream, String filename) {
-        JSONObject jsonObject;
+    public static JSONObject excelToJson(ProcessedFile file) {
+        JSONObject jsonObject = new JSONObject();
+        InputStream stream = file.getInputStream();
         try {
-            jsonObject = easyExcelToJson(inputStream);
+            List<ReadSheet> readSheets = EasyExcelFactory.read(stream).build().excelExecutor().sheetList();
+            for (ReadSheet sheet : readSheets) {
+                putSheetData(jsonObject, sheet, stream);
+            }
         } catch (Exception e) {
-            log.error("{}excel文件转换异常:", filename, e);
-            return new JSONObject();
+            log.error("[EXCEL] {}解析异常:{}", file.getFileName(), e.getMessage());
         } finally {
-            if (inputStream != null) {
+            if (stream != null) {
                 try {
-                    inputStream.close();
+                    stream.close();
                 } catch (IOException e) {
-                    log.error("excel文件流关闭异常:", e);
+                    log.error("close resource error,{}", ExceptionUtils.getStackTrace(e));
                 }
             }
         }
         return jsonObject;
     }
 
-    public static JSONObject easyExcelToJson(InputStream inputStream) {
-        InputStreamCacher streamCacher = new InputStreamCacher(inputStream);
-        InputStream streamCache = streamCacher.getInputStream();
+    private static void putSheetData(JSONObject jsonObject, ReadSheet sheet, InputStream stream){
         try {
-            JSONObject jsonObject = new JSONObject();
-            List<ReadSheet> readSheets = EasyExcelFactory.read(streamCache).build().excelExecutor().sheetList();
-            for (ReadSheet sheet : readSheets) {
-                putSheetData(jsonObject, sheet, streamCacher);
-            }
-            return jsonObject;
-        } finally {
-            if (streamCache != null) {
-                try {
-                    streamCache.close();
-                } catch (IOException e) {
-                    log.error("close resource error,{}", ExceptionUtils.getStackTrace(e));
-                }
-            }
-        }
-    }
-
-    private static void putSheetData(JSONObject jsonObject, ReadSheet sheet, InputStreamCacher streamCacher){
-        InputStream streamCache1 = null;
-        try {
-            streamCache1 = streamCacher.getInputStream();
-            List<Object> dataList = EasyExcelFactory.read(streamCache1).sheet(sheet.getSheetNo()).headRowNumber(0).doReadSync();
+            List<Object> dataList = EasyExcelFactory.read(stream).sheet(sheet.getSheetNo()).headRowNumber(0).doReadSync();
             JSONArray dataArray = JSON.parseArray(JSON.toJSONString(dataList));
             JSONObject header = dataArray.getJSONObject(0);
             JSONArray result = new JSONArray();
@@ -120,13 +99,17 @@ public class FileToJsonUtil {
         }catch (Exception e){
             e.getStackTrace();
         } finally {
-            if (streamCache1 != null) {
+            if (stream != null) {
                 try {
-                    streamCache1.close();
+                    stream.close();
                 } catch (IOException e) {
                     log.error("close resource error,{}", ExceptionUtils.getStackTrace(e));
                 }
             }
         }
     }
+
+
 }
+
+

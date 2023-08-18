@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.file.FileToJsonUtil;
+import com.lrhealth.data.converge.common.util.file.ProcessedFile;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
@@ -88,11 +89,13 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         JSONObject result = new JSONObject();
         InputStream fileStream = null;
         try {
-            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath() + SLASH + xds.getStoredFileName()));
-            result = fileToJson(fileStream, xds.getStoredFileType(), xds.getStoredFileName());
-        }catch (Exception e){
+            String fileName = xds.getStoredFileName();
+            String fileType = xds.getStoredFileType();
+            fileStream = Files.newInputStream(Paths.get(xds.getStoredFilePath() + SLASH + fileName));
+            result = fileToJson(new ProcessedFile(fileStream, fileName, fileType));
+        } catch (Exception e){
             e.getStackTrace();
-        }finally {
+        } finally {
             if (fileStream != null) {
                 try {
                     fileStream.close();
@@ -122,38 +125,36 @@ public class DocumentParseServiceImpl implements DocumentParseService {
 
     }
 
-    private JSONObject fileToJson(InputStream in, String fileType, String fileName) {
-        try {
-            //根据文件类型处理流，输出json对象，json结构待定
-            JSONObject odsAllJsonData = new JSONObject();
-
-            switch (fileType) {
-                case "json":
-                    odsAllJsonData = FileToJsonUtil.jsonToJson(in);
-                    break;
-                case "xls":
-                case "xlsx":
-                    odsAllJsonData = FileToJsonUtil.excelToJsonByali(in, fileName);
-                    break;
-                default:
-            }
-            if (ObjectUtil.isNull(odsAllJsonData)) {
-                throw new CommonException("文件解析为空");
-            }
-            return odsAllJsonData;
-        } catch (Exception e) {
-            log.error("文件解析异常:", e);
-            throw new CommonException("文件解析异常:{}", ExceptionUtil.getMessage(e));
+    private JSONObject fileToJson(ProcessedFile file) {
+        //根据文件类型处理流，输出json对象，json结构待定
+        JSONObject odsAllJsonData = new JSONObject();
+        switch (file.getFileType()) {
+            case "json":
+                odsAllJsonData = FileToJsonUtil.jsonToJson(file);
+                break;
+            case "xls":
+            case "xlsx":
+                odsAllJsonData = FileToJsonUtil.excelToJson(file);
+                break;
+            default:
         }
+        if (ObjectUtil.isNull(odsAllJsonData)) {
+            throw new CommonException("文件解析为空");
+        }
+        return odsAllJsonData;
     }
 
     private void checkParam(Xds xds){
-        if (CharSequenceUtil.isBlank(xds.getStoredFilePath()) || CharSequenceUtil.isBlank(xds.getStoredFileType())
-        || CharSequenceUtil.isBlank(xds.getStoredFileName())){
-            log.error("文档解析必须字段缺失，filePath:{} fileType:{} fileName:{}", xds.getStoredFilePath(),
-                     xds.getStoredFileType(), xds.getStoredFileName());
+        String filePath = xds.getStoredFilePath();
+        String fileType = xds.getStoredFileType();
+        String fileName = xds.getStoredFileName();
+        String orgCode = xds.getOrgCode();
+        if (CharSequenceUtil.isBlank(filePath) || CharSequenceUtil.isBlank(fileType)
+        || CharSequenceUtil.isBlank(fileName)){
+            log.error("文档解析必需字段缺失，filePath:{} fileType:{} fileName:{}", filePath,
+                    fileType, fileName);
         }
-        if (CharSequenceUtil.isBlank(xds.getOrgCode())){
+        if (CharSequenceUtil.isBlank(orgCode)){
             log.error("机构编码缺失");
         }
     }

@@ -198,7 +198,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      * @return xds信息
      * @see XdsStatusEnum
      */
-    public Xds updateXdsStatus(Xds xds, Integer status, String errorMsg) {
+    private Xds updateXdsStatus(Xds xds, Integer status, String errorMsg) {
         xds.setDataConvergeStatus(status);
         xds.setDataConvergeDesc(errorMsg);
         return updateXds(xds);
