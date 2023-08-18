@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -126,8 +125,7 @@ public class TaskServiceImpl implements TaskService {
             result = flinkService.database(flinkXds);
         }else if (FlinkTypeEnum.isFile(dto.getType())){
             FepFileInfoVo fileInfoVo = getFrontendRelation(config);
-            String filePath = CharSequenceUtil.isBlank(dto.getFilePath()) ? null : dto.getFilePath().substring(0, dto.getFilePath().length() - String.valueOf(dto.getXdsId()).length() -1);
-            fileInfoVo.setOriFileFromPath(filePath);
+            fileInfoVo.setOriFileFromPath(dto.getFilePath());
             fileInfoVo.setOriFileType("json");
             fileInfoVo.setOriFileName(String.valueOf(dto.getXdsId()));
             fileInfoVo.setStoredFilePath(fileInfoVo.getStoredFilePath() + SLASH + flinkXds.getOrgCode() + SLASH + flinkXds.getSysCode());

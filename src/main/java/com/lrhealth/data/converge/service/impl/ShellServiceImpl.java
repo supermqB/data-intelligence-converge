@@ -26,7 +26,7 @@ public class ShellServiceImpl implements ShellService {
     @Override
     public String execShell(FepFileInfoVo fepFileInfoVo) {
         String storedFileName = fepFileInfoVo.getXdsId() + "." + fepFileInfoVo.getOriFileType();
-        String oriFilePath = fepFileInfoVo.getOriFileFromPath() + SLASH + fepFileInfoVo.getOriFileName();
+        String oriFilePath = fepFileInfoVo.getOriFileFromPath() + fepFileInfoVo.getOriFileName();
 //        String storedFilePath = fepFileInfoVo.getStoredFilePath() + SLASH + storedFileName;
         String storedFilePath = fepFileInfoVo.getStoredFilePath();
         if (fepFileInfoVo.getFrontendIp().equals(NetUtil.getLocalhostStr())){
