@@ -40,7 +40,7 @@ public class ShellServiceImpl implements ShellService {
     private void cpExecShell(String oriFilePath, String storedFilePath, String storedFileName){
         // 解决解析目标目录不存在问题，先创建目录(暂时)
         List<String> mkdirCommand = new ArrayList<>();
-        mkdirCommand.add("mkdir");
+        mkdirCommand.add("mkdir -p");
         mkdirCommand.add(storedFilePath);
         ShellUtil.execCommand(mkdirCommand);
         List<String> command = new ArrayList<>();
@@ -57,7 +57,7 @@ public class ShellServiceImpl implements ShellService {
 
     private void scpExecShell(String oriFilePath, String storedFilePath, FepFileInfoVo fepFileInfoVo, String storedFileName){
         List<String> mkdirCommand = new ArrayList<>();
-        mkdirCommand.add("mkdir");
+        mkdirCommand.add("mkdir -p");
         mkdirCommand.add(storedFilePath);
         ShellUtil.execCommand(mkdirCommand);
         String sshpass = "sshpass -p '" + fepFileInfoVo.getFrontendPwd() + "' ";
