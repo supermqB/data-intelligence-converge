@@ -57,23 +57,17 @@ public class ShellServiceImpl implements ShellService {
 
     private void scpExecShell(String oriFilePath, String storedFilePath, FepFileInfoVo fepFileInfoVo, String storedFileName){
         List<String> mkdirCommand = new ArrayList<>();
-        mkdirCommand.add("mkdir -p");
-        mkdirCommand.add(storedFilePath);
+        mkdirCommand.add("mkdir -p " + storedFilePath);
         ShellUtil.execCommand(mkdirCommand);
         String sshpass = "sshpass -p '" + fepFileInfoVo.getFrontendPwd() + "' ";
         String fepMessage = fepFileInfoVo.getFrontendPort() + " " + fepFileInfoVo.getFrontendUsername() + "@" + fepFileInfoVo.getFrontendIp();
         List<String> command = new ArrayList<>();
         // sshpass -p 'password' scp -P 29022 rdcp@172.16.29.60:sourceFilePath(远程服务器原始路径) targetFilePath(汇聚服务器存储路径)
-        command.add(sshpass + "scp -P");
-        command.add(fepMessage + ":" + oriFilePath);
-        command.add(storedFilePath + SLASH + storedFileName);
+        command.add(sshpass + "scp -P " + fepMessage + ":" + oriFilePath + " " + storedFilePath + SLASH + storedFileName);
         ShellUtil.execCommand(command);
         List<String> mvCommand = new ArrayList<>();
         // sshpass -p '1q2w3e!Q@W#ERDCP' ssh -p 29022 rdcp@172.16.29.60 "mv 远程服务器原始路径 远程服务器备份路径"
-        mvCommand.add(sshpass + "ssh -p " + fepMessage);
-        mvCommand.add("mv");
-        mvCommand.add(oriFilePath);
-        mvCommand.add(backupFilePath);
+        mvCommand.add(sshpass + "ssh -p " + fepMessage + "mv " + oriFilePath + " " + backupFilePath);
         ShellUtil.execCommand(mvCommand);
     }
 
