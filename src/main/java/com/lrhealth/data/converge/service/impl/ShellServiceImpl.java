@@ -60,7 +60,7 @@ public class ShellServiceImpl implements ShellService {
         mkdirCommand.add("mkdir -p");
         mkdirCommand.add(storedFilePath);
         ShellUtil.execCommand(mkdirCommand);
-        String sshpass = "sshpass -p '" + fepFileInfoVo.getFrontendPwd() + "'";
+        String sshpass = "sshpass -p '" + fepFileInfoVo.getFrontendPwd() + "' ";
         String fepMessage = fepFileInfoVo.getFrontendPort() + " " + fepFileInfoVo.getFrontendUsername() + "@" + fepFileInfoVo.getFrontendIp();
         List<String> command = new ArrayList<>();
         // sshpass -p 'password' scp -P 29022 rdcp@172.16.29.60:sourceFilePath(远程服务器原始路径) targetFilePath(汇聚服务器存储路径)
