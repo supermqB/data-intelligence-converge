@@ -4,9 +4,11 @@ import cn.hutool.core.net.NetUtil;
 import com.lrhealth.data.converge.common.util.ShellUtil;
 import com.lrhealth.data.converge.model.FepFileInfoVo;
 import com.lrhealth.data.converge.service.ShellService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +19,7 @@ import static cn.hutool.core.text.StrPool.SLASH;
  * @date 2023-08-08
  */
 @Service
+@Slf4j
 public class ShellServiceImpl implements ShellService {
 
 
@@ -29,6 +32,11 @@ public class ShellServiceImpl implements ShellService {
         String oriFilePath = fepFileInfoVo.getOriFileFromPath() + fepFileInfoVo.getOriFileName();
 //        String storedFilePath = fepFileInfoVo.getStoredFilePath() + SLASH + storedFileName;
         String storedFilePath = fepFileInfoVo.getStoredFilePath();
+        File file = new File(storedFilePath);
+        if (!file.exists()) {
+            log.info("目录不存在，创建目录");
+            file.mkdirs();
+        }
         if (fepFileInfoVo.getFrontendIp().equals(NetUtil.getLocalhostStr())){
             cpExecShell(oriFilePath, storedFilePath, storedFileName);
         } else {
@@ -38,11 +46,6 @@ public class ShellServiceImpl implements ShellService {
     }
 
     private void cpExecShell(String oriFilePath, String storedFilePath, String storedFileName){
-        // 解决解析目标目录不存在问题，先创建目录(暂时)
-        List<String> mkdirCommand = new ArrayList<>();
-        mkdirCommand.add("mkdir -p");
-        mkdirCommand.add(storedFilePath);
-        ShellUtil.execCommand(mkdirCommand);
         List<String> command = new ArrayList<>();
         command.add("cp");
         command.add(oriFilePath);
@@ -56,9 +59,6 @@ public class ShellServiceImpl implements ShellService {
     }
 
     private void scpExecShell(String oriFilePath, String storedFilePath, FepFileInfoVo fepFileInfoVo, String storedFileName){
-        List<String> mkdirCommand = new ArrayList<>();
-        mkdirCommand.add("mkdir -p " + storedFilePath);
-        ShellUtil.execCommand(mkdirCommand);
         String sshpass = "sshpass -p '" + fepFileInfoVo.getFrontendPwd() + "' ";
         String fepMessage = fepFileInfoVo.getFrontendPort() + " " + fepFileInfoVo.getFrontendUsername() + "@" + fepFileInfoVo.getFrontendIp();
         List<String> command = new ArrayList<>();

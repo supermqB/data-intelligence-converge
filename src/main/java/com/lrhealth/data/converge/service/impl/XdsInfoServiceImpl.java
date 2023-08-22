@@ -12,12 +12,12 @@ import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.FepFileInfoVo;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
+import com.lrhealth.data.converge.service.DataTypeService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import org.springframework.stereotype.Service;
 
@@ -42,7 +42,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private XdsService xdsService;
 
     @Resource
-    private ConvergeConfigService configService;
+    private DataTypeService dataTypeService;
 
 
     @Override
@@ -58,6 +58,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         xds.setBatchNo(String.valueOf(taskDto.getXdsId()));
         xds.setDataConvergeEndTime(taskDto.getEndTime());
         xds.setOdsModelName(OdsModelUtil.getModelName(xds.getSysCode(), xds.getOdsTableName().toUpperCase()));
+        xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName()));
         if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())){
             xds.setDataCount(Integer.valueOf(taskDto.getCountNumber()));
         }
@@ -88,6 +89,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         xds.setBatchNo(IdUtil.randomUUID());
         xds.setDataConvergeEndTime(LocalDateTime.now());
         xds.setDataCount(Integer.valueOf(dto.getDataCount()));
+        xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName()));
         return updateXdsStatus(setFileInfo(xds, dto), XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
 
@@ -108,7 +110,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         Xds xds = Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .convergeMethod(fepFileInfoVo.getConvergeMethod())
-                .dataType(fepFileInfoVo.getDataType())
+//                .dataType(fepFileInfoVo.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
                 .orgCode(fepFileInfoVo.getOrgCode())
                 .sysCode(fepFileInfoVo.getSysCode())
@@ -156,7 +158,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         return Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .convergeMethod(config.getConvergeMethod())
-                .dataType(config.getDataType())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
                 .dataCount(isNotBlank(taskDto.getCountNumber()) ? Integer.parseInt(taskDto.getCountNumber()) : 0)
                 .orgCode(config.getOrgCode())

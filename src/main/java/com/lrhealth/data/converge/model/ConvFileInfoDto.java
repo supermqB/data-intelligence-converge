@@ -72,4 +72,8 @@ public class ConvFileInfoDto implements Serializable {
      */
     private String dataCount;
 
+    /**
+     * ods数据类型
+     */
+    private String dataType;
 }
