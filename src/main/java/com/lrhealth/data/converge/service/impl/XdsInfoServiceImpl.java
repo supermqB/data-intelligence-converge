@@ -164,6 +164,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .sysCode(config.getSysCode())
                 .dataConvergeStartTime(taskDto.getStartTime())
                 .odsTableName(taskDto.getOdsTableName())
+                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName().toUpperCase()))
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
