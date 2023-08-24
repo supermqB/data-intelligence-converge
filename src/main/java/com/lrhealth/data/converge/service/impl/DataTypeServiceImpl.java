@@ -23,8 +23,9 @@ public class DataTypeServiceImpl implements DataTypeService {
     @Resource
     private OriginalModelService originalModelService;
     @Override
-    public String getTableDataType(String odsTableName) {
-        List<OriginalModel> tableList = originalModelService.list(new LambdaQueryWrapper<OriginalModel>().eq(CharSequenceUtil.isNotBlank(odsTableName), OriginalModel::getNameEn, odsTableName));
+    public String getTableDataType(String odsTableName, String sysCode) {
+        List<OriginalModel> tableList = originalModelService.list(new LambdaQueryWrapper<OriginalModel>().eq(CharSequenceUtil.isNotBlank(odsTableName), OriginalModel::getNameEn, odsTableName)
+                .eq(CharSequenceUtil.isNotBlank(sysCode), OriginalModel::getSysCode, sysCode));
         if (tableList.size() != 1){
             throw new CommonException("originalModel查询{}错误", odsTableName);
         }

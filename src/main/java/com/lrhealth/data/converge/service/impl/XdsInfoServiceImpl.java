@@ -58,7 +58,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         xds.setBatchNo(String.valueOf(taskDto.getXdsId()));
         xds.setDataConvergeEndTime(taskDto.getEndTime());
         xds.setOdsModelName(OdsModelUtil.getModelName(xds.getSysCode(), xds.getOdsTableName().toUpperCase()));
-        xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName()));
+        xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName(), xds.getSysCode()));
         if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())){
             xds.setDataCount(Integer.valueOf(taskDto.getCountNumber()));
         }
@@ -89,7 +89,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         xds.setBatchNo(IdUtil.randomUUID());
         xds.setDataConvergeEndTime(LocalDateTime.now());
         xds.setDataCount(Integer.valueOf(dto.getDataCount()));
-        xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName()));
+        xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName(), xds.getSysCode()));
         return updateXdsStatus(setFileInfo(xds, dto), XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
 

@@ -6,5 +6,5 @@ package com.lrhealth.data.converge.service;
  */
 public interface DataTypeService {
 
-    String getTableDataType(String odsTableName);
+    String getTableDataType(String odsTableName, String sysCode);
 }
