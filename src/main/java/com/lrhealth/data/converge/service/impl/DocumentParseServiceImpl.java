@@ -1,6 +1,5 @@
 package com.lrhealth.data.converge.service.impl;
 
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
@@ -131,6 +130,9 @@ public class DocumentParseServiceImpl implements DocumentParseService {
         switch (file.getFileType()) {
             case "json":
                 odsAllJsonData = FileToJsonUtil.jsonToJson(file);
+                break;
+            case "csv":
+                odsAllJsonData = FileToJsonUtil.csvToJson(file);
                 break;
             case "xls":
             case "xlsx":
