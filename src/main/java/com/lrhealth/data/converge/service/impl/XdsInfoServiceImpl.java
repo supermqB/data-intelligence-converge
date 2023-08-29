@@ -169,7 +169,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         // 整合文件不知道表名的情况
         if (isNotBlank(taskDto.getOdsTableName())){
             xds.setOdsTableName(taskDto.getOdsTableName());
-            xds.setOdsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName().toUpperCase()));
+            xds.setOdsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName()));
         }
         return xds;
     }
