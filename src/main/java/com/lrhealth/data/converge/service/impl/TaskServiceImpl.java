@@ -1,15 +1,12 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.common.enums.conv.FlinkTypeEnum;
+import com.lrhealth.data.common.enums.conv.ConvergeTypeEnum;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
 import com.lrhealth.data.common.exception.CommonException;
-import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
-import com.lrhealth.data.converge.dao.entity.Frontend;
-import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
 import com.lrhealth.data.converge.dao.service.FrontendService;
@@ -24,13 +21,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import static cn.hutool.core.text.CharSequenceUtil.isNotBlank;
-import static cn.hutool.core.text.StrPool.DOT;
-import static cn.hutool.core.text.StrPool.SLASH;
 
 /**
  * <p>
@@ -45,14 +37,10 @@ import static cn.hutool.core.text.StrPool.SLASH;
 public class TaskServiceImpl implements TaskService {
     @Value("${spring.kafka.topic.xds}")
     private String topic;
-    @Value("${converge.filepath}")
-    private String storedFilePath;
     @Resource
     private XdsInfoService xdsInfoService;
     @Resource
     private KafkaTemplate<String, String> kafkaTemplate;
-    @Resource
-    private ProjectConvergeService proConvService;
     @Resource
     private ConvergeConfigService configService;
     @Resource
@@ -60,16 +48,22 @@ public class TaskServiceImpl implements TaskService {
     @Resource
     private FrontendService frontendService;
     @Resource
-    private DocumentParseService documentParseService;
+    private FileService fileService;
     @Resource
     private FlinkService flinkService;
     @Resource
-    private ShellService shellService;
+    private DataXService dataXService;
+    @Resource
+    private ConvConfigService convConfigService;
 
     @Override
-    public Xds createTask(@RequestBody TaskDto taskDto) {
-        ConvergeConfig config = getConfig(taskDto.getProjectId());
-        return xdsInfoService.createXdsInfo(taskDto, config);
+    public DataXExecDTO createTask(@RequestBody TaskDto taskDto) {
+        // 校验参数
+        if (CharSequenceUtil.isBlank(taskDto.getOdsTableName())){
+            throw new CommonException("ods表值为空");
+        }
+        // 返回dataX抽取所需参数
+        return dataXService.createTask(taskDto);
     }
 
     @Override
@@ -77,7 +71,7 @@ public class TaskServiceImpl implements TaskService {
         Xds xds;
         //TODO: 目前任务状态在调度中写死TRUE,后续应该通过读取datax配置得到数据抽取结果
         if (taskDto.isTaskStatus()) {
-            xds = xdsInfoService.updateXdsCompleted(taskDto);
+            xds = dataXService.updateTask(taskDto);
             xdsSendKafka(xds);
         } else {
             xds = xdsInfoService.updateXdsFailure(taskDto.getXdsId(), "dataX数据抽取失败");
@@ -85,30 +79,25 @@ public class TaskServiceImpl implements TaskService {
         return xds;
     }
 
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void fepConverge(String projectId) {
+        // 项目配置项，以及与前置机的关联
+        DataXExecDTO dataXExecDTO = convConfigService.getConfig(projectId, null, 1);
         // 获得文件列表
-        List<FepFileInfoVo> fepFileInfoVos = fileConverge(projectId);
-        fepFileInfoVos.forEach(fepFileInfoVo -> {
+        List<FileInfo> fepFileList = fepService.fepFileList(dataXExecDTO.getOriFilePath());
+        fepFileList.forEach(fileInfo -> {
             // 新建xds
-            Xds fileXds = xdsInfoService.createFileXds(fepFileInfoVo);
+            Xds fileXds = xdsInfoService.createFileXds(dataXExecDTO);
             // 文件搬运
-            fepFileInfoVo.setStoredFilePath(fepFileInfoVo.getStoredFilePath() + SLASH + fepFileInfoVo.getOrgCode() + SLASH +  fepFileInfoVo.getSysCode());
-            fepFileInfoVo.setXdsId(fileXds.getId());
-            String storedFileName = shellService.execShell(fepFileInfoVo);
-            ConvFileInfoDto convFileInfoDto =  ConvFileInfoDto.builder()
-                    .id(fepFileInfoVo.getXdsId()).oriFileName(fepFileInfoVo.getOriFileName()).oriFileSize(fepFileInfoVo.getOriFileSize())
-                    .oriFileFromIp(fepFileInfoVo.getFrontendIp()).oriFileType(fepFileInfoVo.getOriFileType())
-                    .storedFileName(storedFileName).storedFileType(fepFileInfoVo.getOriFileType())
-                    .storedFilePath(fepFileInfoVo.getStoredFilePath()).build();
-            // 更新xds文件信息
-            Xds xds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
-            // 数据解析落库
-            documentParseService.fileParseAndSave(xds.getId());
+            FileConvergeInfoDTO fileConfig = new FileConvergeInfoDTO();
+            BeanUtil.copyProperties(dataXExecDTO, fileConfig);
+            fileConfig.setOriFileName(fileInfo.getFileName());
+            fileConfig.setOriFileSize(BigDecimal.valueOf(fileInfo.getFileSize()));
+            fileConfig.setOriFileType(fileInfo.getFileName().substring(fileInfo.getFileName().lastIndexOf(".")));
+            Xds updatedXds = fileService.fileConverge(fileConfig, fileXds.getId());
             // 发送kafka
-            xdsSendKafka(xds);
+            xdsSendKafka(updatedXds);
         });
     }
 
@@ -116,49 +105,20 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(rollbackFor = Exception.class)
     public Xds flinkConverge(FlinkTaskDto dto) {
         Xds result = null;
-        ConvergeConfig config = configService.getOne(new LambdaQueryWrapper<ConvergeConfig>().eq(isNotBlank(dto.getSourceId()), ConvergeConfig::getSysCode, dto.getSourceId()));
-        if (ObjectUtil.isEmpty(config)){
+        DataXExecDTO dataXExecDTO = convConfigService.getConfig(null, dto.getSourceId(), dto.getType());
+        if (ObjectUtil.isEmpty(dataXExecDTO)){
             throw new CommonException("flink关联配置为空");
         }
-        Xds flinkXds = xdsInfoService.createFlinkXds(dto, config);
-        if (FlinkTypeEnum.isDataBase(dto.getType())){
+        Xds flinkXds = xdsInfoService.createFlinkXds(dto, dataXExecDTO);
+        if (ConvergeTypeEnum.isDataBase(dto.getType())){
             result = flinkService.database(flinkXds);
-        }else if (FlinkTypeEnum.isFile(dto.getType())){
-            FepFileInfoVo fileInfoVo = getFrontendRelation(config);
-            fileInfoVo.setOriFileFromPath(dto.getFilePath());
-            fileInfoVo.setOriFileType("json");
-            fileInfoVo.setOriFileName(String.valueOf(dto.getXdsId()));
-            fileInfoVo.setStoredFilePath(fileInfoVo.getStoredFilePath() + SLASH + flinkXds.getOrgCode() + SLASH + flinkXds.getSysCode());
-            fileInfoVo.setXdsId(flinkXds.getId());
-            result = flinkService.file(fileInfoVo);
+        }else if (ConvergeTypeEnum.isFile(dto.getType())){
+            result = flinkService.file(dataXExecDTO, flinkXds.getId(), dto.getFilePath());
         }
         xdsSendKafka(result == null ? new Xds() : result);
         return result;
     }
 
-
-    /**
-     * 组装文件与配置信息
-     * @param projectId 项目ID
-     * @return 前置机文件及信息
-     */
-    private List<FepFileInfoVo> fileConverge(String projectId) {
-        // 项目配置项，以及与前置机的关联
-        ConvergeConfig convergeConfig = getConfig(projectId);
-        FepFileInfoVo frontendRelation = getFrontendRelation(convergeConfig);
-        // 调用前置机接口
-        List<FileInfo> fepFileList = fepService.fepFileList(frontendRelation.getOriFileFromPath());
-        List<FepFileInfoVo> fepFileInfoVos = new ArrayList<>();
-        fepFileList.forEach(fileInfo -> {
-            FepFileInfoVo fepFileInfoVo = new FepFileInfoVo();
-            BeanUtil.copyProperties(frontendRelation, fepFileInfoVo);
-            fepFileInfoVo.setOriFileName(fileInfo.getFileName());
-            fepFileInfoVo.setOriFileType(fileInfo.getFileName().substring(fileInfo.getFileName().lastIndexOf(DOT) + 1));
-            fepFileInfoVo.setOriFileSize(BigDecimal.valueOf(fileInfo.getFileSize()));
-            fepFileInfoVos.add(fepFileInfoVo);
-        });
-        return fepFileInfoVos;
-    }
 
 
     /**
@@ -177,30 +137,6 @@ public class TaskServiceImpl implements TaskService {
             kafkaTemplate.send(topic, JSON.toJSONString(map));
             xdsInfoService.updateKafkaSent(xds);
         }
-    }
-
-    /**
-     * 获取配置信息
-     *
-     * @param projId 项目ID
-     * @return 配置信息
-     */
-    private ConvergeConfig getConfig(String projId) {
-        ProjectConvergeRelation relation = proConvService.getByProjId(projId);
-        return configService.getById(relation.getConvergeId());
-    }
-
-    /**
-     * 关联前置机和配置信息
-     */
-    private FepFileInfoVo getFrontendRelation(ConvergeConfig convergeConfig){
-        Frontend frontendConfig = frontendService.getByFrontenfCode(convergeConfig.getFrontendCode());
-        return FepFileInfoVo.builder().frontendIp(frontendConfig.getFrontendIp())
-                .frontendPort(frontendConfig.getFrontendPort()).frontendPwd(frontendConfig.getFrontendPwd())
-                .frontendUsername(frontendConfig.getFrontendUsername()).encryptionWay(convergeConfig.getEncryptionWay())
-                .zipFlag(convergeConfig.getZipFlag()).oriFileFromPath(frontendConfig.getFilePath())
-                .storedFilePath(convergeConfig.getStoredFilePath()).sysCode(convergeConfig.getSysCode()).orgCode(convergeConfig.getOrgCode())
-                .convergeMethod(convergeConfig.getConvergeMethod()).dataType(convergeConfig.getDataType()).build();
     }
 
 }

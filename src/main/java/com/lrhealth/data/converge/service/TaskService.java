@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.model.DataXExecDTO;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
 
@@ -20,7 +21,7 @@ public interface TaskService {
      * @param taskDto 任务信息
      * @return XDS信息
      */
-    Xds createTask(TaskDto taskDto);
+    DataXExecDTO createTask(TaskDto taskDto);
 
     /**
      * 更新任务状态

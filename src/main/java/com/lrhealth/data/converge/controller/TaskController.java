@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.model.DataXExecDTO;
 import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.TaskService;
@@ -24,28 +25,36 @@ public class TaskController {
 
     /**
      * 创建汇聚任务
-     * 任务调度中datax方式创建xds调用
+     * 任务调度中dataX方式创建xds调用
      *
      * @return 固定字符串
      */
     @PostMapping(value = "/create")
     public DolphinSchedulerReturnVO create(@RequestBody TaskDto dto) {
-        Xds xds = taskService.createTask(dto);
-        return new DolphinSchedulerReturnVO("200", xds);
+        try {
+            DataXExecDTO vo = taskService.createTask(dto);
+            return new DolphinSchedulerReturnVO("200", vo);
+        } catch (Exception e) {
+            return new DolphinSchedulerReturnVO("500", e);
+        }
     }
 
 
     /**
      * 完成汇聚任务
      * 主要用于更新状态
-     * 任务调度中datax方式更新xds调用
+     * 任务调度中dataX方式更新xds调用
      *
      * @return 固定字符串
      */
     @PostMapping(value = "/completed")
     public DolphinSchedulerReturnVO completed(@RequestBody TaskDto taskDto) {
-        Xds xds = taskService.updateTask(taskDto);
-        return new DolphinSchedulerReturnVO("200", xds);
+        try {
+            Xds xds = taskService.updateTask(taskDto);
+            return new DolphinSchedulerReturnVO("200", xds);
+        } catch (Exception e) {
+            return new DolphinSchedulerReturnVO("500", e);
+        }
     }
 
 

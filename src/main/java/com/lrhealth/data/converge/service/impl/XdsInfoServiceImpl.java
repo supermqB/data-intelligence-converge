@@ -10,11 +10,10 @@ import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.common.enums.conv.XdsStoredFileModeEnum;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
-import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
-import com.lrhealth.data.converge.model.FepFileInfoVo;
+import com.lrhealth.data.converge.model.DataXExecDTO;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DataTypeService;
@@ -46,7 +45,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
 
 
     @Override
-    public Xds createXdsInfo(TaskDto taskDto, ConvergeConfig config) {
+    public Xds createXdsInfo(TaskDto taskDto, DataXExecDTO config) {
         Xds xds = build(taskDto, config);
         xdsService.save(xds);
         return xds;
@@ -55,9 +54,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Override
     public Xds updateXdsCompleted(TaskDto taskDto) {
         Xds xds = getXdsInfoById(taskDto.getXdsId());
-        xds.setBatchNo(String.valueOf(taskDto.getXdsId()));
         xds.setDataConvergeEndTime(taskDto.getEndTime());
-        xds.setOdsModelName(OdsModelUtil.getModelName(xds.getSysCode(), xds.getOdsTableName().toUpperCase()));
         xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName(), xds.getSysCode()));
         if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())){
             xds.setDataCount(Integer.valueOf(taskDto.getCountNumber()));
@@ -90,7 +87,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         xds.setDataConvergeEndTime(LocalDateTime.now());
         xds.setDataCount(Integer.valueOf(dto.getDataCount()));
         xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName(), xds.getSysCode()));
-        return updateXdsStatus(setFileInfo(xds, dto), XdsStatusEnum.COMPLETED.getCode(), EMPTY);
+        return updateXdsStatus(xds, XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
 
     @Override
@@ -106,14 +103,13 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     }
 
     @Override
-    public Xds createFileXds(FepFileInfoVo fepFileInfoVo) {
+    public Xds createFileXds(DataXExecDTO dataXExecDTO) {
         Xds xds = Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
-                .convergeMethod(fepFileInfoVo.getConvergeMethod())
-//                .dataType(fepFileInfoVo.getDataType())
+                .convergeMethod(dataXExecDTO.getConvergeMethod())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
-                .orgCode(fepFileInfoVo.getOrgCode())
-                .sysCode(fepFileInfoVo.getSysCode())
+                .orgCode(dataXExecDTO.getOrgCode())
+                .sysCode(dataXExecDTO.getSysCode())
                 .dataConvergeStartTime(LocalDateTime.now())
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
                 .createTime(LocalDateTime.now())
@@ -124,18 +120,19 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     }
 
     @Override
-    public Xds createFlinkXds(FlinkTaskDto dto, ConvergeConfig config) {
+    public Xds createFlinkXds(FlinkTaskDto dto, DataXExecDTO config) {
         LocalDateTime convergeEndTime = Instant.ofEpochMilli(dto.getConvergeTime())
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
         Xds xds = Xds.builder()
                 .id(dto.getXdsId())
+                .batchNo(String.valueOf(dto.getXdsId()))
                 .dataConvergeEndTime(convergeEndTime)
                 .odsTableName(config.getSysCode() + "_" + dto.getTableName().toUpperCase())
                 .odsModelName(dto.getTableName())
                 .taskInstanceName(dto.getJobName())
                 .convergeMethod(config.getConvergeMethod())
-                .dataType(config.getDataType())
+                .dataType(dataTypeService.getTableDataType(dto.getTableName(), dto.getSourceId()))
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
                 .orgCode(config.getOrgCode())
                 .sysCode(config.getSysCode())
@@ -154,8 +151,8 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      * @param config  配置信息
      * @return XDS信息
      */
-    private Xds build(TaskDto taskDto, ConvergeConfig config) {
-        return Xds.builder()
+    private Xds build(TaskDto taskDto, DataXExecDTO config) {
+        Xds xds =  Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .convergeMethod(config.getConvergeMethod())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
@@ -163,12 +160,18 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .orgCode(config.getOrgCode())
                 .sysCode(config.getSysCode())
                 .dataConvergeStartTime(taskDto.getStartTime())
-                .odsTableName(taskDto.getOdsTableName())
-                .odsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName().toUpperCase()))
+                .dataConvergeStatus(XdsStatusEnum.INIT.getCode())
+                .batchNo(taskDto.getBatchNo())
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
                 .createTime(LocalDateTime.now())
                 .createBy(CommonConstant.DEFAULT_USER)
                 .build();
+        // 整合文件不知道表名的情况
+        if (isNotBlank(taskDto.getOdsTableName())){
+            xds.setOdsTableName(taskDto.getOdsTableName());
+            xds.setOdsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName().toUpperCase()));
+        }
+        return xds;
     }
 
     /**

@@ -1,9 +1,8 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
-import com.lrhealth.data.converge.model.FepFileInfoVo;
+import com.lrhealth.data.converge.model.DataXExecDTO;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
 
@@ -24,7 +23,7 @@ public interface XdsInfoService {
      * @param config  汇聚配置信息
      * @return XDS信息
      */
-    Xds createXdsInfo(TaskDto taskDto, ConvergeConfig config);
+    Xds createXdsInfo(TaskDto taskDto, DataXExecDTO config);
 
     /**
      * 更新状态为完成
@@ -78,12 +77,12 @@ public interface XdsInfoService {
     /**
      * 文件采集新增XDS，填充基本信息
      */
-    Xds createFileXds(FepFileInfoVo fepFileInfoVo);
+    Xds createFileXds(DataXExecDTO dataXExecDTO);
 
     /**
      * flinkCDC采集过程新建xds
      * @param dto flink采集信息
      * @return xds
      */
-    Xds createFlinkXds(FlinkTaskDto dto, ConvergeConfig config);
+    Xds createFlinkXds(FlinkTaskDto dto, DataXExecDTO dataXExecDTO);
 }

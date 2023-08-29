@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.net.NetUtil;
 import com.lrhealth.data.converge.common.util.ShellUtil;
 import com.lrhealth.data.converge.model.FepFileInfoVo;
+import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
 import com.lrhealth.data.converge.service.ShellService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,25 +23,23 @@ import static cn.hutool.core.text.StrPool.SLASH;
 @Slf4j
 public class ShellServiceImpl implements ShellService {
 
-
     @Value("${converge.backup}")
     private String backupFilePath;
 
     @Override
-    public String execShell(FepFileInfoVo fepFileInfoVo) {
-        String storedFileName = fepFileInfoVo.getXdsId() + "." + fepFileInfoVo.getOriFileType();
-        String oriFilePath = fepFileInfoVo.getOriFileFromPath() + fepFileInfoVo.getOriFileName();
-//        String storedFilePath = fepFileInfoVo.getStoredFilePath() + SLASH + storedFileName;
-        String storedFilePath = fepFileInfoVo.getStoredFilePath();
+    public String execShell(FileConvergeInfoDTO fileInfo, Long xdsId) {
+        String storedFileName = xdsId + "." + fileInfo.getOriFileType();
+        String oriFilePath = fileInfo.getOriFilePath() + "/" + fileInfo.getOriFileName();
+        String storedFilePath = fileInfo.getStoredFilePath() + "/" + storedFileName;
         File file = new File(storedFilePath);
         if (!file.exists()) {
             log.info("目录不存在，创建目录");
             file.mkdirs();
         }
-        if (fepFileInfoVo.getFrontendIp().equals(NetUtil.getLocalhostStr())){
+        if (fileInfo.getFrontendIp().equals(NetUtil.getLocalhostStr())){
             cpExecShell(oriFilePath, storedFilePath, storedFileName);
         } else {
-            scpExecShell(oriFilePath, storedFilePath, fepFileInfoVo, storedFileName);
+            shExec(fileInfo, oriFilePath, storedFilePath);
         }
         return storedFileName;
     }
@@ -69,6 +68,21 @@ public class ShellServiceImpl implements ShellService {
         // sshpass -p '1q2w3e!Q@W#ERDCP' ssh -p 29022 rdcp@172.16.29.60 "mv 远程服务器原始路径 远程服务器备份路径"
         mvCommand.add(sshpass + "ssh -p " + fepMessage + "mv " + oriFilePath + " " + backupFilePath);
         ShellUtil.execCommand(mvCommand);
+    }
+
+
+    private void shExec(FileConvergeInfoDTO fileInfo, String oriFilePath, String storedFilePath){
+        List<String> command = new ArrayList<>();
+        // bash file.sh 172.16.29.59 29022 rdcp pwd /tmp/file/sink/1692107170982477821 /tmp/file/json/1
+        command.add("bash");
+        command.add("/data/app/rdcp/lr-rd-rdcp-data-converge/file.sh");
+        command.add(fileInfo.getFrontendIp());
+        command.add(fileInfo.getFrontendPort());
+        command.add(fileInfo.getFrontendUsername());
+        command.add(fileInfo.getFrontendPwd());
+        command.add(oriFilePath);
+        command.add(storedFilePath);
+        ShellUtil.execCommand(command);
     }
 
 }

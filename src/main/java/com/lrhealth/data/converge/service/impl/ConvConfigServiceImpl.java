@@ -1,13 +1,22 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.ObjectUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lrhealth.data.common.enums.conv.ConvModeEnum;
+import com.lrhealth.data.common.enums.conv.ConvergeTypeEnum;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
+import com.lrhealth.data.converge.dao.entity.Frontend;
 import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
 import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
+import com.lrhealth.data.converge.dao.service.FrontendService;
 import com.lrhealth.data.converge.dao.service.ProjectConvergeRelationService;
+import com.lrhealth.data.converge.model.DataXExecDTO;
 import com.lrhealth.data.converge.service.ConvConfigService;
+import com.lrhealth.data.converge.service.ProjectConvergeService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -16,6 +25,9 @@ import java.util.stream.Collectors;
 
 import static cn.hutool.core.collection.CollUtil.isEmpty;
 import static cn.hutool.core.text.CharSequenceUtil.format;
+import static cn.hutool.core.text.CharSequenceUtil.isNotBlank;
+
+;
 
 /**
  * <p>
@@ -29,9 +41,12 @@ import static cn.hutool.core.text.CharSequenceUtil.format;
 public class ConvConfigServiceImpl implements ConvConfigService {
     @Resource
     private ConvergeConfigService configService;
-
     @Resource
     private ProjectConvergeRelationService relationService;
+    @Resource
+    private ProjectConvergeService proConvService;
+    @Resource
+    FrontendService frontendService;
 
     @Override
     public Page<ConvergeConfig> queryPage(Integer pageSize, Integer pageNo) {
@@ -58,4 +73,63 @@ public class ConvConfigServiceImpl implements ConvConfigService {
         }
         return config;
     }
+
+    @Override
+    public DataXExecDTO getConfig(String projectId, String sourceId, Integer taskModel) {
+        ConvergeConfig baseConfig;
+        // 任务调度中项目与配置的关联
+        if (CharSequenceUtil.isNotBlank(projectId)){
+            ProjectConvergeRelation relation = proConvService.getByProjId(projectId);
+            baseConfig = configService.getById(relation.getConvergeId());
+        }else {
+            baseConfig = configService.getOne(new LambdaQueryWrapper<ConvergeConfig>()
+                    .eq(isNotBlank(sourceId), ConvergeConfig::getSysCode, sourceId));
+        }
+        if (ObjectUtil.isNotNull(baseConfig)){
+            return convergeMode(baseConfig, taskModel);
+        }
+        return new DataXExecDTO();
+    }
+
+    private DataXExecDTO convergeMode(ConvergeConfig baseConfig, Integer taskModel){
+        // 前置机模式
+        if (ConvModeEnum.isFrontend(baseConfig.getConvergeMode())){
+            return frontendConfig(baseConfig, taskModel);
+        }
+        // 直连模式
+        return directConnectConfig(baseConfig, taskModel);
+    }
+
+
+    private DataXExecDTO frontendConfig(ConvergeConfig config, Integer taskModel){
+        DataXExecDTO dataXExecBO;
+        Frontend frontend = frontendService.getByFrontendCode(config.getFrontendCode());
+        // db
+        dataXExecBO = DataXExecDTO.builder()
+                .orgCode(config.getOrgCode()).sysCode(config.getSysCode()).convergeMethod(config.getConvergeMethod())
+                .frontendIp(frontend.getFrontendIp()).frontendPort(frontend.getFrontendPort())
+                .frontendUsername(frontend.getFrontendUsername()).frontendPwd(frontend.getFrontendPwd())
+                .build();
+        // file
+        if (ConvergeTypeEnum.isFile(taskModel)){
+            // 前置机目录/dataX生成的文件目录
+            dataXExecBO.setOriFilePath(frontend.getFilePath());
+            dataXExecBO.setStoredFilePath(config.getStoredFilePath());
+        }
+        return dataXExecBO;
+    }
+
+    private DataXExecDTO directConnectConfig(ConvergeConfig config, Integer taskModel){
+        DataXExecDTO dataXExecBO;
+        dataXExecBO = DataXExecDTO.builder()
+                .orgCode(config.getOrgCode()).sysCode(config.getSysCode())
+                .convergeMethod(config.getConvergeMethod()).build();
+        if (ConvergeTypeEnum.isFile(taskModel)){
+            // 直连模式，dataX生成文件的目录就是汇聚读取的目录
+            dataXExecBO.setOriFilePath(config.getStoredFilePath());
+            dataXExecBO.setStoredFilePath(config.getStoredFilePath());
+        }
+        return dataXExecBO;
+    }
+
 }

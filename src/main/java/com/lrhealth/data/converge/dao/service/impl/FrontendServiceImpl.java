@@ -26,7 +26,7 @@ import static cn.hutool.core.text.CharSequenceUtil.isBlank;
 public class FrontendServiceImpl extends ServiceImpl<FrontendMapper, Frontend> implements FrontendService {
 
     @Override
-    public Frontend getByFrontenfCode(String frontendCode) {
+    public Frontend getByFrontendCode(String frontendCode) {
         if (isBlank(frontendCode)) {
             throw new CommonException("前置机编码为空");
         }

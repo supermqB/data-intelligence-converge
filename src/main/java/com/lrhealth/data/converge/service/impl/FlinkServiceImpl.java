@@ -1,14 +1,12 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.ConvFileInfoDto;
-import com.lrhealth.data.converge.model.FepFileInfoVo;
+import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
 import com.lrhealth.data.converge.model.TaskDto;
-import com.lrhealth.data.converge.service.DocumentParseService;
-import com.lrhealth.data.converge.service.FlinkService;
-import com.lrhealth.data.converge.service.ShellService;
-import com.lrhealth.data.converge.service.XdsInfoService;
+import com.lrhealth.data.converge.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -27,10 +25,9 @@ public class FlinkServiceImpl implements FlinkService {
     private BeeBaseRepository beeBaseRepository;
     @Resource
     private XdsInfoService xdsInfoService;
+
     @Resource
-    private ShellService shellService;
-    @Resource
-    private DocumentParseService documentParseService;
+    private FileService fileService;
 
     @Override
     public Xds database(Xds xds){
@@ -45,14 +42,13 @@ public class FlinkServiceImpl implements FlinkService {
     }
 
     @Override
-    public Xds file(FepFileInfoVo fileInfoVo){
-        String storedFileName = shellService.execShell(fileInfoVo);
-        ConvFileInfoDto convFileInfoDto = ConvFileInfoDto.builder()
-                .id(fileInfoVo.getXdsId()).oriFileName(fileInfoVo.getOriFileName())
-                .oriFileFromIp(fileInfoVo.getFrontendIp()).oriFileType(fileInfoVo.getOriFileType()).storedFileName(storedFileName)
-                .storedFileType(fileInfoVo.getOriFileType()).storedFilePath(fileInfoVo.getStoredFilePath()).build();
-        Xds updatedFileXds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
-        return documentParseService.flinkFileParseAndSave(updatedFileXds);
+    public Xds file(DataXExecDTO dataXExecDTO, Long xdsId, String oriFilePath){
+        FileConvergeInfoDTO fileConfig = new FileConvergeInfoDTO();
+        BeanUtil.copyProperties(dataXExecDTO, fileConfig);
+        fileConfig.setOriFilePath(oriFilePath);
+        fileConfig.setOriFileType("json");
+        fileConfig.setOriFileName(String.valueOf(xdsId));
+        return fileService.flinkFileConverge(fileConfig, xdsId);
     }
 
 
