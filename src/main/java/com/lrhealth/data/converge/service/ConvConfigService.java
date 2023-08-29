@@ -2,7 +2,7 @@ package com.lrhealth.data.converge.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
-import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileExecInfoDTO;
 
 import java.util.List;
 
@@ -41,5 +41,5 @@ public interface ConvConfigService {
      */
     ConvergeConfig queryById(Long id);
 
-    DataXExecDTO getConfig(String projectId, String sourceId, Integer taskModel);
+    FileExecInfoDTO getConfig(String projectId, String sourceId, Integer taskModel);
 }

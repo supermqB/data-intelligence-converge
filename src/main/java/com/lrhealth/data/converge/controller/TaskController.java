@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.DolphinSchedulerReturnVO;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.TaskService;
@@ -32,7 +32,7 @@ public class TaskController {
     @PostMapping(value = "/create")
     public DolphinSchedulerReturnVO create(@RequestBody TaskDto dto) {
         try {
-            DataXExecDTO vo = taskService.createTask(dto);
+            FileExecInfoDTO vo = taskService.createTask(dto);
             return new DolphinSchedulerReturnVO("200", vo);
         } catch (Exception e) {
             return new DolphinSchedulerReturnVO("500", e);

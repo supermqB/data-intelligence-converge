@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DataXExecDTO {
+public class FileExecInfoDTO {
     /**
      *汇聚方式：1-接口模式，2-文件模式，3-队列模式，4-日志模式，5-视图模式，6-库表模式，7-自主模式
      */

@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileExecInfoDTO;
 
 /**
  * @author jinmengyu
@@ -11,5 +11,5 @@ public interface FlinkService {
 
     Xds database(Xds xds);
 
-    Xds file(DataXExecDTO dataXExecDTO, Long xdsId, String oriFilePath);
+    Xds file(FileExecInfoDTO fileExecInfoDTO, Long xdsId, String oriFilePath);
 }

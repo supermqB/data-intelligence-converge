@@ -14,7 +14,7 @@ import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
 import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
 import com.lrhealth.data.converge.dao.service.FrontendService;
 import com.lrhealth.data.converge.dao.service.ProjectConvergeRelationService;
-import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.service.ConvConfigService;
 import com.lrhealth.data.converge.service.ProjectConvergeService;
 import org.springframework.stereotype.Service;
@@ -75,7 +75,7 @@ public class ConvConfigServiceImpl implements ConvConfigService {
     }
 
     @Override
-    public DataXExecDTO getConfig(String projectId, String sourceId, Integer taskModel) {
+    public FileExecInfoDTO getConfig(String projectId, String sourceId, Integer taskModel) {
         ConvergeConfig baseConfig;
         // 任务调度中项目与配置的关联
         if (CharSequenceUtil.isNotBlank(projectId)){
@@ -88,10 +88,10 @@ public class ConvConfigServiceImpl implements ConvConfigService {
         if (ObjectUtil.isNotNull(baseConfig)){
             return convergeMode(baseConfig, taskModel);
         }
-        return new DataXExecDTO();
+        return new FileExecInfoDTO();
     }
 
-    private DataXExecDTO convergeMode(ConvergeConfig baseConfig, Integer taskModel){
+    private FileExecInfoDTO convergeMode(ConvergeConfig baseConfig, Integer taskModel){
         // 前置机模式
         if (ConvModeEnum.isFrontend(baseConfig.getConvergeMode())){
             return frontendConfig(baseConfig, taskModel);
@@ -101,11 +101,11 @@ public class ConvConfigServiceImpl implements ConvConfigService {
     }
 
 
-    private DataXExecDTO frontendConfig(ConvergeConfig config, Integer taskModel){
-        DataXExecDTO dataXExecBO;
+    private FileExecInfoDTO frontendConfig(ConvergeConfig config, Integer taskModel){
+        FileExecInfoDTO dataXExecBO;
         Frontend frontend = frontendService.getByFrontendCode(config.getFrontendCode());
         // db
-        dataXExecBO = DataXExecDTO.builder()
+        dataXExecBO = FileExecInfoDTO.builder()
                 .orgCode(config.getOrgCode()).sysCode(config.getSysCode()).convergeMethod(config.getConvergeMethod())
                 .frontendIp(frontend.getFrontendIp()).frontendPort(frontend.getFrontendPort())
                 .frontendUsername(frontend.getFrontendUsername()).frontendPwd(frontend.getFrontendPwd())
@@ -119,9 +119,9 @@ public class ConvConfigServiceImpl implements ConvConfigService {
         return dataXExecBO;
     }
 
-    private DataXExecDTO directConnectConfig(ConvergeConfig config, Integer taskModel){
-        DataXExecDTO dataXExecBO;
-        dataXExecBO = DataXExecDTO.builder()
+    private FileExecInfoDTO directConnectConfig(ConvergeConfig config, Integer taskModel){
+        FileExecInfoDTO dataXExecBO;
+        dataXExecBO = FileExecInfoDTO.builder()
                 .orgCode(config.getOrgCode()).sysCode(config.getSysCode())
                 .convergeMethod(config.getConvergeMethod()).build();
         if (ConvergeTypeEnum.isFile(taskModel)){

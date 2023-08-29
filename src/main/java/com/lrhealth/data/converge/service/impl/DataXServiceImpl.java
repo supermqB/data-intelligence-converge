@@ -5,7 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.lrhealth.data.common.enums.conv.ConvergeTypeEnum;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.ConvConfigService;
@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Service
 public class DataXServiceImpl implements DataXService {
-    private static ConcurrentMap<Long, DataXExecDTO> dataXConfigMap = new ConcurrentHashMap<>();
+    private static ConcurrentMap<Long, FileExecInfoDTO> dataXConfigMap = new ConcurrentHashMap<>();
     @Resource
     ConvConfigService configService;
     @Resource
@@ -32,9 +32,9 @@ public class DataXServiceImpl implements DataXService {
     @Resource
     FileService fileService;
     @Override
-    public DataXExecDTO createTask(TaskDto taskDto) {
+    public FileExecInfoDTO createTask(TaskDto taskDto) {
         // dataX所需要的配置
-        DataXExecDTO base = configService.getConfig(taskDto.getProjectId(), null, taskDto.getTaskModel());
+        FileExecInfoDTO base = configService.getConfig(taskDto.getProjectId(), null, taskDto.getTaskModel());
         Xds xds = xdsInfoService.createXdsInfo(taskDto, base);
         base.setXdsId(xds.getId());
         base.setOdsModelName(xds.getOdsModelName());
@@ -50,11 +50,11 @@ public class DataXServiceImpl implements DataXService {
         if (ConvergeTypeEnum.isFile(taskDto.getTaskModel())){
             // 开始文件解析流程
             FileConvergeInfoDTO fileConfig = new FileConvergeInfoDTO();
-            DataXExecDTO dataXExecDTO = dataXConfigMap.get(taskDto.getXdsId());
-            if (ObjectUtil.isNull(dataXExecDTO)){
+            FileExecInfoDTO fileExecInfoDTO = dataXConfigMap.get(taskDto.getXdsId());
+            if (ObjectUtil.isNull(fileExecInfoDTO)){
                 throw new CommonException("xdsId配置不存在");
             }
-            BeanUtil.copyProperties(dataXExecDTO, fileConfig);
+            BeanUtil.copyProperties(fileExecInfoDTO, fileConfig);
             fileConfig.setOriFileName(taskDto.getOriFileName());
             fileConfig.setOriFileType("csv");
             fileService.fileConverge(fileConfig, taskDto.getXdsId());

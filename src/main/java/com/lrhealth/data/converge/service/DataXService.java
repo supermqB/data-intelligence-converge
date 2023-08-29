@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.TaskDto;
 
 /**
@@ -20,7 +20,7 @@ public interface DataXService {
      * @param taskDto
      * @return
      */
-    DataXExecDTO createTask(TaskDto taskDto);
+    FileExecInfoDTO createTask(TaskDto taskDto);
 
     Xds updateTask(TaskDto taskDto);
 

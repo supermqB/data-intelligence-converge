@@ -3,7 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.*;
@@ -42,9 +42,9 @@ public class FlinkServiceImpl implements FlinkService {
     }
 
     @Override
-    public Xds file(DataXExecDTO dataXExecDTO, Long xdsId, String oriFilePath){
+    public Xds file(FileExecInfoDTO fileExecInfoDTO, Long xdsId, String oriFilePath){
         FileConvergeInfoDTO fileConfig = new FileConvergeInfoDTO();
-        BeanUtil.copyProperties(dataXExecDTO, fileConfig);
+        BeanUtil.copyProperties(fileExecInfoDTO, fileConfig);
         fileConfig.setOriFilePath(oriFilePath);
         fileConfig.setOriFileType("json");
         fileConfig.setOriFileName(String.valueOf(xdsId));

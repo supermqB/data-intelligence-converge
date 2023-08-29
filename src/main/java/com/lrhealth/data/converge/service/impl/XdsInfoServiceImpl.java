@@ -13,7 +13,7 @@ import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
-import com.lrhealth.data.converge.model.DataXExecDTO;
+import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.DataTypeService;
@@ -45,7 +45,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
 
 
     @Override
-    public Xds createXdsInfo(TaskDto taskDto, DataXExecDTO config) {
+    public Xds createXdsInfo(TaskDto taskDto, FileExecInfoDTO config) {
         Xds xds = build(taskDto, config);
         xdsService.save(xds);
         return xds;
@@ -103,13 +103,13 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     }
 
     @Override
-    public Xds createFileXds(DataXExecDTO dataXExecDTO) {
+    public Xds createFileXds(FileExecInfoDTO fileExecInfoDTO) {
         Xds xds = Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
-                .convergeMethod(dataXExecDTO.getConvergeMethod())
+                .convergeMethod(fileExecInfoDTO.getConvergeMethod())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
-                .orgCode(dataXExecDTO.getOrgCode())
-                .sysCode(dataXExecDTO.getSysCode())
+                .orgCode(fileExecInfoDTO.getOrgCode())
+                .sysCode(fileExecInfoDTO.getSysCode())
                 .dataConvergeStartTime(LocalDateTime.now())
                 .kafkaSendFlag(KafkaSendFlagEnum.NONE.getCode())
                 .createTime(LocalDateTime.now())
@@ -120,7 +120,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     }
 
     @Override
-    public Xds createFlinkXds(FlinkTaskDto dto, DataXExecDTO config) {
+    public Xds createFlinkXds(FlinkTaskDto dto, FileExecInfoDTO config) {
         LocalDateTime convergeEndTime = Instant.ofEpochMilli(dto.getConvergeTime())
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
@@ -151,7 +151,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      * @param config  配置信息
      * @return XDS信息
      */
-    private Xds build(TaskDto taskDto, DataXExecDTO config) {
+    private Xds build(TaskDto taskDto, FileExecInfoDTO config) {
         Xds xds =  Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .convergeMethod(config.getConvergeMethod())

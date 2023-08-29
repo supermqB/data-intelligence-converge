@@ -57,7 +57,7 @@ public class TaskServiceImpl implements TaskService {
     private ConvConfigService convConfigService;
 
     @Override
-    public DataXExecDTO createTask(@RequestBody TaskDto taskDto) {
+    public FileExecInfoDTO createTask(@RequestBody TaskDto taskDto) {
         // 校验参数
         if (CharSequenceUtil.isBlank(taskDto.getOdsTableName())){
             throw new CommonException("ods表值为空");
@@ -83,15 +83,15 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(rollbackFor = Exception.class)
     public void fepConverge(String projectId) {
         // 项目配置项，以及与前置机的关联
-        DataXExecDTO dataXExecDTO = convConfigService.getConfig(projectId, null, 1);
+        FileExecInfoDTO fileExecInfoDTO = convConfigService.getConfig(projectId, null, 1);
         // 获得文件列表
-        List<FileInfo> fepFileList = fepService.fepFileList(dataXExecDTO.getOriFilePath());
+        List<FileInfo> fepFileList = fepService.fepFileList(fileExecInfoDTO.getOriFilePath());
         fepFileList.forEach(fileInfo -> {
             // 新建xds
-            Xds fileXds = xdsInfoService.createFileXds(dataXExecDTO);
+            Xds fileXds = xdsInfoService.createFileXds(fileExecInfoDTO);
             // 文件搬运
             FileConvergeInfoDTO fileConfig = new FileConvergeInfoDTO();
-            BeanUtil.copyProperties(dataXExecDTO, fileConfig);
+            BeanUtil.copyProperties(fileExecInfoDTO, fileConfig);
             fileConfig.setOriFileName(fileInfo.getFileName());
             fileConfig.setOriFileSize(BigDecimal.valueOf(fileInfo.getFileSize()));
             fileConfig.setOriFileType(fileInfo.getFileName().substring(fileInfo.getFileName().lastIndexOf(".")));
@@ -105,15 +105,15 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(rollbackFor = Exception.class)
     public Xds flinkConverge(FlinkTaskDto dto) {
         Xds result = null;
-        DataXExecDTO dataXExecDTO = convConfigService.getConfig(null, dto.getSourceId(), dto.getType());
-        if (ObjectUtil.isEmpty(dataXExecDTO)){
+        FileExecInfoDTO fileExecInfoDTO = convConfigService.getConfig(null, dto.getSourceId(), dto.getType());
+        if (ObjectUtil.isEmpty(fileExecInfoDTO)){
             throw new CommonException("flink关联配置为空");
         }
-        Xds flinkXds = xdsInfoService.createFlinkXds(dto, dataXExecDTO);
+        Xds flinkXds = xdsInfoService.createFlinkXds(dto, fileExecInfoDTO);
         if (ConvergeTypeEnum.isDataBase(dto.getType())){
             result = flinkService.database(flinkXds);
         }else if (ConvergeTypeEnum.isFile(dto.getType())){
-            result = flinkService.file(dataXExecDTO, flinkXds.getId(), dto.getFilePath());
+            result = flinkService.file(fileExecInfoDTO, flinkXds.getId(), dto.getFilePath());
         }
         xdsSendKafka(result == null ? new Xds() : result);
         return result;
