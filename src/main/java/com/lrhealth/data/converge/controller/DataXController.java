@@ -32,7 +32,7 @@ public class DataXController {
 
     @PostMapping("/exec")
     public ResultBase execJson(@RequestParam("json") String json,
-                                             @RequestParam("jsonPath") String jsonPath){
+                                 @RequestParam("jsonPath") String jsonPath){
         try {
             dataXService.execDataX(json, jsonPath);
             return ResultBase.success();
