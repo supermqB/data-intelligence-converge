@@ -26,6 +26,11 @@ public class ShellServiceImpl implements ShellService {
     @Value("${converge.backup}")
     private String backupFilePath;
 
+    @Value("${datax.softpath}")
+    private String dataxSoftPath;
+    @Value("${datax.exec}")
+    private String dataxExecFile;
+
     @Override
     public String execShell(FileConvergeInfoDTO fileInfo, Long xdsId) {
         String storedFileName = xdsId + "." + fileInfo.getOriFileType();
@@ -42,6 +47,15 @@ public class ShellServiceImpl implements ShellService {
             shExec(fileInfo, oriFilePath, storedFilePath);
         }
         return storedFileName;
+    }
+
+    @Override
+    public String dataXExec(String json, String filePath) {
+        List<String> command = new ArrayList<>();
+        command.add("python");
+        command.add(dataxSoftPath + dataxExecFile);
+        command.add(filePath + "/" + json);
+        return ShellUtil.execCommand(command);
     }
 
     private void cpExecShell(String oriFilePath, String storedFilePath, String storedFileName){

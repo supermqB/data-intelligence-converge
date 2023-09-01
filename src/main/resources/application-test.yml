@@ -138,3 +138,7 @@ fep:
   port: 18081
   fileScan: /file/scan
 
+datax:
+  softpath: /opt/soft/datax/
+  exec: bin/datax.py
+

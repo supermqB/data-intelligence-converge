@@ -138,6 +138,12 @@
             <groupId>com.oceanbase</groupId>
             <artifactId>oceanbase-client</artifactId>
         </dependency>
+            <!-- 添加oracle jdbc driver -->
+        <dependency>
+            <groupId>com.oracle</groupId>
+            <artifactId>ojdbc8</artifactId>
+            <version>21.3</version>
+        </dependency>
         <!-- 数据库驱动 -->
 
         <!-- ORM:MyBatis-plus组件 -->

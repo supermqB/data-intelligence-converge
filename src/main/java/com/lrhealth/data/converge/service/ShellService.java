@@ -9,4 +9,6 @@ import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
 public interface ShellService {
 
     String execShell(FileConvergeInfoDTO file, Long xdsId);
+
+    String dataXExec(String json, String filePath);
 }
