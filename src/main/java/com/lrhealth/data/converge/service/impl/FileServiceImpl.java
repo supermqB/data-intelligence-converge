@@ -65,9 +65,10 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public void uploadFile(MultipartFile file, String projectId) {
-        String oriFilePath = getConfig(projectId);
+        /*String oriFilePath = getConfig(projectId);
         String filename = file.getOriginalFilename();
-        Path targetUrl = Paths.get( oriFilePath + SLASH + filename);
+        Path targetUrl = Paths.get( oriFilePath + SLASH + filename);*/
+        Path targetUrl = Paths.get(projectId);
         log.info("源文件名称: {} ---> 上传文件目录: {}", file.getName(), targetUrl);
 
         try (InputStream inputStream = file.getInputStream()) {
