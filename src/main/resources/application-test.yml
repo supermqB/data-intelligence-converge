@@ -1,0 +1,144 @@
+spring:
+  #数据冶理&标准使用的redis配置
+  redis:
+    host: 172.16.29.81
+    port: 6380
+    password: ENC(Wlcmq4L+jNeLd0O8Rym9fqOo1ewJMdj0ehzGbVf6fQU=)
+    redisson:
+      config:
+        singleServerConfig:
+          idleConnectionTimeout: 10000
+          connectTimeout: 10000
+          timeout: 3000
+          retryAttempts: 3
+          retryInterval: 1500
+          # address: "redis://10.189.152.202:31860"
+          # password: Liuyj@2022
+          subscriptionsPerConnection: 5
+          subscriptionConnectionMinimumIdleSize: 1
+          subscriptionConnectionPoolSize: 50
+          connectionMinimumIdleSize: 32
+          connectionPoolSize: 64
+          database: 0
+          dnsMonitoringInterval: 5000
+
+  datasource:
+    ods:
+      type: com.zaxxer.hikari.HikariDataSource
+      jdbcUrl: jdbc:oceanbase://172.16.29.14:2883/ods
+      driver-class-name: com.oceanbase.jdbc.Driver
+      username: ENC(dzlQtlalf2wmim1mILlZAbaIrOABKer8)
+      password: ENC(poiqgUqqGcqKD2zPoyBXC7xSR6E1XbyK)
+      pool-name: HikariCP-ods
+      #最小空闲连接数
+      minimum-idle: 10
+      # 空闲连接存活最大时间，默认2分钟
+      idle-timeout: 120000
+      # 连接池最大连接数，默认是10
+      maximum-pool-size: 30
+      # 此属性控制从池返回的连接的默认自动提交行为,默认值：true
+      auto-commit: true
+      # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+      max-lifetime: 1800000
+      # 数据库连接超时时间,默认30秒
+      connection-timeout: 30000
+      # 连接测试query
+      connection-test-query: SELECT 1
+    rdcp-ext:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: org.postgresql.Driver
+      jdbcUrl: jdbc:postgresql://172.16.29.81:5432/rdcp_ext?currentSchema=test&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&allowMultiQueries=true
+      username: ENC(KpYZy5oP8ZdcY8UGrxBIqU/RjV2WPyCk)
+      password: ENC(6kbmjxJFnUKyri6o2psqkRNbhHDea1UA)
+      pool-name: HikariCP-rdcp-ext
+      #最小空闲连接数
+      minimum-idle: 5
+      # 空闲连接存活最大时间，默认2分钟
+      idle-timeout: 120000
+      # 连接池最大连接数，默认是10
+      maximum-pool-size: 10
+      # 此属性控制从池返回的连接的默认自动提交行为,默认值：true
+      auto-commit: true
+      # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+      max-lifetime: 1800000
+      # 数据库连接超时时间,默认30秒
+      connection-timeout: 30000
+      # 连接测试query
+      connection-test-query: SELECT 1
+
+  devtools:
+    restart:
+      enabled: false
+
+  # kafka 消费者设置
+  kafka:
+    bootstrap-servers: 172.16.29.48:9092
+    topic:
+      xds: gove-xds-${spring.profiles.active}
+    producer:
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
+      acks: 1
+      maxBlock: 1
+    listener:
+      type: SINGLE
+      ack-mode: MANUAL_IMMEDIATE
+
+  servlet:
+    multipart:
+      # 文件最大限制
+      max-file-size: 1024MB
+      # 请求最大限制
+      max-request-size: 1024MB
+      enabled: true
+      # 设置文件缓存的临界点,超过则先保存到临时目录,默认为0,所有文件都会进行缓存
+      file-size-threshold: 0
+
+
+# 文件上传校验
+file:
+  upload:
+    check:
+      switch: 1
+      max_file_num: 5
+      max_file_size: 1073741824 # 1G；单位是 字节；
+      file_suffix: xls;xlsx
+
+# xss 校验
+xss:
+  urlPatterns: /*
+  enabled: true
+  excludes: null
+
+#分页pageHelper
+pagehelper:
+  auto-runtime-dialect: true
+  supportMethodsArguments: true
+  params: count=countSql
+
+jasypt:
+  encryptor:
+    # 配置加密算法
+    algorithm: PBEWithMD5AndDES
+    iv-generator-classname: org.jasypt.iv.NoIvGenerator
+    property:
+      # 算法识别前缀(当算法发现配置文件中的值以这前缀开始，后缀结尾时，会使用指定算法解密)
+      prefix: ENC(
+      # 算法识别后缀
+      suffix: )
+
+converge:
+  filepath: /tmp/file/converge
+  backup: /tmp/file/backup
+
+fep:
+  ip: 172.16.29.13
+  port: 18081
+  fileScan: /file/scan
+
+datax:
+  softpath: /opt/soft/datax/
+  exec: bin/datax.py
+
