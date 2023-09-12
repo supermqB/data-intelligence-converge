@@ -1,0 +1,45 @@
+{
+  "job": {
+    "content": [
+      {
+        "reader": {
+          "name": "readerPlugin-reader",
+          "parameter": {
+            "username": "readerUsername",
+            "password": "readerPassword",
+            "connection": [
+              {
+                "querySql": [
+                  "readerQuerySql"
+                ],
+                "jdbcUrl": [
+                  "readerJdbcUrl"
+                ]
+              }
+            ]
+          }
+        },
+        "writer": {
+          "name": "txtfilewriter",
+          "parameter": {
+            "path":"fileSavePath",
+            "fileName":"readerTableName_",
+            "writeMode":"truncate",
+            "fileFormat":"csv",
+            "encoding":"utf-8",
+            "fieldDelimiter":",",
+            "nullFormat":"null",
+            "header":[
+              csvHeader
+            ]
+          }
+        }
+      }
+    ],
+    "setting": {
+      "speed": {
+        "channel": 4
+      }
+    }
+  }
+}
