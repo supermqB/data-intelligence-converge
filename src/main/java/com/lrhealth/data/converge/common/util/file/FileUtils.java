@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.common.util.file;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ZipUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -210,35 +211,6 @@ public class FileUtils {
     }
 
     /**
-     * 拆分文件
-     *
-     * @param fileName 待拆分的完整文件名
-     * @param byteSize 按多少字节大小拆分
-     * @param aesKey
-     * @return 拆分后的文件名列表
-     * @throws IOException
-     */
-    public List<String> splitBySize(String fileName, int byteSize, byte[] aesKey)
-            throws IOException {
-        List<String> parts = new ArrayList<String>();
-        File file = new File(fileName);
-        int count = (int) Math.ceil(file.length() / (double) byteSize);
-        int countLen = (count + "").length();
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(count,
-                count * 3, 1, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<Runnable>(count * 2));
-
-        for (int i = 0; i < count; i++) {
-            String partFileName = file.getName() + "."
-                    + leftPad((i + 1) + "", countLen, '0') + ".part";
-            threadPool.execute(new SplitRunnable(byteSize, i * byteSize,
-                    partFileName, file, aesKey));
-            parts.add(partFileName);
-        }
-        return parts;
-    }
-
-    /**
      * 合并文件
      *
      * @param dirPath        拆分文件所在目录名
@@ -261,7 +233,7 @@ public class FileUtils {
         randomAccessFile.close();
 
         ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
-                partFiles.size(), partFiles.size() * 3, 1, TimeUnit.SECONDS,
+                partFiles.size() / 2, partFiles.size() * 3 / 2, 1, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<Runnable>(partFiles.size() * 2));
 
         for (int i = 0; i < partFiles.size(); i++) {
@@ -280,52 +252,6 @@ public class FileUtils {
     private class FileComparator implements Comparator<File> {
         public int compare(File o1, File o2) {
             return o1.getName().compareToIgnoreCase(o2.getName());
-        }
-    }
-
-    /**
-     * 分割处理Runnable
-     *
-     * @author yjmyzz@126.com
-     *
-     */
-    private class SplitRunnable implements Runnable {
-        int byteSize;
-        String partFileName;
-        File originFile;
-        int startPos;
-        byte[] aesKey;
-
-        public SplitRunnable(int byteSize, int startPos, String partFileName,
-                             File originFile, byte[] aesKey) {
-            this.startPos = startPos;
-            this.byteSize = byteSize;
-            this.partFileName = partFileName;
-            this.originFile = originFile;
-            this.aesKey = aesKey;
-        }
-
-        public void run() {
-            RandomAccessFile rFile;
-            OutputStream os;
-            try {
-                rFile = new RandomAccessFile(originFile, "r");
-                byte[] b = new byte[byteSize];
-                rFile.seek(startPos);// 移动指针到每“段”开头
-                int s = rFile.read(b);
-                if(s < b.length){
-                    b = ArrayUtil.sub(b,0,s);
-                }
-                byte[] gzip = ZipUtil.gzip(b);
-                AES aes = SecureUtil.aes(aesKey);
-                byte[] encrypt = aes.encrypt(gzip);
-                os = new FileOutputStream(partFileName);
-                os.write(encrypt, 0, encrypt.length);
-                os.flush();
-                os.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -354,16 +280,21 @@ public class FileUtils {
                 rFile = new RandomAccessFile(mergeFileName, "rw");
                 rFile.seek(startPos);
                 FileInputStream fs = new FileInputStream(partFile);
-                byte[] b = new byte[fs.available()];
-                fs.read(b);
                 AES aes = SecureUtil.aes(aesKey);
-                byte[] decrypt = aes.decrypt(b);
-                byte[] bytes = ZipUtil.unGzip(decrypt);
-                fs.close();
-                rFile.write(bytes);
+                FileOutputStream fileOutputStream = new FileOutputStream(partFile.getName() + ".temp.zip");
+                aes.decrypt(fs,fileOutputStream,true);
+                File unzip = ZipUtil.unzip(partFile.getName() + ".temp.zip");
+                FileInputStream fileInputStream = new FileInputStream(unzip);
+
+                byte[] b = new byte[2048];
+                while (fileInputStream.read(b) != -1) {
+                    rFile.write(b);
+                }
+
                 rFile.close();
                 int i = FILE_SIZE.get() + 1;
                 FILE_SIZE.set(i);
+                FileUtils.delete(partFile.getName());
             } catch (IOException e) {
                 e.printStackTrace();
             }
