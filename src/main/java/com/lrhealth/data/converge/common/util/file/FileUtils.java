@@ -7,6 +7,8 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -281,10 +283,13 @@ public class FileUtils {
                 rFile.seek(startPos);
                 FileInputStream fs = new FileInputStream(partFile);
                 AES aes = SecureUtil.aes(aesKey);
-                FileOutputStream fileOutputStream = new FileOutputStream(partFile.getName() + ".temp.zip");
-                aes.decrypt(fs,fileOutputStream,true);
-                File unzip = ZipUtil.unzip(partFile.getName() + ".temp.zip");
-                FileInputStream fileInputStream = new FileInputStream(unzip);
+                aes.decrypt(fs, Files.newOutputStream(Paths.get("C:\\work\\" + partFile.getName() + ".zip")),true);
+                fs.close();
+                partFile.delete();
+                File unzip = ZipUtil.unzip("C:\\work\\" + partFile.getName() + ".zip");
+                FileInputStream fileInputStream =
+                        new FileInputStream(FileUtil.file(unzip.getPath() +"\\"+partFile.getName()+
+                        ".temp"));
 
                 byte[] b = new byte[2048];
                 while (fileInputStream.read(b) != -1) {
@@ -292,9 +297,13 @@ public class FileUtils {
                 }
 
                 rFile.close();
+                fileInputStream.close();
                 int i = FILE_SIZE.get() + 1;
                 FILE_SIZE.set(i);
                 FileUtils.delete(partFile.getName());
+                unzip.delete();
+                FileUtils.delete(unzip.getName());
+                FileUtils.delete(partFile.getName()+ ".zip");
             } catch (IOException e) {
                 e.printStackTrace();
             }

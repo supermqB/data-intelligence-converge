@@ -109,7 +109,7 @@ public class DownloadFileTask {
                     FileUtils fileUtils = new FileUtils();
                     FILE_SIZE.set(0);
                     try {
-                        fileUtils.mergePartFiles("C:\\work\\", ".zip",
+                        fileUtils.mergePartFiles("C:\\work\\", ".part",
                                 1024*1024*200, "C:\\work\\" + "new.csv", Base64Decoder.decode(s));
                     } catch (IOException e) {
                         throw new RuntimeException(e);
