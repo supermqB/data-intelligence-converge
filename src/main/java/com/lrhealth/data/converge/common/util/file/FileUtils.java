@@ -300,10 +300,9 @@ public class FileUtils {
                 fileInputStream.close();
                 int i = FILE_SIZE.get() + 1;
                 FILE_SIZE.set(i);
-                FileUtils.delete(partFile.getName());
-                unzip.delete();
-                FileUtils.delete(unzip.getName());
-                FileUtils.delete(partFile.getName()+ ".zip");
+                FileUtils.delete("C:\\work\\" +unzip.getName());
+                FileUtils.delete("C:\\work\\" + partFile.getName()+ ".zip");
+                FileUtil.del("C:\\work\\" + partFile.getName());
             } catch (IOException e) {
                 e.printStackTrace();
             }
