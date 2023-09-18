@@ -26,7 +26,8 @@ import javax.sql.DataSource;
  */
 @Slf4j
 @Configuration
-@MapperScan(basePackages = {"com.lrhealth.data.model.*.mapper", "com.lrhealth.data.converge.dao.mapper"},
+@MapperScan(basePackages = {"com.lrhealth.data.model.*.mapper", "com.lrhealth.data.converge.dao.mapper",
+"com.lrhealth.data.converge.scheduled.dao.mapper"},
         sqlSessionFactoryRef = "rdcpExtSqlSessionFactory")
 public class RdcpExtDataSourceConfig {
 
