@@ -292,8 +292,9 @@ public class FileUtils {
                         ".temp"));
 
                 byte[] b = new byte[2048];
-                while (fileInputStream.read(b) != -1) {
-                    rFile.write(b);
+                int len;
+                while ((len = fileInputStream.read(b)) != -1) {
+                    rFile.write(b, 0, len);
                 }
 
                 rFile.close();

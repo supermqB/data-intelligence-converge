@@ -110,7 +110,7 @@ public class DownloadFileTask {
                     FILE_SIZE.set(0);
                     try {
                         fileUtils.mergePartFiles("C:\\work\\", ".part",
-                                1024*1024*200, "C:\\work\\" + "new.csv", Base64Decoder.decode(s));
+                                2, "C:\\work\\" + "new.myfile", Base64Decoder.decode(s));
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -122,6 +122,8 @@ public class DownloadFileTask {
                     while (true){
                         if(FILE_SIZE.get() == preFileStatusDto.getPartFileMap().size()){
                             System.out.println("合并完成：" + LocalDateTime.now());
+                            //通知删除
+                            HttpUtil.get(url + "/deleteFiles/" + taskId, 10000);
                             break;
                         }
                         try {
