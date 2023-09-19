@@ -2,6 +2,10 @@ package com.lrhealth.data.converge.scheduled;
 
 import cn.hutool.core.codec.Base64Decoder;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.crypto.asymmetric.KeyType;
+import cn.hutool.crypto.asymmetric.RSA;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -15,7 +19,9 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewServic
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.dto.PreFileStatusDto;
+import com.lrhealth.data.converge.scheduled.utils.RsaUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -31,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -63,11 +70,17 @@ public class DownloadFileTask {
     @Resource
     private Executor threadPoolTaskExecutor;
 
-    @Scheduled(cron = "0/30 * * * * *")
+    @Value("${lrhealth.converge.privateKeyStr}")
+    private String privateKeyStr;
+
+    @Scheduled(cron = "0 0/30 * * * *")
     public void refreshFENodesStatus() {
         //循环前置机
+        RSA instance = RsaUtils.getInstance(privateKeyStr);
+        String token = "lrhealth:" + System.currentTimeMillis();
+
         List<ConvTunnel> tunnelList = convTunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
-                .ne(ConvTunnel::getStatus, "3"));
+                .ne(ConvTunnel::getStatus, 3));
         List<Long> frontendIdList =
                 tunnelList.stream().map(ConvTunnel::getFrontendId).distinct().collect(Collectors.toList());
 
@@ -75,7 +88,10 @@ public class DownloadFileTask {
             CompletableFuture.runAsync(() ->{
                 ConvFeNode node = convFeNodeService.getById(id);
                 String url = node.getIp() + ":" +node.getPort() + "/task/frontend/status";
-                String result = HttpUtil.get(url);
+                String result = HttpRequest.get(url)
+                        .header("Authorization",instance.encryptBase64(token, KeyType.PrivateKey))
+                        .execute().body();
+                System.out.println(result);
 
                 //更新状态
                 //添加任务
@@ -102,32 +118,49 @@ public class DownloadFileTask {
                     ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
                             .eq(ConvTaskResultView::getTaskId, taskId));
                     String fileName = "";
+
                     String url = feNode.getIp() + ":" + feNode.getPort();
+                    RSA instance = RsaUtils.getInstance(privateKeyStr);
+                    AtomicReference<String> token = new AtomicReference<>("lrhealth:" + System.currentTimeMillis());
 
                     log.info("通知拆分：" + LocalDateTime.now());
                     //通知前置机文件拆分-压缩-加密
-                    String result = HttpUtil.post(url + "/prepareFiles/" + taskId,
-                            new HashMap<String,Object>(){{
-                                put("zipFlag",tunnel.getZipFlag());
-                                put("encryptionFlag",tunnel.getEncryptionFlag());
-                                put("dataShardSize",tunnel.getDataShardSize());
-                            }}
-                            ,10000);
+                    String result;
+                    try {
+                         result = HttpRequest.post(url + "/prepareFiles/" + taskId)
+                                .header("Authorization",instance.encryptBase64(token.get(),KeyType.PrivateKey))
+                                .body(JSONObject.toJSONString(new HashMap<String,Object>(){{
+                                    put("zipFlag",tunnel.getZipFlag());
+                                    put("encryptionFlag",tunnel.getEncryptionFlag());
+                                    put("dataShardSize",tunnel.getDataShardSize());
+                                }})).timeout(3000).execute().body();
+                    }catch (Exception e){
+                        log.error("任务：" + taskId + "通知拆分异常！");
+                        continue;
+                    }
 
-                    PreFileStatusDto preFileStatusDto;
+
+                    PreFileStatusDto preFileStatusDto = null;
                     //查询拆分结果
                     while (true) {
-                        String statusResponse = HttpUtil.get(url + "/prepareFiles/status/" + taskId, 10000);
-                        preFileStatusDto = JSONObject.parseObject(statusResponse, PreFileStatusDto.class);
-                        if ("1".equals(preFileStatusDto.getStatus())) {
-                            break;
-                        }
                         try {
+                            log.info("轮询状态：" + LocalDateTime.now());
+                            token.set("lrhealth:" + System.currentTimeMillis());
+                            String statusResponse = HttpRequest.get(url + "/prepareFiles/status/" + taskId)
+                                    .header("Authorization",instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                                    .timeout(3000).execute().body();
+                            preFileStatusDto = JSONObject.parseObject(statusResponse, PreFileStatusDto.class);
+                            if ("1".equals(preFileStatusDto.getStatus())) {
+                                break;
+                            }
                             Thread.sleep(3000);
                         } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+                            log.error("轮询任务:" + taskId + "异常！");
+                            break;
                         }
-                        log.info("轮询状态：" + LocalDateTime.now());
+                    }
+                    if (preFileStatusDto == null){
+                        continue;
                     }
 
                     log.info("开始下载：" + LocalDateTime.now());
@@ -137,11 +170,18 @@ public class DownloadFileTask {
                     for (Map.Entry<String, Integer> entry : preFileStatusDto.getPartFileMap().entrySet()) {
                         CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
                             int i = 0;
-                            long l = HttpUtil.downloadFile(url + "/downloadFiles/" + entry.getKey(),
-                                    destPath + entry.getKey());
+//                            long l = HttpUtil.downloadFile(url + "/downloadFiles/" + entry.getKey(),
+//                                    destPath + entry.getKey());
+                            token.set("lrhealth:" + System.currentTimeMillis());
+                            HttpResponse execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
+                                    .header("Authorization",instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                                    .execute();
+                            long l = execute.writeBody(destPath + entry.getKey());
                             while (l != entry.getValue() && i < 3) {
-                                l = HttpUtil.downloadFile(url + "/downloadFiles/" + entry.getKey(),
-                                        destPath + entry.getKey());
+                                execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
+                                        .header("Authorization",instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                                        .execute();
+                                l = execute.writeBody(destPath + entry.getKey());
                                 i++;
                             }
                             return null;
@@ -162,31 +202,32 @@ public class DownloadFileTask {
                                         + fileName,
                                 Base64Decoder.decode(result));
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        log.error("任务："+ taskId + "合并失败！");
+                        continue;
                     }
-                    try {
-                        Thread.sleep(3000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+
                     File file = FileUtil.file(taskResultView.getStoredPath());
                     while (true){
                         if(FILE_SIZE.get() == preFileStatusDto.getPartFileMap().size()
                         && file.length() == taskResultView.getDataSize()){
                             log.info("合并完成：" + LocalDateTime.now());
+                            token.set("lrhealth:" + System.currentTimeMillis());
                             //通知删除
-                            HttpUtil.get(url + "/deleteFiles/" + taskId, 10000);
+                            HttpRequest.get(url + "/deleteFiles/" + taskId)
+                                    .header("Authorization",instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                                    .timeout(3000).execute().body();
                             break;
                         }
                         try {
                             Thread.sleep(3000);
                         } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+                            log.error("合并任务：" + taskId + "异常！");
                         }
                     }
                 }
                 taskDeque.clear();
             }
+
         }
     }
 }
