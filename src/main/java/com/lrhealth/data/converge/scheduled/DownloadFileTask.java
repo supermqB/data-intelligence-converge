@@ -85,11 +85,11 @@ public class DownloadFileTask {
                 tunnelList.stream().map(ConvTunnel::getFrontendId).distinct().collect(Collectors.toList());
 
         for (Long id : frontendIdList) {
-            CompletableFuture.runAsync(() ->{
+            CompletableFuture.runAsync(() -> {
                 ConvFeNode node = convFeNodeService.getById(id);
-                String url = node.getIp() + ":" +node.getPort() + "/task/frontend/status";
+                String url = node.getIp() + ":" + node.getPort() + "/task/frontend/status";
                 String result = HttpRequest.get(url)
-                        .header("Authorization",instance.encryptBase64(token, KeyType.PrivateKey))
+                        .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                         .execute().body();
                 System.out.println(result);
 
@@ -108,126 +108,125 @@ public class DownloadFileTask {
 
     public void downloadFile() {
         while (true) {
-            if (taskDeque.size() > 0) {
-                //异步获取文件
-                for (Integer taskId : taskDeque) {
+            Integer taskId = taskDeque.pollFirst();
+            if (taskId == null) {
+                continue;
+            }
+            ConvTask convTask = convTaskService.getById(taskId);
+            ConvTunnel tunnel = convTunnelService.getById(convTask.getTunnelId());
+            ConvFeNode feNode = convFeNodeService.getById(tunnel.getFrontendId());
+            ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
+                    .eq(ConvTaskResultView::getTaskId, taskId));
+            String fileName = "";
 
-                    ConvTask convTask = convTaskService.getById(taskId);
-                    ConvTunnel tunnel = convTunnelService.getById(convTask.getTunnelId());
-                    ConvFeNode feNode = convFeNodeService.getById(tunnel.getFrontendId());
-                    ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
-                            .eq(ConvTaskResultView::getTaskId, taskId));
-                    String fileName = "";
+            String url = feNode.getIp() + ":" + feNode.getPort();
+            RSA instance = RsaUtils.getInstance(privateKeyStr);
+            AtomicReference<String> token = new AtomicReference<>("lrhealth:" + System.currentTimeMillis());
 
-                    String url = feNode.getIp() + ":" + feNode.getPort();
-                    RSA instance = RsaUtils.getInstance(privateKeyStr);
-                    AtomicReference<String> token = new AtomicReference<>("lrhealth:" + System.currentTimeMillis());
-
-                    log.info("通知拆分：" + LocalDateTime.now());
-                    //通知前置机文件拆分-压缩-加密
-                    String result;
-                    try {
-                         result = HttpRequest.post(url + "/prepareFiles/" + taskId)
-                                .header("Authorization",instance.encryptBase64(token.get(),KeyType.PrivateKey))
-                                .body(JSONObject.toJSONString(new HashMap<String,Object>(){{
-                                    put("zipFlag",tunnel.getZipFlag());
-                                    put("encryptionFlag",tunnel.getEncryptionFlag());
-                                    put("dataShardSize",tunnel.getDataShardSize());
-                                }})).timeout(3000).execute().body();
-                    }catch (Exception e){
-                        log.error("任务：" + taskId + "通知拆分异常！");
-                        continue;
-                    }
-
-
-                    PreFileStatusDto preFileStatusDto = null;
-                    //查询拆分结果
-                    while (true) {
-                        try {
-                            log.info("轮询状态：" + LocalDateTime.now());
-                            token.set("lrhealth:" + System.currentTimeMillis());
-                            String statusResponse = HttpRequest.get(url + "/prepareFiles/status/" + taskId)
-                                    .header("Authorization",instance.encryptBase64(token.get(), KeyType.PrivateKey))
-                                    .timeout(3000).execute().body();
-                            preFileStatusDto = JSONObject.parseObject(statusResponse, PreFileStatusDto.class);
-                            if ("1".equals(preFileStatusDto.getStatus())) {
-                                break;
-                            }
-                            Thread.sleep(3000);
-                        } catch (InterruptedException e) {
-                            log.error("轮询任务:" + taskId + "异常！");
-                            break;
-                        }
-                    }
-                    if (preFileStatusDto == null){
-                        continue;
-                    }
-
-                    log.info("开始下载：" + LocalDateTime.now());
-
-                    //异步下载文件
-                    List<CompletableFuture<Void>> futureList = new ArrayList<>();
-                    for (Map.Entry<String, Integer> entry : preFileStatusDto.getPartFileMap().entrySet()) {
-                        CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
-                            int i = 0;
-//                            long l = HttpUtil.downloadFile(url + "/downloadFiles/" + entry.getKey(),
-//                                    destPath + entry.getKey());
-                            token.set("lrhealth:" + System.currentTimeMillis());
-                            HttpResponse execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
-                                    .header("Authorization",instance.encryptBase64(token.get(), KeyType.PrivateKey))
-                                    .execute();
-                            long l = execute.writeBody(destPath + entry.getKey());
-                            while (l != entry.getValue() && i < 3) {
-                                execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
-                                        .header("Authorization",instance.encryptBase64(token.get(), KeyType.PrivateKey))
-                                        .execute();
-                                l = execute.writeBody(destPath + entry.getKey());
-                                i++;
-                            }
-                            return null;
-                        }, threadPoolTaskExecutor);
-                        futureList.add(future);
-                    }
-                    //同步结果-校验-重试
-                    CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]))
-                            .thenApply(e -> futureList.stream().map(CompletableFuture::join)
-                                    .collect(Collectors.toList())).join();
-                    log.info("下载完成：" + LocalDateTime.now());
-                    // 文件解密-解压缩-合并
-                    FileUtils fileUtils = new FileUtils();
-                    FILE_SIZE.set(0);
-                    try {
-                        fileUtils.mergePartFiles(destPath, ".part",
-                                tunnel.getDataShardSize().intValue(), destPath + File.separator
-                                        + fileName,
-                                Base64Decoder.decode(result));
-                    } catch (IOException e) {
-                        log.error("任务："+ taskId + "合并失败！");
-                        continue;
-                    }
-
-                    File file = FileUtil.file(taskResultView.getStoredPath());
-                    while (true){
-                        if(FILE_SIZE.get() == preFileStatusDto.getPartFileMap().size()
-                        && file.length() == taskResultView.getDataSize()){
-                            log.info("合并完成：" + LocalDateTime.now());
-                            token.set("lrhealth:" + System.currentTimeMillis());
-                            //通知删除
-                            HttpRequest.get(url + "/deleteFiles/" + taskId)
-                                    .header("Authorization",instance.encryptBase64(token.get(), KeyType.PrivateKey))
-                                    .timeout(3000).execute().body();
-                            break;
-                        }
-                        try {
-                            Thread.sleep(3000);
-                        } catch (InterruptedException e) {
-                            log.error("合并任务：" + taskId + "异常！");
-                        }
-                    }
-                }
-                taskDeque.clear();
+            log.info("通知拆分：" + LocalDateTime.now());
+            //通知前置机文件拆分-压缩-加密
+            String result;
+            try {
+                result = HttpRequest.post(url + "/prepareFiles/" + taskId)
+                        .header("Authorization", instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                        .body(JSONObject.toJSONString(new HashMap<String, Object>() {{
+                            put("zipFlag", tunnel.getZipFlag());
+                            put("encryptionFlag", tunnel.getEncryptionFlag());
+                            put("dataShardSize", tunnel.getDataShardSize());
+                        }})).timeout(3000).execute().body();
+            } catch (Exception e) {
+                log.error("任务：" + taskId + "通知拆分异常！");
+                continue;
             }
 
+
+            PreFileStatusDto preFileStatusDto = null;
+            //查询拆分结果
+            while (true) {
+                try {
+                    log.info("轮询状态：" + LocalDateTime.now());
+                    token.set("lrhealth:" + System.currentTimeMillis());
+                    String statusResponse = HttpRequest.get(url + "/prepareFiles/status/" + taskId)
+                            .header("Authorization", instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                            .timeout(3000).execute().body();
+                    preFileStatusDto = JSONObject.parseObject(statusResponse, PreFileStatusDto.class);
+                    if ("1".equals(preFileStatusDto.getStatus())) {
+                        break;
+                    }
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    log.error("轮询任务:" + taskId + "异常！");
+                    break;
+                }
+            }
+            if (preFileStatusDto == null) {
+                continue;
+            }
+
+            log.info("开始下载：" + LocalDateTime.now());
+
+            //异步下载文件
+            List<CompletableFuture<Void>> futureList = new ArrayList<>();
+            for (Map.Entry<String, Integer> entry : preFileStatusDto.getPartFileMap().entrySet()) {
+                CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+                    int i = 0;
+//                            long l = HttpUtil.downloadFile(url + "/downloadFiles/" + entry.getKey(),
+//                                    destPath + entry.getKey());
+                    token.set("lrhealth:" + System.currentTimeMillis());
+                    HttpResponse execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
+                            .header("Authorization", instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                            .execute();
+                    long l = execute.writeBody(destPath + entry.getKey());
+                    while (l != entry.getValue() && i < 3) {
+                        execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
+                                .header("Authorization", instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                                .execute();
+                        l = execute.writeBody(destPath + entry.getKey());
+                        i++;
+                    }
+                    return null;
+                }, threadPoolTaskExecutor);
+                futureList.add(future);
+            }
+            //同步结果-校验-重试
+            CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]))
+                    .thenApply(e -> futureList.stream().map(CompletableFuture::join)
+                            .collect(Collectors.toList())).join();
+            log.info("下载完成：" + LocalDateTime.now());
+            // 文件解密-解压缩-合并
+            FileUtils fileUtils = new FileUtils();
+            FILE_SIZE.set(0);
+            try {
+                fileUtils.mergePartFiles(destPath, ".part",
+                        tunnel.getDataShardSize().intValue(), destPath + File.separator
+                                + fileName,
+                        Base64Decoder.decode(result));
+            } catch (IOException e) {
+                log.error("任务：" + taskId + "合并失败！");
+                continue;
+            }
+
+            File file = FileUtil.file(taskResultView.getStoredPath());
+            while (true) {
+                if (FILE_SIZE.get() == preFileStatusDto.getPartFileMap().size()
+                        && file.length() == taskResultView.getDataSize()) {
+                    log.info("合并完成：" + LocalDateTime.now());
+                    token.set("lrhealth:" + System.currentTimeMillis());
+                    //通知删除
+                    HttpRequest.get(url + "/deleteFiles/" + taskId)
+                            .header("Authorization", instance.encryptBase64(token.get(), KeyType.PrivateKey))
+                            .timeout(3000).execute().body();
+                    break;
+                }
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    log.error("合并任务：" + taskId + "异常！");
+                }
+            }
+            //跟新文件状态
         }
     }
+
 }
+
