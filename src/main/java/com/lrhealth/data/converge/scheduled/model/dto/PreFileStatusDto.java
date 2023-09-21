@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.scheduled.dto;
+package com.lrhealth.data.converge.scheduled.model.dto;
 
 import lombok.Data;
 

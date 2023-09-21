@@ -227,7 +227,7 @@ public class FileUtils {
         ArrayList<File> partFiles = FileUtils.getDirFiles(dirPath,
                 partFileSuffix);
         Collections.sort(partFiles, new FileComparator());
-
+        FileUtils.delete(mergeFileName);
         RandomAccessFile randomAccessFile = new RandomAccessFile(mergeFileName,
                 "rw");
 //        randomAccessFile.setLength(partFileSize * (partFiles.size() - 1)

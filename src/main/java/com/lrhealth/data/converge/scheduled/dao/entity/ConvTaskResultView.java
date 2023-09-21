@@ -112,5 +112,8 @@ public class ConvTaskResultView implements Serializable {
      */
     private Integer status;
 
-
+    /**
+     * 文件名
+     */
+    private String feStoredFilename;
 }
