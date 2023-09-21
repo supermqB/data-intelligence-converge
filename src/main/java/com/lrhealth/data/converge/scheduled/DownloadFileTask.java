@@ -20,6 +20,7 @@ import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
 import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.utils.RsaUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.hssf.record.FeatHdrRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -125,6 +126,10 @@ public class DownloadFileTask {
                 log.error("任务：" + taskId + "通知拆分异常！");
                 continue;
             }
+            if ("false".equals(result)){
+                log.error("任务：" + taskId + "通知拆分异常！");
+                continue;
+            }
 
 
             PreFileStatusDto preFileStatusDto = null;
@@ -159,7 +164,7 @@ public class DownloadFileTask {
                 fileUtils.mergePartFiles(path, ".part",
                         tunnel.getDataShardSize().intValue(), path + File.separator
                                 + fileName,
-                        Base64Decoder.decode(result));
+                        Base64Decoder.decode(feNode.getAesKey()));
             } catch (IOException e) {
                 log.error("任务：" + taskId + "合并失败！");
                 continue;

@@ -98,5 +98,8 @@ public class ConvFeNode implements Serializable {
      */
     private Long id;
 
-
+    /**
+     * aes_key
+     */
+    private String aesKey;
 }
