@@ -12,7 +12,7 @@ public class RsaUtils {
     private static RSA rsa;
 
     public static RSA getInstance(String key) {
-        if(rsa == null || !rsa.getPrivateKeyBase64().equals(key)){
+        if(rsa == null || !key.equals(rsa.getPrivateKeyBase64())){
             rsa = new RSA(key,null);
         }
         return rsa;

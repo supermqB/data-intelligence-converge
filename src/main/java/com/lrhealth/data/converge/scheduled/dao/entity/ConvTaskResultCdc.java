@@ -54,11 +54,6 @@ public class ConvTaskResultCdc implements Serializable {
     private Integer deleteCount;
 
     /**
-     * 入库时间
-     */
-    private LocalDateTime storedTime;
-
-    /**
      * 删除标识
      */
     @TableField(fill = FieldFill.INSERT)

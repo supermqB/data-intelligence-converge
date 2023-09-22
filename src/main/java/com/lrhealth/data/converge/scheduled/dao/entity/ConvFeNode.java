@@ -1,9 +1,6 @@
 package com.lrhealth.data.converge.scheduled.dao.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -38,7 +35,7 @@ public class ConvFeNode implements Serializable {
     /**
      * 创建时间
      */
-    private LocalDateTime createDate;
+    private LocalDateTime createTime;
 
     /**
      * 创建者
@@ -48,7 +45,7 @@ public class ConvFeNode implements Serializable {
     /**
      * 更新时间
      */
-    private LocalDateTime updateDate;
+    private LocalDateTime updateTime;
 
     /**
      * 更新者
@@ -68,16 +65,6 @@ public class ConvFeNode implements Serializable {
     private Integer port;
 
     /**
-     * 前置机用户名
-     */
-    private String username;
-
-    /**
-     * 前置机密码
-     */
-    private String passwd;
-
-    /**
      * 系统编码
      */
     private String sysCode;
@@ -88,18 +75,19 @@ public class ConvFeNode implements Serializable {
     private String orgCode;
 
     /**
-     * 上下线状态
+     * 上下线状态， 0-离线，1-在线
      */
-    private String state;
+    private Integer state;
 
 
     /**
      * 主键id
      */
+    @TableId(value = "id",type = IdType.AUTO)
     private Long id;
 
     /**
-     * aes_key
+     * aesKey
      */
     private String aesKey;
 }

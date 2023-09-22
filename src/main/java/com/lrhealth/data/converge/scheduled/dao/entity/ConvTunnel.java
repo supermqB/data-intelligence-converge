@@ -1,9 +1,6 @@
 package com.lrhealth.data.converge.scheduled.dao.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -88,6 +85,7 @@ public class ConvTunnel implements Serializable {
     /**
      * 主键id
      */
+    @TableId(value = "id",type = IdType.AUTO)
     private Long id;
 
     /**
@@ -131,7 +129,7 @@ public class ConvTunnel implements Serializable {
     private String encryptionFlag;
 
     /**
-     * 管道状态：0-任务已排班，1-任务执行中，2-暂停，3-废弃
+     * 管道状态：0-待配置，1-任务已排班，2-任务执行中，3-暂停，4-废弃
      */
     private Integer status;
 

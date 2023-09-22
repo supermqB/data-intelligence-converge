@@ -1,11 +1,14 @@
 package com.lrhealth.data.converge.scheduled.service.impl;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.common.util.file.FileUtils;
 import com.lrhealth.data.converge.scheduled.dao.entity.*;
 import com.lrhealth.data.converge.scheduled.dao.service.*;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
@@ -20,6 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,12 +121,12 @@ public class ConvergeServiceImpl implements ConvergeService {
         String token = "lrhealth:" + System.currentTimeMillis();
 
         ConvFeNode node = convFeNodeService.getById(feNodeId);
-        if ("离线".equals(node.getState())){
+        if (node.getState() == 0){
             return;
         }
         String url = node.getIp() + ":" + node.getPort() + "/task/frontend/status";
         if (!this.ping(node.getIp(), String.valueOf(node.getPort()))){
-            node.setState("离线");
+            node.setState(0);
             convFeNodeService.updateById(node);
             log.error("前置机：" + node.getIp() + "ping 异常！");
             return;
@@ -207,24 +214,43 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     @Override
     public void downLoadFile(String url, PreFileStatusDto preFileStatusDto) {
-        List<CompletableFuture<Void>> futureList = new ArrayList<>();
+        List<CompletableFuture<String>> futureList = new ArrayList<>();
         RSA instance = RsaUtils.getInstance(privateKeyStr);
         String token = "lrhealth:" + System.currentTimeMillis();
         for (Map.Entry<String, Integer> entry : preFileStatusDto.getPartFileMap().entrySet()) {
-            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                 int i = 0;
                 HttpResponse execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
                         .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                         .execute();
-                long l = execute.writeBody(path + entry.getKey());
+                long l = 0;
+                try {
+                    l = execute.writeBody(Files.newOutputStream(FileUtil.file(path + File.separator + entry.getKey()).toPath()),
+                            true,
+                            null);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
                 while (l != entry.getValue() && i < 3) {
                     execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
                             .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                             .execute();
-                    l = execute.writeBody(path + entry.getKey());
+                    try {
+                        l =
+                                execute.writeBody(Files.newOutputStream(FileUtil.file(path + File.separator + entry.getKey()).toPath()),
+                                        true,
+                                        null);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                     i++;
                 }
-                return null;
+                if(i == 3){
+                    log.error("文件传输重试超过3次！");
+                    return entry.getKey();
+                }
+                return "";
             }, threadPoolTaskExecutor);
             futureList.add(future);
         }
@@ -243,5 +269,12 @@ public class ConvergeServiceImpl implements ConvergeService {
                 .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                 .body(JSONObject.toJSONString(fileTask))
                 .timeout(3000).execute().body();
+    }
+
+    @Override
+    @Transactional
+    public void updateFileStatus(ConvTaskResultView taskResultView) {
+        taskResultView.setStatus(4);
+        convTaskResultViewService.updateById(taskResultView);
     }
 }

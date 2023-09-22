@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.scheduled.service;
 
 
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
 import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
 
@@ -16,9 +17,11 @@ public interface ConvergeService {
 
     String prepareFiles(String url, FileTask fileTask);
 
-    PreFileStatusDto getPreFilesStatus(String url, FileTask fileTask);
+    PreFileStatusDto getPreFilesStatus(String url, FileTask fileTask) throws Exception;
 
     void downLoadFile(String url, PreFileStatusDto preFileStatusDto);
 
     void deleteFiles(String url, FileTask fileTask);
+
+    void updateFileStatus(ConvTaskResultView taskResultView);
 }

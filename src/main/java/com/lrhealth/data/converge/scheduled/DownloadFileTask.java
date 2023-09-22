@@ -70,7 +70,7 @@ public class DownloadFileTask {
     @Resource
     private Executor threadPoolTaskExecutor;
 
-    private final ConcurrentLinkedDeque<FileTask> taskDeque = new ConcurrentLinkedDeque<>();
+    private static final ConcurrentLinkedDeque<FileTask> taskDeque = new ConcurrentLinkedDeque<>();
     public static AtomicInteger FILE_SIZE = new AtomicInteger();
 
     @Value("${lrhealth.converge.privateKeyStr}")
@@ -79,7 +79,7 @@ public class DownloadFileTask {
     @Value("${lrhealth.converge.path}")
     private String path;
 
-    @Scheduled(cron = "0 0/30 * * * *")
+    @Scheduled(cron = "0/5 * * * * *")
     @Transactional
     public void refreshFENodesStatus() {
         //循环前置机
@@ -97,13 +97,17 @@ public class DownloadFileTask {
 
     @PostConstruct
     public void loadTaskData() {
-        CompletableFuture.runAsync(this::downloadFile, threadPoolTaskExecutor);
+        threadPoolTaskExecutor.execute(this::downloadFile);
     }
 
     public void downloadFile() {
         while (true) {
-            FileTask fileTask = taskDeque.pollFirst();
+            FileTask fileTask = taskDeque.peekFirst();
             if (fileTask == null) {
+                try {
+                    Thread.sleep(3000);
+                }catch (Exception ignored){
+                }
                 continue;
             }
 
@@ -115,7 +119,7 @@ public class DownloadFileTask {
             ConvFeNode feNode = convFeNodeService.getById(tunnel.getFrontendId());
             ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
                     .eq(ConvTaskResultView::getTaskId, taskId));
-            String url = feNode.getIp() + ":" + feNode.getPort();
+            String url = feNode.getIp() + ":" + feNode.getPort() + "/file";
 
             log.info("通知拆分：" + LocalDateTime.now());
             //通知前置机文件拆分-压缩-加密
@@ -126,7 +130,7 @@ public class DownloadFileTask {
                 log.error("任务：" + taskId + "通知拆分异常！");
                 continue;
             }
-            if ("false".equals(result)){
+            if (!"true".equals(result)){
                 log.error("任务：" + taskId + "通知拆分异常！");
                 continue;
             }
@@ -142,7 +146,7 @@ public class DownloadFileTask {
                         break;
                     }
                     Thread.sleep(3000);
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     log.error("轮询任务:" + taskId + "异常！");
                     break;
                 }
@@ -165,7 +169,7 @@ public class DownloadFileTask {
                         tunnel.getDataShardSize().intValue(), path + File.separator
                                 + fileName,
                         Base64Decoder.decode(feNode.getAesKey()));
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error("任务：" + taskId + "合并失败！");
                 continue;
             }
@@ -180,11 +184,13 @@ public class DownloadFileTask {
                 }
                 try {
                     Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    log.error("合并任务：" + taskId + "异常！");
+                } catch (Exception e) {
+                    log.error("删除文件：" + taskId + "异常！");
                 }
             }
             //跟新文件状态
+            taskDeque.pollFirst();
+            convergeService.updateFileStatus(taskResultView);
         }
     }
 
