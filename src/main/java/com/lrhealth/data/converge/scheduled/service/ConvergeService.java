@@ -19,7 +19,7 @@ public interface ConvergeService {
 
     PreFileStatusDto getPreFilesStatus(String url, FileTask fileTask) throws Exception;
 
-    void downLoadFile(String url, PreFileStatusDto preFileStatusDto);
+    void downLoadFile(String url, Integer taskId, PreFileStatusDto preFileStatusDto);
 
     void deleteFiles(String url, FileTask fileTask);
 

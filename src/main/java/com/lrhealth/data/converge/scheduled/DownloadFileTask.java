@@ -122,7 +122,8 @@ public class DownloadFileTask {
             ConvTunnel tunnel = convTunnelService.getById(convTask.getTunnelId());
             ConvFeNode feNode = convFeNodeService.getById(tunnel.getFrontendId());
             ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
-                    .eq(ConvTaskResultView::getTaskId, taskId));
+                    .eq(ConvTaskResultView::getTaskId, taskId)
+                    .eq(ConvTaskResultView::getFeStoredFilename,fileName));
             String url = feNode.getIp() + ":" + feNode.getPort() + "/file";
 
             FileTask frontNodeTask = new FileTask(convTask.getFedTaskId(),fileName);
@@ -163,13 +164,14 @@ public class DownloadFileTask {
 
             //异步下载文件
             log.info("开始下载：" + LocalDateTime.now());
-            convergeService.downLoadFile(url,preFileStatusDto);
+            convergeService.downLoadFile(url, frontNodeTask.getTaskId() ,preFileStatusDto);
             log.info("下载完成：" + LocalDateTime.now());
 
             // 文件解密-解压缩-合并
             FileUtils fileUtils = new FileUtils();
             FILE_SIZE.set(0);
             try {
+                System.out.println(feNode.getAesKey());
                 fileUtils.mergePartFiles(path, ".part",
                         tunnel.getDataShardSize().intValue(), path + File.separator
                                 + fileName,
