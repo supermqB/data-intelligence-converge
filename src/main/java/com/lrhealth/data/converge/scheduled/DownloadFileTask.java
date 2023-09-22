@@ -8,6 +8,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.DataConvergeApplication;
 import com.lrhealth.data.converge.common.util.file.FileUtils;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
@@ -21,6 +22,8 @@ import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.utils.RsaUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.record.FeatHdrRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -47,10 +50,11 @@ import java.util.stream.Collectors;
  * @version 1.0
  * 文件下载任务
  */
-@Slf4j
 @Component
 @EnableScheduling
 public class DownloadFileTask {
+
+    private static final Logger log = LoggerFactory.getLogger(DownloadFileTask.class);
 
     @Resource
     private ConvergeService convergeService;
@@ -83,12 +87,12 @@ public class DownloadFileTask {
     @Transactional
     public void refreshFENodesStatus() {
         //循环前置机
+        System.out.println("定时更新前置机任务状态！");
         List<ConvTunnel> tunnelList = convTunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
                 .ne(ConvTunnel::getStatus, 0)
                 .ne(ConvTunnel::getStatus, 4));
         List<Long> frontendIdList =
                 tunnelList.stream().map(ConvTunnel::getFrontendId).distinct().collect(Collectors.toList());
-        log.debug("定时更新前置机任务状态！");
         convergeService.updateDownLoadFileTask(taskDeque);
         for (Long id : frontendIdList) {
             CompletableFuture.runAsync(() -> convergeService.updateFeNodeStatus(id,taskDeque), threadPoolTaskExecutor);

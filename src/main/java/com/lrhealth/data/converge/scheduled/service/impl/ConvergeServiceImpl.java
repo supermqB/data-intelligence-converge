@@ -145,10 +145,14 @@ public class ConvergeServiceImpl implements ConvergeService {
             log.error("获取前置机：" + node.getIp() + "状态异常！");
             return;
         }
-        log.debug("statusRes: " + result);
+        System.out.println("statusRes: " + result);
         FrontendStatusDto frontendStatusDto = JSONObject.parseObject(result, FrontendStatusDto.class);
-        List<TunnelStatusDto> tunnelStatusDtoList = frontendStatusDto.getTunnelStatusDtoList();
 
+        if (frontendStatusDto == null || frontendStatusDto.getTunnelStatusDtoList() == null){
+            log.error("status返回结果异常: " + result);
+            return;
+        }
+        List<TunnelStatusDto> tunnelStatusDtoList = frontendStatusDto.getTunnelStatusDtoList();
         for (TunnelStatusDto tunnelStatusDto : tunnelStatusDtoList) {
             Long tunnelId = tunnelStatusDto.getTunnelId();
             ConvTunnel tunnel = convTunnelService.getById(tunnelId);
