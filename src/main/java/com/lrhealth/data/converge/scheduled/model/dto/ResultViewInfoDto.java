@@ -24,4 +24,6 @@ public class ResultViewInfoDto {
     private Integer recordCount;
 
     private Integer status;
+
+    private Integer fileSize;
 }

@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.scheduled.dao.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.relational.core.sql.In;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -95,7 +96,7 @@ public class ConvTaskResultView implements Serializable {
     /**
      * 文件大小
      */
-    private Long dataSize;
+    private Integer dataSize;
 
     /**
      * 文件传输时间（单位秒）

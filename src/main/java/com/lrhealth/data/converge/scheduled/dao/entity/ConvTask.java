@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.relational.core.sql.In;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -27,7 +28,7 @@ public class ConvTask implements Serializable {
      * 主键id
      */
     @TableId(value = "id", type = IdType.AUTO)
-    private Long id;
+    private Integer id;
 
     /**
      * 机构编码
@@ -110,5 +111,8 @@ public class ConvTask implements Serializable {
      */
     private String convergeMethod;
 
-
+    /**
+     * 前置机id
+     */
+    private Integer fedTaskId;
 }

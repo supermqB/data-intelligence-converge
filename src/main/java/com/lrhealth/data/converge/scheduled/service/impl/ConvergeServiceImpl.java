@@ -9,6 +9,7 @@ import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.util.file.FileUtils;
+import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.scheduled.dao.entity.*;
 import com.lrhealth.data.converge.scheduled.dao.service.*;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
@@ -28,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +109,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             List<ConvTaskResultView> taskResultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
                     .eq(ConvTaskResultView::getTaskId, convTask.getId()));
             for (ConvTaskResultView taskResultView : taskResultViews) {
-                FileTask fileTask = new FileTask(convTask.getId().intValue(), taskResultView.getFeStoredFilename());
+                FileTask fileTask = new FileTask(convTask.getId(), taskResultView.getFeStoredFilename());
                 if(!taskDeque.contains(fileTask)){
                     taskDeque.add(fileTask);
                 }
@@ -123,17 +125,16 @@ public class ConvergeServiceImpl implements ConvergeService {
         String token = "lrhealth:" + System.currentTimeMillis();
 
         ConvFeNode node = convFeNodeService.getById(feNodeId);
-        if (node.getState() == 0){
-            return;
-        }
         String url = node.getIp() + ":" + node.getPort() + "/task/front/status";
-        if (!this.ping(node.getIp(), String.valueOf(node.getPort()))){
+        if (!this.ping(node.getIp(), String.valueOf(node.getPort()))) {
             node.setState(0);
             convFeNodeService.updateById(node);
             log.error("前置机：" + node.getIp() + "ping 异常！");
             return;
         }
 
+        node.setState(1);
+        convFeNodeService.updateById(node);
         String result;
         try {
             log.debug("statusReq: " + url);
@@ -146,7 +147,9 @@ public class ConvergeServiceImpl implements ConvergeService {
             return;
         }
         System.out.println("statusRes: " + result);
-        FrontendStatusDto frontendStatusDto = JSONObject.parseObject(result, FrontendStatusDto.class);
+        Object value = JSONObject.parseObject(result).get("value");
+        FrontendStatusDto frontendStatusDto = JSONObject.parseObject(JSONObject.toJSONString(value),
+                FrontendStatusDto.class);
 
         if (frontendStatusDto == null || frontendStatusDto.getTunnelStatusDtoList() == null){
             log.error("status返回结果异常: " + result);
@@ -157,20 +160,29 @@ public class ConvergeServiceImpl implements ConvergeService {
             Long tunnelId = tunnelStatusDto.getTunnelId();
             ConvTunnel tunnel = convTunnelService.getById(tunnelId);
             tunnel.setStatus(tunnelStatusDto.getTunnelStatus());
+            convTunnelService.updateById(tunnel);
             List<TaskStatusDto> taskStatusList = tunnelStatusDto.getTaskStatusList();
             for (TaskStatusDto taskStatusDto : taskStatusList) {
                 ConvTask convTask = new ConvTask();
                 BeanUtils.copyProperties(taskStatusDto,convTask);
-                convTask.setId(taskStatusDto.getTaskId());
-                convTask.setCreateTime(LocalDateTime.parse(taskStatusDto.getStartTime()));
-                convTask.setEndTime(LocalDateTime.parse(taskStatusDto.getEndTime()));
+                convTask.setFedTaskId(taskStatusDto.getTaskId());
+                convTask.setTunnelId(tunnelId);
+                convTask.setSysCode(tunnel.getSysCode());
+                convTask.setOrgCode(tunnel.getOrgCode());
+                convTask.setConvergeMethod(tunnel.getConvergeMethod());
+                DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                convTask.setStartTime(LocalDateTime.parse(taskStatusDto.getStartTime(),df));
+                convTask.setEndTime(LocalDateTime.parse(taskStatusDto.getEndTime(),df));
+                convTask.setDelFlag(0);
                 convTaskService.saveOrUpdate(convTask);
 
-                List<String> taskLogs = taskStatusDto.getTaskLogs();
-                for (String taskLog : taskLogs) {
+                List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
+                for (TaskLogDto taskLog : taskLogs) {
                     ConvTaskLog convTaskLog = new ConvTaskLog();
                     convTaskLog.setTaskId(convTask.getId());
-                    convTaskLog.setLogDetail(taskLog);
+                    convTaskLog.setJobId(Long.valueOf(taskLog.getLogId()));
+                    convTaskLog.setLogDetail(taskLog.getLogDetail());
+                    convTaskLog.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(),df));
                     convTaskLogService.saveOrUpdate(convTaskLog);
                 }
 
@@ -184,17 +196,21 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTaskResultView.setFeStoredPath(resultViewInfoDto.getFilePath());
                     convTaskResultView.setStoredPath(path + File.separator + resultViewInfoDto.getFileName());
                     convTaskResultView.setFeStoredFilename(resultViewInfoDto.getFileName());
-                    convTaskResultViewService.saveOrUpdate(convTaskResultView);
+                    convTaskResultView.setDataSize(resultViewInfoDto.getFileSize());
+                    convTaskResultView.setDelFlag(0);
 
                     if(taskStatusDto.getStatus() == 3){
-                        FileTask fileTask = new FileTask(taskStatusDto.getTaskId().intValue(), resultViewInfoDto.getFileName());
+                        FileTask fileTask = new FileTask(convTask.getId(), resultViewInfoDto.getFileName());
                         if(!taskDeque.contains(fileTask)){
                             taskDeque.add(fileTask);
+                            convTaskResultView.setStatus(2);
                         }
                     }
+                    convTaskResultViewService.saveOrUpdate(convTaskResultView);
                 }
             }
         }
+        System.out.println("前置机：" + node.getIp() + " 状态更新结束！");
     }
 
     @Override

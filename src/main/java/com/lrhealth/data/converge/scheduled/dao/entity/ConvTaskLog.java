@@ -33,7 +33,7 @@ public class ConvTaskLog implements Serializable {
     /**
      * 任务主键id
      */
-    private Long taskId;
+    private Integer taskId;
 
     /**
      * 日志详情

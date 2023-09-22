@@ -125,11 +125,12 @@ public class DownloadFileTask {
                     .eq(ConvTaskResultView::getTaskId, taskId));
             String url = feNode.getIp() + ":" + feNode.getPort() + "/file";
 
+            FileTask frontNodeTask = new FileTask(convTask.getFedTaskId(),fileName);
             log.info("通知拆分：" + LocalDateTime.now());
             //通知前置机文件拆分-压缩-加密
             String result;
             try {
-                result = convergeService.prepareFiles(url,fileTask);
+                result = convergeService.prepareFiles(url,frontNodeTask);
             } catch (Exception e) {
                 log.error("任务：" + taskId + "通知拆分异常！");
                 continue;
@@ -145,7 +146,7 @@ public class DownloadFileTask {
             while (true) {
                 try {
                     log.info("轮询状态：" + LocalDateTime.now());
-                    preFileStatusDto = convergeService.getPreFilesStatus(url,fileTask);
+                    preFileStatusDto = convergeService.getPreFilesStatus(url,frontNodeTask);
                     if (preFileStatusDto == null || "1".equals(preFileStatusDto.getStatus())) {
                         break;
                     }
@@ -183,7 +184,7 @@ public class DownloadFileTask {
                 if (FILE_SIZE.get() == preFileStatusDto.getPartFileMap().size()
                         && file.length() == taskResultView.getDataSize()) {
                     log.info("合并完成：" + LocalDateTime.now());
-                    convergeService.deleteFiles(url,fileTask);
+                    convergeService.deleteFiles(url,frontNodeTask);
                     break;
                 }
                 try {
