@@ -75,6 +75,7 @@ public class ConvergeServiceImpl implements ConvergeService {
         RSA instance = RsaUtils.getInstance(privateKeyStr);
         String token = "lrhealth:" + System.currentTimeMillis();
         try {
+            log.debug("pingReq: " + url);
             HttpResponse response = HttpRequest.get(url)
                     .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                     .timeout(3000)
@@ -94,6 +95,7 @@ public class ConvergeServiceImpl implements ConvergeService {
         } catch (Exception e) {
             status = false;
         }
+        log.debug("pingRes: " + status);
         return status;
     }
 
@@ -124,7 +126,7 @@ public class ConvergeServiceImpl implements ConvergeService {
         if (node.getState() == 0){
             return;
         }
-        String url = node.getIp() + ":" + node.getPort() + "/task/frontend/status";
+        String url = node.getIp() + ":" + node.getPort() + "/task/front/status";
         if (!this.ping(node.getIp(), String.valueOf(node.getPort()))){
             node.setState(0);
             convFeNodeService.updateById(node);
@@ -134,6 +136,7 @@ public class ConvergeServiceImpl implements ConvergeService {
 
         String result;
         try {
+            log.debug("statusReq: " + url);
             result = HttpRequest.get(url)
                     .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                     .timeout(3000)
@@ -142,7 +145,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             log.error("获取前置机：" + node.getIp() + "状态异常！");
             return;
         }
-
+        log.debug("statusRes: " + result);
         FrontendStatusDto frontendStatusDto = JSONObject.parseObject(result, FrontendStatusDto.class);
         List<TunnelStatusDto> tunnelStatusDtoList = frontendStatusDto.getTunnelStatusDtoList();
 

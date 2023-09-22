@@ -88,7 +88,7 @@ public class DownloadFileTask {
                 .ne(ConvTunnel::getStatus, 4));
         List<Long> frontendIdList =
                 tunnelList.stream().map(ConvTunnel::getFrontendId).distinct().collect(Collectors.toList());
-
+        log.debug("定时更新前置机任务状态！");
         convergeService.updateDownLoadFileTask(taskDeque);
         for (Long id : frontendIdList) {
             CompletableFuture.runAsync(() -> convergeService.updateFeNodeStatus(id,taskDeque), threadPoolTaskExecutor);
