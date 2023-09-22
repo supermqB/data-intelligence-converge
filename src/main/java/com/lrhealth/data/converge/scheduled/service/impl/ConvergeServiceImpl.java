@@ -222,28 +222,13 @@ public class ConvergeServiceImpl implements ConvergeService {
                 int i = 0;
                 HttpResponse execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
                         .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
-                        .execute();
-                long l = 0;
-                try {
-                    l = execute.writeBody(Files.newOutputStream(FileUtil.file(path + File.separator + entry.getKey()).toPath()),
-                            true,
-                            null);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
+                        .executeAsync();
+                long l = execute.writeBody(path + File.separator + entry.getKey());
                 while (l != entry.getValue() && i < 3) {
                     execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
                             .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
-                            .execute();
-                    try {
-                        l =
-                                execute.writeBody(Files.newOutputStream(FileUtil.file(path + File.separator + entry.getKey()).toPath()),
-                                        true,
-                                        null);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                            .executeAsync();
+                    l = execute.writeBody(path + File.separator + entry.getKey());
                     i++;
                 }
                 if(i == 3){
