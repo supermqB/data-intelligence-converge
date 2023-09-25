@@ -83,8 +83,8 @@ public class DownloadFileTask {
     @Value("${lrhealth.converge.path}")
     private String path;
 
- //   @Scheduled(cron = "0/5 * * * * *")
-  //  @Transactional
+    @Scheduled(cron = "0 0/2 * * * *")
+    @Transactional
     public void refreshFENodesStatus() {
         //循环前置机
         System.out.println("定时更新前置机任务状态！");
@@ -99,7 +99,7 @@ public class DownloadFileTask {
         }
     }
 
-   // @PostConstruct
+    @PostConstruct
     public void loadTaskData() {
         threadPoolTaskExecutor.execute(this::downloadFile);
     }

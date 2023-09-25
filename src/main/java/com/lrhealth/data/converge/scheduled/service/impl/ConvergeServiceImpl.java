@@ -325,5 +325,22 @@ public class ConvergeServiceImpl implements ConvergeService {
     public void updateFileStatus(ConvTaskResultView taskResultView) {
         taskResultView.setStatus(4);
         convTaskResultViewService.updateById(taskResultView);
+        List<ConvTaskResultView> taskResultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
+                .eq(ConvTaskResultView::getTaskId, taskResultView.getTaskId())
+                .ne(ConvTaskResultView::getId, taskResultView.getId()));
+        boolean flag = true;
+        for (ConvTaskResultView resultView : taskResultViews) {
+            if (resultView.getStatus() != 4 && resultView.getStatus() != 5) {
+                flag = false;
+                break;
+            }
+        }
+        if(flag){
+            Integer taskId = taskResultView.getTaskId();
+            ConvTask convTask = convTaskService.getById(taskId);
+            convTask.setStatus(4);
+            convTaskService.updateById(convTask);
+        }
+
     }
 }
