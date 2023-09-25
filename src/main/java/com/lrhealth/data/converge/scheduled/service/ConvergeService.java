@@ -5,6 +5,7 @@ import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
 import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
 
+import java.io.File;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public interface ConvergeService {
@@ -19,7 +20,7 @@ public interface ConvergeService {
 
     PreFileStatusDto getPreFilesStatus(String url, FileTask fileTask) throws Exception;
 
-    void downLoadFile(String url, Integer taskId, PreFileStatusDto preFileStatusDto);
+    void downLoadFile(String url, File file, FileTask fileTask, PreFileStatusDto preFileStatusDto);
 
     void deleteFiles(String url, FileTask fileTask);
 

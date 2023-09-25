@@ -83,8 +83,8 @@ public class DownloadFileTask {
     @Value("${lrhealth.converge.path}")
     private String path;
 
-    @Scheduled(cron = "0/5 * * * * *")
-    @Transactional
+ //   @Scheduled(cron = "0/5 * * * * *")
+  //  @Transactional
     public void refreshFENodesStatus() {
         //循环前置机
         System.out.println("定时更新前置机任务状态！");
@@ -99,7 +99,7 @@ public class DownloadFileTask {
         }
     }
 
-    @PostConstruct
+   // @PostConstruct
     public void loadTaskData() {
         threadPoolTaskExecutor.execute(this::downloadFile);
     }
@@ -127,6 +127,18 @@ public class DownloadFileTask {
             String url = feNode.getIp() + ":" + feNode.getPort() + "/file";
 
             FileTask frontNodeTask = new FileTask(convTask.getFedTaskId(),fileName);
+            String destPath = path + File.separator + frontNodeTask.getTaskId()
+                    + File.separator + frontNodeTask.getFileName() + File.separator;
+            File file =
+                    new File(path + File.separator + fileTask.getTaskId()
+                            + File.separator + fileTask.getFileName() + File.separator);
+            if (!file.exists()){
+                if (!file.mkdirs()){
+                    log.error("创建文件夹失败！");
+                    continue;
+                }
+            }
+
             log.info("通知拆分：" + LocalDateTime.now());
             //通知前置机文件拆分-压缩-加密
             String result;
@@ -143,37 +155,38 @@ public class DownloadFileTask {
 
 
             PreFileStatusDto preFileStatusDto = null;
+            int i = 0;
             //查询拆分结果
-            while (true) {
+            while (i < (20 * 60 * 2)) {
                 try {
                     log.info("轮询状态：" + LocalDateTime.now());
                     preFileStatusDto = convergeService.getPreFilesStatus(url,frontNodeTask);
                     if (preFileStatusDto == null || "1".equals(preFileStatusDto.getStatus())) {
                         break;
                     }
+                    i++;
                     Thread.sleep(3000);
                 } catch (Exception e) {
                     log.error("轮询任务:" + taskId + "异常！");
                     break;
                 }
             }
-            if (preFileStatusDto == null) {
+            if (preFileStatusDto == null || i >= (20 * 60 * 2)) {
                 log.error("轮询任务:" + taskId + "异常！");
                 continue;
             }
 
             //异步下载文件
             log.info("开始下载：" + LocalDateTime.now());
-            convergeService.downLoadFile(url, frontNodeTask.getTaskId() ,preFileStatusDto);
+            convergeService.downLoadFile(url, file, frontNodeTask,preFileStatusDto);
             log.info("下载完成：" + LocalDateTime.now());
 
             // 文件解密-解压缩-合并
             FileUtils fileUtils = new FileUtils();
             FILE_SIZE.set(0);
             try {
-                System.out.println(feNode.getAesKey());
-                fileUtils.mergePartFiles(path, ".part",
-                        tunnel.getDataShardSize().intValue(), path + File.separator
+                fileUtils.mergePartFiles(destPath, ".part",
+                        tunnel.getDataShardSize().intValue(), destPath + File.separator
                                 + fileName,
                         Base64Decoder.decode(feNode.getAesKey()));
             } catch (Exception e) {
@@ -181,19 +194,26 @@ public class DownloadFileTask {
                 continue;
             }
 
-            File file = FileUtil.file(taskResultView.getStoredPath());
-            while (true) {
+            File destFile = FileUtil.file(destPath + File.separator
+                    + fileName);
+            i = 0;
+            while (i < (20 * 60 * 2)) {
                 if (FILE_SIZE.get() == preFileStatusDto.getPartFileMap().size()
-                        && file.length() == taskResultView.getDataSize()) {
+                        && destFile.length() == taskResultView.getDataSize()) {
                     log.info("合并完成：" + LocalDateTime.now());
                     convergeService.deleteFiles(url,frontNodeTask);
                     break;
                 }
                 try {
                     Thread.sleep(3000);
+                    i++;
                 } catch (Exception e) {
                     log.error("删除文件：" + taskId + "异常！");
                 }
+            }
+            if (i >= 20 * 60 * 2){
+                System.out.println("合并文件异常！" + path + fileName);
+                continue;
             }
             //跟新文件状态
             taskDeque.pollFirst();

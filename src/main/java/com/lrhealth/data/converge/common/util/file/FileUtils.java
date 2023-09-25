@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.common.util.file;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ZipUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -239,7 +238,7 @@ public class FileUtils {
                 new ArrayBlockingQueue<Runnable>(partFiles.size() * 2));
 
         for (int i = 0; i < partFiles.size(); i++) {
-            threadPool.execute(new MergeRunnable(i * partFileSize,
+            threadPool.execute(new MergeRunnable(dirPath,i * partFileSize,
                     mergeFileName, partFiles.get(i), aesKey));
         }
 
@@ -268,8 +267,10 @@ public class FileUtils {
         String mergeFileName;
         File partFile;
         byte[] aesKey;
+        String destPath;
 
-        public MergeRunnable(long startPos, String mergeFileName, File partFile, byte[] aesKey) {
+        public MergeRunnable(String destPath, long startPos, String mergeFileName, File partFile, byte[] aesKey) {
+            this.destPath = destPath;
             this.startPos = startPos;
             this.mergeFileName = mergeFileName;
             this.partFile = partFile;
@@ -283,13 +284,13 @@ public class FileUtils {
                 rFile.seek(startPos);
                 FileInputStream fs = new FileInputStream(partFile);
                 AES aes = SecureUtil.aes(aesKey);
-                aes.decrypt(fs, Files.newOutputStream(Paths.get("C:\\work\\" + partFile.getName() + ".zip")),true);
+                aes.decrypt(fs, Files.newOutputStream(Paths.get(destPath + partFile.getName() + ".zip")),true);
                 fs.close();
                 partFile.delete();
-                File unzip = ZipUtil.unzip("C:\\work\\" + partFile.getName() + ".zip");
+                File unzip = ZipUtil.unzip(destPath + partFile.getName() + ".zip");
                 FileInputStream fileInputStream =
-                        new FileInputStream(FileUtil.file(unzip.getPath() +"\\"+partFile.getName()+
-                        ".temp"));
+                        new FileInputStream(FileUtil.file(unzip.getPath() +
+                                File.separator + partFile.getName() + ".temp"));
 
                 byte[] b = new byte[2048];
                 int len;
@@ -301,9 +302,9 @@ public class FileUtils {
                 fileInputStream.close();
                 int i = FILE_SIZE.get() + 1;
                 FILE_SIZE.set(i);
-                FileUtils.delete("C:\\work\\" +unzip.getName());
-                FileUtils.delete("C:\\work\\" + partFile.getName()+ ".zip");
-                FileUtil.del("C:\\work\\" + partFile.getName());
+                FileUtils.delete(destPath +unzip.getName());
+                FileUtils.delete(destPath + partFile.getName()+ ".zip");
+                FileUtil.del(destPath + partFile.getName());
             } catch (IOException e) {
                 e.printStackTrace();
             }

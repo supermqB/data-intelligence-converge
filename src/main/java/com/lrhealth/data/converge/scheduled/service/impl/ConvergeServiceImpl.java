@@ -4,7 +4,6 @@ import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.scheduled.dao.entity.*;
@@ -103,7 +102,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                     .eq(ConvTaskResultView::getTaskId, convTask.getId()));
             for (ConvTaskResultView taskResultView : taskResultViews) {
                 FileTask fileTask = new FileTask(convTask.getId(), taskResultView.getFeStoredFilename());
-                if(!taskDeque.contains(fileTask)){
+                if (!taskDeque.contains(fileTask)) {
                     taskDeque.add(fileTask);
                 }
             }
@@ -143,15 +142,15 @@ public class ConvergeServiceImpl implements ConvergeService {
         Object value = JSONObject.parseObject(result).get("value");
         FrontendStatusDto frontendStatusDto;
         try {
-             frontendStatusDto = JSONObject.parseObject(JSONObject.toJSONString(value),
+            frontendStatusDto = JSONObject.parseObject(JSONObject.toJSONString(value),
                     FrontendStatusDto.class);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("反序列化失败！" + e.getMessage());
             return;
         }
 
 
-        if (frontendStatusDto == null || frontendStatusDto.getTunnelStatusDtoList() == null){
+        if (frontendStatusDto == null || frontendStatusDto.getTunnelStatusDtoList() == null) {
             log.error("status返回结果异常: " + result);
             return;
         }
@@ -165,28 +164,28 @@ public class ConvergeServiceImpl implements ConvergeService {
             for (TaskStatusDto taskStatusDto : taskStatusList) {
                 ConvTask one = convTaskService.getOne(new LambdaQueryWrapper<ConvTask>()
                         .eq(ConvTask::getTunnelId, tunnelId)
-                        .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId()),false);
+                        .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId()), false);
                 ConvTask convTask = new ConvTask();
-                BeanUtils.copyProperties(taskStatusDto,convTask);
+                BeanUtils.copyProperties(taskStatusDto, convTask);
                 convTask.setFedTaskId(taskStatusDto.getTaskId());
                 convTask.setTunnelId(tunnelId);
-                convTask.setName(tunnel.getName() + "_任务" +taskStatusDto.getTaskId());
+                convTask.setName(tunnel.getName() + "_任务" + taskStatusDto.getTaskId());
                 convTask.setSysCode(tunnel.getSysCode());
                 convTask.setOrgCode(tunnel.getOrgCode());
                 convTask.setConvergeMethod(tunnel.getConvergeMethod());
                 DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                convTask.setStartTime(LocalDateTime.parse(taskStatusDto.getStartTime(),df));
-                if (taskStatusDto.getEndTime() != null){
-                    convTask.setEndTime(LocalDateTime.parse(taskStatusDto.getEndTime(),df));
+                convTask.setStartTime(LocalDateTime.parse(taskStatusDto.getStartTime(), df));
+                if (taskStatusDto.getEndTime() != null) {
+                    convTask.setEndTime(LocalDateTime.parse(taskStatusDto.getEndTime(), df));
                 }
                 convTask.setDelFlag(0);
                 int taskId;
-                if (one != null){
+                if (one != null) {
                     taskId = one.getId();
-                    BeanUtils.copyProperties(convTask,one);
+                    BeanUtils.copyProperties(convTask, one);
                     one.setId(taskId);
                     convTaskService.updateById(one);
-                }else {
+                } else {
                     convTaskService.save(convTask);
                     taskId = convTask.getId();
                 }
@@ -197,15 +196,15 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTaskLog.setTaskId(taskId);
                     convTaskLog.setFedLogId(taskLog.getLogId());
                     convTaskLog.setLogDetail(taskLog.getLogDetail());
-                    convTaskLog.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(),df));
+                    convTaskLog.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(), df));
                     ConvTaskLog logServiceOne = convTaskLogService.getOne(new LambdaQueryWrapper<ConvTaskLog>()
                             .eq(ConvTaskLog::getFedLogId, taskLog.getLogId())
                             .eq(ConvTaskLog::getTaskId, convTask.getId()), false);
-                    if (logServiceOne != null){
+                    if (logServiceOne != null) {
                         logServiceOne.setLogDetail(convTaskLog.getLogDetail());
-                        logServiceOne.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(),df));
+                        logServiceOne.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(), df));
                         convTaskLogService.updateById(logServiceOne);
-                    }else {
+                    } else {
                         convTaskLogService.save(convTaskLog);
                     }
 
@@ -215,7 +214,7 @@ public class ConvergeServiceImpl implements ConvergeService {
 
                 for (ResultViewInfoDto resultViewInfoDto : fileInfoList) {
                     ConvTaskResultView convTaskResultView = new ConvTaskResultView();
-                    BeanUtils.copyProperties(resultViewInfoDto,convTaskResultView);
+                    BeanUtils.copyProperties(resultViewInfoDto, convTaskResultView);
                     convTaskResultView.setTaskId(taskId);
                     convTaskResultView.setDataItemCount(resultViewInfoDto.getRecordCount());
                     convTaskResultView.setFeStoredPath(resultViewInfoDto.getFilePath());
@@ -224,22 +223,22 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTaskResultView.setDataSize(resultViewInfoDto.getFileSize());
                     convTaskResultView.setDelFlag(0);
 
-                    if(taskStatusDto.getStatus() == 3){
+                    if (taskStatusDto.getStatus() == 3) {
                         FileTask fileTask = new FileTask(taskId, resultViewInfoDto.getFileName());
-                        if(!taskDeque.contains(fileTask)){
+                        if (!taskDeque.contains(fileTask)) {
                             taskDeque.add(fileTask);
                             convTaskResultView.setStatus(2);
                         }
                     }
                     ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
                             .eq(ConvTaskResultView::getTaskId, taskId)
-                            .eq(ConvTaskResultView::getTableName, resultViewInfoDto.getTableName()),false);
-                    if (taskResultView != null){
+                            .eq(ConvTaskResultView::getTableName, resultViewInfoDto.getTableName()), false);
+                    if (taskResultView != null) {
                         int id = taskResultView.getId();
-                        BeanUtils.copyProperties(convTaskResultView,taskResultView);
+                        BeanUtils.copyProperties(convTaskResultView, taskResultView);
                         taskResultView.setId(id);
                         convTaskResultViewService.updateById(taskResultView);
-                    }else {
+                    } else {
                         convTaskResultViewService.save(convTaskResultView);
                     }
 
@@ -264,7 +263,7 @@ public class ConvergeServiceImpl implements ConvergeService {
     public PreFileStatusDto getPreFilesStatus(String url, FileTask fileTask) {
         RSA instance = RsaUtils.getInstance(privateKeyStr);
         String token = "lrhealth:" + System.currentTimeMillis();
-        String statusResponse = HttpRequest.post(url + "/prepareFiles/status" )
+        String statusResponse = HttpRequest.post(url + "/prepareFiles/status")
                 .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                 .body(JSONObject.toJSONString(fileTask))
                 .timeout(3000).execute().body();
@@ -272,29 +271,31 @@ public class ConvergeServiceImpl implements ConvergeService {
     }
 
     @Override
-    public void downLoadFile(String url, Integer taskId, PreFileStatusDto preFileStatusDto) {
+    public void downLoadFile(String url, File file, FileTask fileTask, PreFileStatusDto preFileStatusDto) {
         List<CompletableFuture<String>> futureList = new ArrayList<>();
         RSA instance = RsaUtils.getInstance(privateKeyStr);
         String token = "lrhealth:" + System.currentTimeMillis();
         for (Map.Entry<String, Integer> entry : preFileStatusDto.getPartFileMap().entrySet()) {
             CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                 int i = 0;
-//                HttpResponse execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
-//                        .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
-//                        .executeAsync();
-//                long l = execute.writeBody(path + File.separator + entry.getKey());
-                long l = HttpUtil.downloadFile(url + "/downloadFiles/" + taskId + "/"+ entry.getKey(),
-                        path + File.separator + entry.getKey());
+                HttpResponse execute = HttpRequest.get(url + "/downloadFiles")
+                        .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
+                        .form("taskId", fileTask.getTaskId())
+                        .form("fileName", fileTask.getFileName())
+                        .form("partFileName", entry.getKey())
+                        .executeAsync();
+                long l = execute.writeBody(file);
                 while (l != entry.getValue() && i < 3) {
-//                    execute = HttpRequest.get(url + "/downloadFiles/" + entry.getKey())
-//                            .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
-//                            .executeAsync();
-//                    l = execute.writeBody(path + File.separator + entry.getKey());
-                    l = HttpUtil.downloadFile(url + "/downloadFiles/" + taskId + "/" + entry.getKey(),
-                            path + File.separator + entry.getKey());
+                    execute = HttpRequest.get(url + "/downloadFiles")
+                            .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
+                            .form("taskId", fileTask.getTaskId())
+                            .form("fileName", fileTask.getFileName())
+                            .form("partFileName", entry.getKey())
+                            .executeAsync();
+                    l = execute.writeBody(file);
                     i++;
                 }
-                if(i == 3){
+                if (i == 3) {
                     log.error("文件传输重试超过3次！");
                     return entry.getKey();
                 }
