@@ -150,6 +150,11 @@ public class DownloadFileTask {
             }
             if (!"true".equals(result)){
                 log.error("任务：" + taskId + "通知拆分异常！");
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
+                }
                 continue;
             }
 
