@@ -160,11 +160,9 @@ public class ConvergeServiceImpl implements ConvergeService {
             ConvTunnel tunnel = convTunnelService.getById(tunnelId);
             tunnel.setStatus(tunnelStatusDto.getTunnelStatus());
             convTunnelService.updateById(tunnel);
+            Integer convTaskId;
             List<TaskStatusDto> taskStatusList = tunnelStatusDto.getTaskStatusList();
             for (TaskStatusDto taskStatusDto : taskStatusList) {
-                ConvTask one = convTaskService.getOne(new LambdaQueryWrapper<ConvTask>()
-                        .eq(ConvTask::getTunnelId, tunnelId)
-                        .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId()), false);
                 ConvTask convTask = new ConvTask();
                 BeanUtils.copyProperties(taskStatusDto, convTask);
                 convTask.setFedTaskId(taskStatusDto.getTaskId());
@@ -179,43 +177,37 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTask.setEndTime(LocalDateTime.parse(taskStatusDto.getEndTime(), df));
                 }
                 convTask.setDelFlag(0);
-                int taskId;
-                if (one != null) {
-                    taskId = one.getId();
-                    BeanUtils.copyProperties(convTask, one);
-                    one.setId(taskId);
-                    convTaskService.updateById(one);
-                } else {
-                    convTaskService.save(convTask);
-                    taskId = convTask.getId();
+                convTaskService.saveOrUpdate(convTask,new LambdaQueryWrapper<ConvTask>()
+                        .eq(ConvTask::getTunnelId,tunnelId)
+                        .eq(ConvTask::getFedTaskId,taskStatusDto.getTaskId()));
+
+                convTaskId = convTask.getId();
+                if(convTaskId == null){
+                    List<ConvTask> list = convTaskService.list(new LambdaQueryWrapper<ConvTask>()
+                            .eq(ConvTask::getTunnelId, tunnelId)
+                            .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId()));
+                    convTaskId = list.stream().findFirst().get().getId();
                 }
+
 
                 List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
                 for (TaskLogDto taskLog : taskLogs) {
                     ConvTaskLog convTaskLog = new ConvTaskLog();
-                    convTaskLog.setTaskId(taskId);
+                    convTaskLog.setTaskId(convTaskId);
                     convTaskLog.setFedLogId(taskLog.getLogId());
                     convTaskLog.setLogDetail(taskLog.getLogDetail());
                     convTaskLog.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(), df));
-                    ConvTaskLog logServiceOne = convTaskLogService.getOne(new LambdaQueryWrapper<ConvTaskLog>()
+                    convTaskLogService.saveOrUpdate(convTaskLog, new LambdaQueryWrapper<ConvTaskLog>()
                             .eq(ConvTaskLog::getFedLogId, taskLog.getLogId())
-                            .eq(ConvTaskLog::getTaskId, taskId), false);
-                    if (logServiceOne != null) {
-                        logServiceOne.setLogDetail(convTaskLog.getLogDetail());
-                        logServiceOne.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(), df));
-                        convTaskLogService.updateById(logServiceOne);
-                    } else {
-                        convTaskLogService.save(convTaskLog);
-                    }
+                            .eq(ConvTaskLog::getTaskId, convTaskId));
 
                 }
 
                 List<ResultViewInfoDto> fileInfoList = taskStatusDto.getFileInfoList();
-
                 for (ResultViewInfoDto resultViewInfoDto : fileInfoList) {
                     ConvTaskResultView convTaskResultView = new ConvTaskResultView();
                     BeanUtils.copyProperties(resultViewInfoDto, convTaskResultView);
-                    convTaskResultView.setTaskId(taskId);
+                    convTaskResultView.setTaskId(convTaskId);
                     convTaskResultView.setDataItemCount(resultViewInfoDto.getRecordCount());
                     convTaskResultView.setFeStoredPath(resultViewInfoDto.getFilePath());
                     convTaskResultView.setStoredPath(path + File.separator + resultViewInfoDto.getFileName());
@@ -224,24 +216,15 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTaskResultView.setDelFlag(0);
 
                     if (taskStatusDto.getStatus() == 3) {
-                        FileTask fileTask = new FileTask(taskId, resultViewInfoDto.getFileName());
+                        FileTask fileTask = new FileTask(convTaskId, resultViewInfoDto.getFileName());
                         if (!taskDeque.contains(fileTask)) {
                             taskDeque.add(fileTask);
                             convTaskResultView.setStatus(2);
                         }
                     }
-                    ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
-                            .eq(ConvTaskResultView::getTaskId, taskId)
-                            .eq(ConvTaskResultView::getTableName, resultViewInfoDto.getTableName()), false);
-                    if (taskResultView != null) {
-                        int id = taskResultView.getId();
-                        BeanUtils.copyProperties(convTaskResultView, taskResultView);
-                        taskResultView.setId(id);
-                        convTaskResultViewService.updateById(taskResultView);
-                    } else {
-                        convTaskResultViewService.save(convTaskResultView);
-                    }
-
+                    convTaskResultViewService.saveOrUpdate(convTaskResultView,new LambdaQueryWrapper<ConvTaskResultView>()
+                            .eq(ConvTaskResultView::getTaskId, convTaskId)
+                            .eq(ConvTaskResultView::getTableName, resultViewInfoDto.getTableName()));
                 }
             }
         }
