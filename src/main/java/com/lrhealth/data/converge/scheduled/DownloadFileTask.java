@@ -126,11 +126,10 @@ public class DownloadFileTask {
             String url = feNode.getIp() + ":" + feNode.getPort() + "/file";
 
             FileTask frontNodeTask = new FileTask(convTask.getFedTaskId(),fileName);
-            String destPath = path + File.separator + frontNodeTask.getTaskId()
-                    + File.separator + frontNodeTask.getFileName() + File.separator;
+            String destPath = path + File.separator + fileTask.getTaskId()
+                    + File.separator + fileTask.getFileName() + File.separator;
             File file =
-                    new File(path + File.separator + fileTask.getTaskId()
-                            + File.separator + fileTask.getFileName() + File.separator);
+                    new File(destPath);
             if (!file.exists()){
                 if (!file.mkdirs()){
                     log.error("创建文件夹失败！");

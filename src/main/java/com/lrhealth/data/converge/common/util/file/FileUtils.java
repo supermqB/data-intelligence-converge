@@ -135,7 +135,10 @@ public class FileUtils {
 
         });
         ArrayList<File> files = new ArrayList<File>();
-
+        if (fileArr == null || fileArr.length < 1){
+            System.out.println("目录"+ dirPath +"下未找到文件！");
+            return null;
+        }
         for (File f : fileArr) {
             if (f.isFile()) {
                 files.add(f);
