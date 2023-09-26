@@ -139,7 +139,7 @@ public class DownloadFileTask {
                 }
             }
 
-            log.info("通知拆分：" + LocalDateTime.now());
+            log.info("通知拆分文件：" + LocalDateTime.now() + " " + fileName);
             //通知前置机文件拆分-压缩-加密
             String result;
             try {
@@ -168,13 +168,13 @@ public class DownloadFileTask {
             //查询拆分结果
             while (i < (20 * 60 * 2)) {
                 try {
-                    log.info("轮询状态：" + LocalDateTime.now());
+                    log.info("轮询状态：" + LocalDateTime.now() + " " + fileName);
                     preFileStatusDto = convergeService.getPreFilesStatus(url,frontNodeTask);
                     if (preFileStatusDto == null || "1".equals(preFileStatusDto.getStatus())) {
                         break;
                     }
                     i++;
-                    Thread.sleep(3000);
+                    Thread.sleep(5000);
                 } catch (Exception e) {
                     log.error("轮询任务:" + taskId + "异常！\n" + e.getMessage());
                     taskDeque.add(fileTask);
@@ -182,7 +182,7 @@ public class DownloadFileTask {
                     break;
                 }
             }
-            if (preFileStatusDto == null || i >= (20 * 60 * 2)) {
+            if (preFileStatusDto == null || i >= (12 * 60 * 2)) {
                 log.error("轮询任务:" + taskId + "异常！");
                 taskDeque.add(fileTask);
                 taskDeque.pollFirst();
@@ -190,9 +190,11 @@ public class DownloadFileTask {
             }
 
             //异步下载文件
-            log.info("开始下载：" + LocalDateTime.now());
+            log.info("开始下载：" + LocalDateTime.now() + " " + fileName);
+            long startTime = System.currentTimeMillis();
+            long endTime = System.currentTimeMillis();
             convergeService.downLoadFile(url, file, frontNodeTask,preFileStatusDto);
-            log.info("下载完成：" + LocalDateTime.now());
+            log.info("下载完成：" + LocalDateTime.now() + " " + fileName);
 
             // 文件解密-解压缩-合并
             FileUtils fileUtils = new FileUtils();
@@ -215,7 +217,8 @@ public class DownloadFileTask {
             while (i < (20 * 60 * 2)) {
                 if (FILE_SIZE.get() == preFileStatusDto.getPartFileMap().size()
                         && destFile.length() == taskResultView.getDataSize()) {
-                    log.info("合并完成：" + LocalDateTime.now());
+                    log.info("合并完成：" + LocalDateTime.now()+ " " + fileName);
+                     endTime = System.currentTimeMillis();
                     convergeService.deleteFiles(url,frontNodeTask);
                     break;
                 }
@@ -235,7 +238,9 @@ public class DownloadFileTask {
             }
             //跟新文件状态
             taskDeque.pollFirst();
+            taskResultView.setTransferTime(endTime - startTime);
             convergeService.updateFileStatus(taskResultView);
+            log.info("文件状态更新成功！" + fileName);
         }
     }
 
