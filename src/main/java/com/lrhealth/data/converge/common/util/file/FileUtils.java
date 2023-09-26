@@ -225,7 +225,7 @@ public class FileUtils {
      * @throws IOException
      */
     public void mergePartFiles(String dirPath, String partFileSuffix,
-                               int partFileSize, String mergeFileName, byte[] aesKey) throws IOException {
+                               int partFileSize, String mergeFileName, byte[] aesKey) throws Exception {
         ArrayList<File> partFiles = FileUtils.getDirFiles(dirPath,
                 partFileSuffix);
         Collections.sort(partFiles, new FileComparator());

@@ -99,7 +99,10 @@ public class ConvergeServiceImpl implements ConvergeService {
                 .eq(ConvTask::getStatus, 3));
         for (ConvTask convTask : list) {
             List<ConvTaskResultView> taskResultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
-                    .eq(ConvTaskResultView::getTaskId, convTask.getId()));
+                    .eq(ConvTaskResultView::getTaskId, convTask.getId())
+                    .and((l) -> l.eq(ConvTaskResultView::getStatus,1)
+                            .or()
+                            .eq(ConvTaskResultView::getStatus,2)));
             for (ConvTaskResultView taskResultView : taskResultViews) {
                 FileTask fileTask = new FileTask(convTask.getId(), taskResultView.getFeStoredFilename());
                 if (!taskDeque.contains(fileTask)) {
@@ -167,6 +170,10 @@ public class ConvergeServiceImpl implements ConvergeService {
             Integer convTaskId;
             List<TaskStatusDto> taskStatusList = tunnelStatusDto.getTaskStatusList();
             for (TaskStatusDto taskStatusDto : taskStatusList) {
+
+                ConvTask one = convTaskService.getOne(new LambdaQueryWrapper<ConvTask>()
+                                .eq(ConvTask::getFedTaskId,taskStatusDto.getTaskId())
+                                .eq(ConvTask::getTunnelId,tunnelId),false);
                 ConvTask convTask = new ConvTask();
                 BeanUtils.copyProperties(taskStatusDto, convTask);
                 convTask.setFedTaskId(taskStatusDto.getTaskId());
@@ -181,6 +188,10 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTask.setEndTime(LocalDateTime.parse(taskStatusDto.getEndTime(), df));
                 }
                 convTask.setDelFlag(0);
+                if (one != null){
+                    convTask.setStatus(one.getStatus());
+                    taskStatusDto.setStatus(one.getStatus());
+                }
                 convTaskService.saveOrUpdate(convTask,new LambdaQueryWrapper<ConvTask>()
                         .eq(ConvTask::getTunnelId,tunnelId)
                         .eq(ConvTask::getFedTaskId,taskStatusDto.getTaskId()));
@@ -209,6 +220,10 @@ public class ConvergeServiceImpl implements ConvergeService {
 
                 List<ResultViewInfoDto> fileInfoList = taskStatusDto.getFileInfoList();
                 for (ResultViewInfoDto resultViewInfoDto : fileInfoList) {
+                    ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
+                            .eq(ConvTaskResultView::getTaskId, convTaskId)
+                            .eq(ConvTaskResultView::getTableName,resultViewInfoDto.getTableName()), false);
+
                     ConvTaskResultView convTaskResultView = new ConvTaskResultView();
                     BeanUtils.copyProperties(resultViewInfoDto, convTaskResultView);
                     convTaskResultView.setTaskId(convTaskId);
@@ -218,14 +233,18 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTaskResultView.setFeStoredFilename(resultViewInfoDto.getFileName());
                     convTaskResultView.setDataSize(resultViewInfoDto.getFileSize());
                     convTaskResultView.setDelFlag(0);
+                    if (taskResultView != null){
+                        convTaskResultView.setStatus(taskResultView.getStatus());
+                    }
 
-                    if (taskStatusDto.getStatus() == 3) {
+                    if (taskStatusDto.getStatus() == 3 && convTaskResultView.getStatus() == 1) {
                         FileTask fileTask = new FileTask(convTaskId, resultViewInfoDto.getFileName());
                         if (!taskDeque.contains(fileTask)) {
                             taskDeque.add(fileTask);
                             convTaskResultView.setStatus(2);
                         }
                     }
+
                     convTaskResultViewService.saveOrUpdate(convTaskResultView,new LambdaQueryWrapper<ConvTaskResultView>()
                             .eq(ConvTaskResultView::getTaskId, convTaskId)
                             .eq(ConvTaskResultView::getTableName, resultViewInfoDto.getTableName()));
@@ -310,14 +329,14 @@ public class ConvergeServiceImpl implements ConvergeService {
     @Override
     @Transactional
     public void updateFileStatus(ConvTaskResultView taskResultView) {
-        taskResultView.setStatus(4);
+        taskResultView.setStatus(3);
         convTaskResultViewService.updateById(taskResultView);
         List<ConvTaskResultView> taskResultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
                 .eq(ConvTaskResultView::getTaskId, taskResultView.getTaskId())
                 .ne(ConvTaskResultView::getId, taskResultView.getId()));
         boolean flag = true;
         for (ConvTaskResultView resultView : taskResultViews) {
-            if (resultView.getStatus() != 4 && resultView.getStatus() != 5) {
+            if (resultView.getStatus() == 1 || resultView.getStatus() == 2) {
                 flag = false;
                 break;
             }
