@@ -199,7 +199,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTaskLog.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(), df));
                     ConvTaskLog logServiceOne = convTaskLogService.getOne(new LambdaQueryWrapper<ConvTaskLog>()
                             .eq(ConvTaskLog::getFedLogId, taskLog.getLogId())
-                            .eq(ConvTaskLog::getTaskId, convTask.getId()), false);
+                            .eq(ConvTaskLog::getTaskId, taskId), false);
                     if (logServiceOne != null) {
                         logServiceOne.setLogDetail(convTaskLog.getLogDetail());
                         logServiceOne.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(), df));
