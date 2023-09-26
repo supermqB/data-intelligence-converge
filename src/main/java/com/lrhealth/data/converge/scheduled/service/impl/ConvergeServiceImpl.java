@@ -110,7 +110,7 @@ public class ConvergeServiceImpl implements ConvergeService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateFeNodeStatus(Long feNodeId, ConcurrentLinkedDeque<FileTask> taskDeque) {
 
         RSA instance = RsaUtils.getInstance(privateKeyStr);
@@ -135,7 +135,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                     .timeout(3000)
                     .execute().body();
         } catch (Exception e) {
-            log.error("获取前置机：" + node.getIp() + "状态异常！");
+            log.error("获取前置机：" + node.getIp() + "状态异常！\n" + e.getMessage());
             return;
         }
         System.out.println("statusRes: " + result);
@@ -158,6 +158,10 @@ public class ConvergeServiceImpl implements ConvergeService {
         for (TunnelStatusDto tunnelStatusDto : tunnelStatusDtoList) {
             Long tunnelId = tunnelStatusDto.getTunnelId();
             ConvTunnel tunnel = convTunnelService.getById(tunnelId);
+            if (tunnel == null){
+                System.out.println("不存在的tunnel: " + tunnelId);
+                continue;
+            }
             tunnel.setStatus(tunnelStatusDto.getTunnelStatus());
             convTunnelService.updateById(tunnel);
             Integer convTaskId;

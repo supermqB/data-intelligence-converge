@@ -83,8 +83,7 @@ public class DownloadFileTask {
     @Value("${lrhealth.converge.path}")
     private String path;
 
-    @Scheduled(cron = "0 0/2 * * * *")
-    @Transactional
+    @Scheduled(cron = "0 * * * * *")
     public void refreshFENodesStatus() {
         //循环前置机
         System.out.println("定时更新前置机任务状态！");
@@ -93,9 +92,9 @@ public class DownloadFileTask {
                 .ne(ConvTunnel::getStatus, 4));
         List<Long> frontendIdList =
                 tunnelList.stream().map(ConvTunnel::getFrontendId).distinct().collect(Collectors.toList());
-        convergeService.updateDownLoadFileTask(taskDeque);
+         convergeService.updateDownLoadFileTask(taskDeque);
         for (Long id : frontendIdList) {
-            CompletableFuture.runAsync(() -> convergeService.updateFeNodeStatus(id,taskDeque), threadPoolTaskExecutor);
+            convergeService.updateFeNodeStatus(id,taskDeque);
         }
     }
 
@@ -145,7 +144,7 @@ public class DownloadFileTask {
             try {
                 result = convergeService.prepareFiles(url,frontNodeTask);
             } catch (Exception e) {
-                log.error("任务：" + taskId + "通知拆分异常！");
+                log.error("任务：" + taskId + "通知拆分异常！\n" + e.getMessage());
                 continue;
             }
             if (!"true".equals(result)){
@@ -172,7 +171,7 @@ public class DownloadFileTask {
                     i++;
                     Thread.sleep(3000);
                 } catch (Exception e) {
-                    log.error("轮询任务:" + taskId + "异常！");
+                    log.error("轮询任务:" + taskId + "异常！\n" + e.getMessage());
                     break;
                 }
             }
@@ -195,7 +194,7 @@ public class DownloadFileTask {
                                 + fileName,
                         Base64Decoder.decode(feNode.getAesKey()));
             } catch (Exception e) {
-                log.error("任务：" + taskId + "合并失败！");
+                log.error("任务：" + taskId + "合并失败！\n" + e.getMessage());
                 continue;
             }
 
@@ -213,11 +212,11 @@ public class DownloadFileTask {
                     Thread.sleep(3000);
                     i++;
                 } catch (Exception e) {
-                    log.error("删除文件：" + taskId + "异常！");
+                    log.error("删除文件：" + taskId + "异常！\n" + e.getMessage());
                 }
             }
             if (i >= 20 * 60 * 2){
-                System.out.println("合并文件异常！" + path + fileName);
+                System.out.println("合并文件超时！" + path + fileName);
                 continue;
             }
             //跟新文件状态
