@@ -141,7 +141,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             log.error("获取前置机：" + node.getIp() + "状态异常！\n" + e.getMessage());
             return;
         }
-        System.out.println("statusRes: " + result);
+        log.info("statusRes: " + result);
         Object value = JSONObject.parseObject(result).get("value");
         FrontendStatusDto frontendStatusDto;
         try {
@@ -162,7 +162,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             Long tunnelId = tunnelStatusDto.getTunnelId();
             ConvTunnel tunnel = convTunnelService.getById(tunnelId);
             if (tunnel == null){
-                System.out.println("不存在的tunnel: " + tunnelId);
+                log.info("不存在的tunnel: " + tunnelId);
                 continue;
             }
             tunnel.setStatus(tunnelStatusDto.getTunnelStatus());
@@ -251,7 +251,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                 }
             }
         }
-        System.out.println("前置机：" + node.getIp() + " 状态更新结束！");
+        log.info("前置机：" + node.getIp() + " 状态更新结束！");
     }
 
     @Override

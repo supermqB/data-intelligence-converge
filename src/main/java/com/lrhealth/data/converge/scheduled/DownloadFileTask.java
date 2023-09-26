@@ -86,7 +86,7 @@ public class DownloadFileTask {
     @Scheduled(cron = "0 * * * * *")
     public void refreshFENodesStatus() {
         //循环前置机
-        System.out.println("定时更新前置机任务状态！" + LocalDateTime.now());
+        log.info("定时更新前置机任务状态！" + LocalDateTime.now());
         List<ConvTunnel> tunnelList = convTunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
                 .ne(ConvTunnel::getStatus, 0)
                 .ne(ConvTunnel::getStatus, 4));
