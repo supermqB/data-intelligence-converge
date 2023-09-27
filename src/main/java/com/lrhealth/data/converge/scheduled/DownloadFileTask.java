@@ -220,6 +220,7 @@ public class DownloadFileTask {
                     + fileName);
             i = 0;
             while (i < (20 * 60 * 2)) {
+                log.info("正在合并文件..." + LocalDateTime.now());
                 if (FILE_SIZE.get() == preFileStatusDto.getPartFileMap().size()
                         && destFile.length() == taskResultView.getDataSize()) {
                     log.info("合并完成：" + LocalDateTime.now()+ " " + fileName);
