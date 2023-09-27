@@ -148,6 +148,7 @@ public class DownloadFileTask {
                 log.error("任务：" + taskId + "通知拆分异常！\n" + e.getMessage());
                 taskDeque.add(fileTask);
                 taskDeque.pollFirst();
+                convergeService.resetStatus(convTask,taskResultView);
                 continue;
             }
             if (!"true".equals(result)){
@@ -159,6 +160,7 @@ public class DownloadFileTask {
                 }
                 taskDeque.add(fileTask);
                 taskDeque.pollFirst();
+                convergeService.resetStatus(convTask,taskResultView);
                 continue;
             }
 
@@ -179,6 +181,7 @@ public class DownloadFileTask {
                     log.error("轮询任务:" + taskId + "异常！\n" + e.getMessage());
                     taskDeque.add(fileTask);
                     taskDeque.pollFirst();
+                    convergeService.resetStatus(convTask,taskResultView);
                     break;
                 }
             }
@@ -186,6 +189,7 @@ public class DownloadFileTask {
                 log.error("轮询任务:" + taskId + "异常！");
                 taskDeque.add(fileTask);
                 taskDeque.pollFirst();
+                convergeService.resetStatus(convTask,taskResultView);
                 continue;
             }
 
@@ -208,6 +212,7 @@ public class DownloadFileTask {
                 log.error("任务：" + taskId + "合并失败！\n" + e.getMessage());
                 taskDeque.add(fileTask);
                 taskDeque.pollFirst();
+                convergeService.resetStatus(convTask,taskResultView);
                 continue;
             }
 
@@ -227,6 +232,7 @@ public class DownloadFileTask {
                     i++;
                 } catch (Exception e) {
                     log.error("删除文件：" + taskId + "异常！\n" + e.getMessage());
+                    convergeService.resetStatus(convTask,taskResultView);
                     break;
                 }
             }
@@ -234,6 +240,7 @@ public class DownloadFileTask {
                 System.out.println("合并文件超时！" + path + fileName);
                 taskDeque.add(fileTask);
                 taskDeque.pollFirst();
+                convergeService.resetStatus(convTask,taskResultView);
                 continue;
             }
             //跟新文件状态

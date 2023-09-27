@@ -349,4 +349,13 @@ public class ConvergeServiceImpl implements ConvergeService {
         }
 
     }
+
+    @Override
+    @Transactional
+    public void resetStatus(ConvTask convTask, ConvTaskResultView taskResultView) {
+        convTask.setStatus(3);
+        taskResultView.setStatus(1);
+        convTaskService.updateById(convTask);
+        convTaskResultViewService.updateById(taskResultView);
+    }
 }
