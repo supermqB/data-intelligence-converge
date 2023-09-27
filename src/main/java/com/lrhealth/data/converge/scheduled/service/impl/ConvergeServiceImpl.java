@@ -188,7 +188,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTask.setEndTime(LocalDateTime.parse(taskStatusDto.getEndTime(), df));
                 }
                 convTask.setDelFlag(0);
-                if (one != null){
+                if (one != null && one.getStatus() > 3){
                     convTask.setStatus(one.getStatus());
                     taskStatusDto.setStatus(one.getStatus());
                 }
@@ -233,7 +233,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                     convTaskResultView.setFeStoredFilename(resultViewInfoDto.getFileName());
                     convTaskResultView.setDataSize(resultViewInfoDto.getFileSize());
                     convTaskResultView.setDelFlag(0);
-                    if (taskResultView != null){
+                    if (taskResultView != null  && taskResultView.getStatus() > 1){
                         convTaskResultView.setStatus(taskResultView.getStatus());
                     }
 
