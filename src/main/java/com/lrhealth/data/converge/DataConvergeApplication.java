@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication(scanBasePackages = {"com.lrhealth.data.*"})
 @EnableTransactionManagement(proxyTargetClass = true)
 @EnableAsync
+@EnableRetry
 public class DataConvergeApplication {
     private static final Logger log = LoggerFactory.getLogger(DataConvergeApplication.class);
 

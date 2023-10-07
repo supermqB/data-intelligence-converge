@@ -4,16 +4,14 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ZipUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
+import com.lrhealth.data.converge.scheduled.config.exception.FileMergeException;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import static com.lrhealth.data.converge.scheduled.DownloadFileTask.FILE_SIZE;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -123,21 +121,14 @@ public class FileUtils {
     public static ArrayList<File> getDirFiles(String dirPath,
                                               final String suffix) {
         File path = new File(dirPath);
-        File[] fileArr = path.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                String lowerName = name.toLowerCase();
-                String lowerSuffix = suffix.toLowerCase();
-                if (lowerName.endsWith(lowerSuffix)) {
-                    return true;
-                }
-                return false;
-            }
-
+        File[] fileArr = path.listFiles((dir, name) -> {
+            String lowerName = name.toLowerCase();
+            String lowerSuffix = suffix.toLowerCase();
+            return lowerName.endsWith(lowerSuffix);
         });
-        ArrayList<File> files = new ArrayList<File>();
+        ArrayList<File> files = new ArrayList<>();
         if (fileArr == null || fileArr.length < 1){
-            System.out.println("目录"+ dirPath +"下未找到文件！");
-            return null;
+            return files;
         }
         for (File f : fileArr) {
             if (f.isFile()) {
@@ -217,33 +208,39 @@ public class FileUtils {
     /**
      * 合并文件
      *
-     * @param dirPath        拆分文件所在目录名
-     * @param partFileSuffix 拆分文件后缀名
-     * @param partFileSize   拆分文件的字节数大小
-     * @param mergeFileName  合并后的文件名
-     * @param aesKey 加密
+     * @param threadPoolTaskExecutor
+     * @param dirPath                拆分文件所在目录名
+     * @param partFileSuffix         拆分文件后缀名
+     * @param partFileSize           拆分文件的字节数大小
+     * @param mergeFileName          合并后的文件名
+     * @param aesKey                 加密
      * @throws IOException
      */
-    public void mergePartFiles(String dirPath, String partFileSuffix,
+    public void mergePartFiles(Executor executor, String dirPath, String partFileSuffix,
                                int partFileSize, String mergeFileName, byte[] aesKey) throws Exception {
         ArrayList<File> partFiles = FileUtils.getDirFiles(dirPath,
                 partFileSuffix);
-        Collections.sort(partFiles, new FileComparator());
+        partFiles.sort(new FileComparator());
         FileUtils.delete(mergeFileName);
         RandomAccessFile randomAccessFile = new RandomAccessFile(mergeFileName,
                 "rw");
-//        randomAccessFile.setLength(partFileSize * (partFiles.size() - 1)
-//                + partFiles.get(partFiles.size() - 1).length());
         randomAccessFile.close();
 
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
-                partFiles.size() / 2, partFiles.size() * 3 / 2, 1, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<Runnable>(partFiles.size() * 2));
-
+        List<CompletableFuture<Void>> futureList = new ArrayList<>();
         for (int i = 0; i < partFiles.size(); i++) {
-            threadPool.execute(new MergeRunnable(dirPath,i * partFileSize,
-                    mergeFileName, partFiles.get(i), aesKey));
+            CompletableFuture<Void> future = CompletableFuture.runAsync(new MergeRunnable(dirPath,
+                            i * partFileSize, mergeFileName, partFiles.get(i), aesKey),executor)
+                    .exceptionally(e -> {
+                        throw new FileMergeException("文件合并异常: " + mergeFileName + "\n"
+                                + e.getMessage() + "\n"
+                                + Arrays.toString(e.getStackTrace()));
+                    });
+            futureList.add(future);
         }
+
+        CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]))
+                .thenApply(e -> futureList.stream().map(CompletableFuture::join)
+                        .collect(Collectors.toList())).join();
 
     }
 
@@ -303,8 +300,6 @@ public class FileUtils {
 
                 rFile.close();
                 fileInputStream.close();
-                int i = FILE_SIZE.get() + 1;
-                FILE_SIZE.set(i);
                 FileUtils.delete(destPath +unzip.getName());
                 FileUtils.delete(destPath + partFile.getName()+ ".zip");
                 FileUtil.del(destPath + partFile.getName());
