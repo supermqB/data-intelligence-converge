@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.scheduled.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.http.HttpRequest;
@@ -8,13 +9,23 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.scheduled.config.ConvergeConfig;
 import com.lrhealth.data.converge.scheduled.config.exception.FeNodeStatusException;
 import com.lrhealth.data.converge.scheduled.config.exception.PingException;
-import com.lrhealth.data.converge.scheduled.dao.entity.*;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskLog;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultCdc;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskLogService;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultCdcService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
-import com.lrhealth.data.converge.scheduled.model.FileTask;
-import com.lrhealth.data.converge.scheduled.model.dto.*;
+import com.lrhealth.data.converge.scheduled.model.dto.FrontendStatusDto;
+import com.lrhealth.data.converge.scheduled.model.dto.ResultCDCInfoDTO;
+import com.lrhealth.data.converge.scheduled.model.dto.ResultViewInfoDto;
+import com.lrhealth.data.converge.scheduled.model.dto.TaskLogDto;
+import com.lrhealth.data.converge.scheduled.model.dto.TaskStatusDto;
+import com.lrhealth.data.converge.scheduled.model.dto.TunnelStatusDto;
 import com.lrhealth.data.converge.scheduled.service.FeNodeService;
 import com.lrhealth.data.converge.scheduled.utils.RsaUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +64,9 @@ public class FeNodeServiceImpl implements FeNodeService {
 
     @Resource
     private ConvTaskResultViewService convTaskResultViewService;
+
+    @Resource
+    private ConvTaskResultCdcService convTaskResultCdcService;
 
     @Override
     @Retryable(value = {PingException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -190,5 +204,19 @@ public class FeNodeServiceImpl implements FeNodeService {
                 .eq(ConvTaskResultView::getTaskId, convTask.getId())
                 .eq(ConvTaskResultView::getTableName, resultViewInfoDto.getTableName()));
         return convTaskResultView;
+    }
+
+    @Override
+    public ConvTaskResultCdc saveOrUpdateFile(ResultCDCInfoDTO cdcInfoDTO, ConvTask convTask) {
+        ConvTaskResultCdc convTaskResultCdc = BeanUtil.copyProperties(cdcInfoDTO, ConvTaskResultCdc.class);
+        convTaskResultCdc.setTaskId(Long.valueOf(convTask.getId()));
+        convTaskResultCdc.setDelFlag(0);
+
+        // @formatter:off
+        convTaskResultCdcService.saveOrUpdate(convTaskResultCdc, new LambdaQueryWrapper<ConvTaskResultCdc>()
+            .eq(ConvTaskResultCdc::getTaskId, convTask.getId())
+            .eq(ConvTaskResultCdc::getTableName, cdcInfoDTO.getTableName()));
+        // @formatter:on
+        return convTaskResultCdc;
     }
 }

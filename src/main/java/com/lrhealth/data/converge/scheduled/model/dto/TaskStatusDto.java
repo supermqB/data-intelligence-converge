@@ -23,4 +23,6 @@ public class TaskStatusDto {
     private List<TaskLogDto> taskLogs;
 
     private List<ResultViewInfoDto> fileInfoList;
+
+    private List<ResultCDCInfoDTO> cdcInfoList;
 }

@@ -126,6 +126,11 @@ public class ConvergeServiceImpl implements ConvergeService {
                         }
                     }
                 }
+
+                List<ResultCDCInfoDTO> cdcInfoList = taskStatusDto.getCdcInfoList();
+                for (ResultCDCInfoDTO resultCDCInfoDTO : cdcInfoList) {
+                    feNodeService.saveOrUpdateFile(resultCDCInfoDTO, convTask);
+                }
             }
         }
         log.info("前置机：" + node.getIp() + " 状态更新结束！");
