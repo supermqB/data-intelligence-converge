@@ -1,14 +1,24 @@
 package com.lrhealth.data.converge.scheduled.service.impl;
 
 import cn.hutool.core.codec.Base64Decoder;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSONObject;
+import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.converge.common.util.file.FileUtils;
+import com.lrhealth.data.converge.common.util.file.LargeFileUtil;
+import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
+import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.scheduled.config.ConvergeConfig;
 import com.lrhealth.data.converge.scheduled.config.exception.*;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
 import com.lrhealth.data.converge.scheduled.model.TaskFileConfig;
 import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
@@ -18,11 +28,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,9 +54,16 @@ public class TaskFileServiceImpl implements TaskFileService {
 
     @Resource
     private ConvergeConfig convergeConfig;
-
     @Resource
     private Executor threadPoolTaskExecutor;
+    @Resource
+    private ConvTaskResultViewService taskResultViewService;
+    @Resource
+    private XdsService xdsService;
+    @Resource
+    private ConvTaskService taskService;
+    @Resource
+    private JDBCRepository jdbcRepository;
 
     @Override
     @Retryable(value = {FileSplitException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -188,6 +208,19 @@ public class TaskFileServiceImpl implements TaskFileService {
         return false;
     }
 
+    @Override
+    @Async
+    public void fileParseAndSave(Integer taskResultViewId) {
+        // 创建xds
+        Xds xds = createXds(taskResultViewId);
+        Integer countNumber = LargeFileUtil.csvParseAndInsert(xds.getStoredFilePath(), xds.getStoredFileName(), xds.getId(), xds.getOdsTableName());
+        // 获得数据的大概存储大小
+        String avgRowLength = getAvgRowLength(xds.getOdsTableName());
+        // 更新xds
+        updateXds(xds.getId(), countNumber * Long.parseLong(avgRowLength));
+        // 发送kafka
+    }
+
     private long writeFile(TaskFileConfig taskFileConfig, Map.Entry<String, Integer> entry) {
         RSA instance = RsaUtils.getInstance(convergeConfig.getPrivateKeyStr());
         String token = "lrhealth:" + System.currentTimeMillis();
@@ -200,4 +233,45 @@ public class TaskFileServiceImpl implements TaskFileService {
                 .executeAsync();
         return execute.writeBody(taskFileConfig.getDestPath());
     }
+
+    private Xds createXds(Integer taskResultViewId){
+        ConvTaskResultView taskResultView = taskResultViewService.getById(taskResultViewId);
+        ConvTask convTask = taskService.getById(taskResultView.getTaskId());
+        Xds xds =  Xds.builder()
+                .id(IdUtil.getSnowflakeNextId())
+                .orgCode(convTask.getOrgCode())
+                .sysCode(convTask.getSysCode())
+                .convergeMethod(convTask.getConvergeMethod())
+                .dataConvergeStartTime(convTask.getStartTime())
+                .dataConvergeStatus(XdsStatusEnum.INIT.getCode())
+                .odsModelName(taskResultView.getTableName())
+                .oriFileName(taskResultView.getFeStoredFilename())
+                .storedFilePath(taskResultView.getStoredPath())
+                .storedFileName(taskResultView.getFeStoredFilename())
+                .storedFileType("csv")
+                .storedFileMode(0)
+                .odsTableName(convTask.getSysCode() + "_" + taskResultView.getTableName())
+                .storedFileSize(BigDecimal.valueOf(taskResultView.getDataSize()))
+                .dataCount(taskResultView.getDataItemCount())
+                .createTime(LocalDateTime.now())
+                .build();
+        xdsService.save(xds);
+        return xdsService.getById(xds.getId());
+    }
+
+    private void updateXds(Long xdsId, Long dataSize){
+        Xds updateXds = Xds.builder().id(xdsId).dataSize(dataSize)
+                .dataConvergeEndTime(LocalDateTime.now()).updateTime(LocalDateTime.now()).build();
+        xdsService.updateById(updateXds);
+    }
+
+    private String getAvgRowLength(String odsTableName){
+        // 刷新tables表的数据
+        String refreshSql = "ANALYZE TABLE " + odsTableName + " COMPUTE STATISTICS FOR ALL COLUMNS SIZE AUTO;";
+        jdbcRepository.execSql(refreshSql);
+        // 获取每行的平均大小
+        String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
+        return jdbcRepository.execSql(selectSql);
+    }
+
 }
