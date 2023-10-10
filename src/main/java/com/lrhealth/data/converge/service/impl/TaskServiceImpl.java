@@ -156,20 +156,22 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Async
     public void fileParseAndSave(Integer taskResultViewId) {
+        ConvTaskResultView taskResultView = taskResultViewService.getById(taskResultViewId);
+        ConvTask convTask = taskService.getById(taskResultView.getTaskId());
         // 创建xds
-        Xds xds = createXds(taskResultViewId);
+        Xds xds = createXds(taskResultView, convTask);
         Integer countNumber = LargeFileUtil.csvParseAndInsert(xds.getStoredFilePath(), xds.getStoredFileName(), xds.getId(), xds.getOdsTableName());
         // 获得数据的大概存储大小
         String avgRowLength = getAvgRowLength(xds.getOdsTableName());
         // 更新xds
         updateXds(xds.getId(), countNumber * Long.parseLong(avgRowLength));
+        // 更新task表
+        taskService.updateById(ConvTask.builder().id(convTask.getId()).status(5).build());
         // 发送kafka
         xdsSendKafka(xds);
     }
 
-    private Xds createXds(Integer taskResultViewId){
-        ConvTaskResultView taskResultView = taskResultViewService.getById(taskResultViewId);
-        ConvTask convTask = taskService.getById(taskResultView.getTaskId());
+    private Xds createXds(ConvTaskResultView taskResultView, ConvTask convTask){
         Xds xds =  Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .orgCode(convTask.getOrgCode())
