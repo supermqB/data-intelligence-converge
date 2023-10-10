@@ -25,7 +25,7 @@ public class InitOrmBeeConfig {
         BeeFactory.getInstance().setDataSource(odsDataSource);
         honeyConfig.setLoggerType("log4j2");
         honeyConfig.naming_translateType = 3;
-        honeyConfig.showSQL=true;
+        honeyConfig.showSQL=false;
     }
 
 }

@@ -155,4 +155,6 @@ public class Xds implements Serializable {
      */
     private Integer delFlag;
 
+    private Long dataSize;
+
 }

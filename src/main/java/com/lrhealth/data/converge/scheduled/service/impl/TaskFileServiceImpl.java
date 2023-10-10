@@ -41,7 +41,6 @@ public class TaskFileServiceImpl implements TaskFileService {
 
     @Resource
     private ConvergeConfig convergeConfig;
-
     @Resource
     private Executor threadPoolTaskExecutor;
 
@@ -200,4 +199,5 @@ public class TaskFileServiceImpl implements TaskFileService {
                 .executeAsync();
         return execute.writeBody(taskFileConfig.getDestPath());
     }
+
 }

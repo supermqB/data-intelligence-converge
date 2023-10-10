@@ -4,6 +4,7 @@ import com.lrhealth.data.converge.scheduled.config.exception.FeNodeStatusExcepti
 import com.lrhealth.data.converge.scheduled.config.exception.PingException;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultCdc;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.model.dto.*;
@@ -25,4 +26,6 @@ public interface FeNodeService {
     void saveOrUpdateLog(TaskLogDto taskLog, ConvTask convTask);
 
     ConvTaskResultView saveOrUpdateFile(ResultViewInfoDto resultViewInfoDto, ConvTask convTask);
+
+    ConvTaskResultCdc saveOrUpdateFile(ResultCDCInfoDTO cdcInfoDTO, ConvTask convTask);
 }

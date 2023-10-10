@@ -54,6 +54,11 @@ public class ConvTaskResultCdc implements Serializable {
     private Integer deleteCount;
 
     /**
+     * 更新条数
+     */
+    private Integer updateCount;
+
+    /**
      * 删除标识
      */
     @TableField(fill = FieldFill.INSERT)
@@ -81,11 +86,5 @@ public class ConvTaskResultCdc implements Serializable {
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-
-    /**
-     * 更新条数
-     */
-    private Integer updateCount;
-
 
 }
