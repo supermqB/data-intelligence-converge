@@ -181,7 +181,9 @@ public class FeNodeServiceImpl implements FeNodeService {
         convTaskResultView.setTaskId(convTask.getId());
         convTaskResultView.setDataItemCount(resultViewInfoDto.getRecordCount());
         convTaskResultView.setFeStoredPath(resultViewInfoDto.getFilePath());
-        convTaskResultView.setStoredPath(convergeConfig.getOutputPath() + File.separator + resultViewInfoDto.getFileName());
+        String destPath = convergeConfig.getOutputPath() + File.separator + convTask.getId()
+                + File.separator + resultViewInfoDto.getFileName().replace(".","_") + File.separator;
+        convTaskResultView.setStoredPath(destPath + resultViewInfoDto.getFileName());
         convTaskResultView.setFeStoredFilename(resultViewInfoDto.getFileName());
         convTaskResultView.setDataSize(resultViewInfoDto.getFileSize());
         convTaskResultView.setDelFlag(0);
