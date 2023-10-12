@@ -16,7 +16,7 @@ import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
-import com.lrhealth.data.converge.service.DataTypeService;
+import com.lrhealth.data.converge.service.OdsModelService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +41,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private XdsService xdsService;
 
     @Resource
-    private DataTypeService dataTypeService;
+    private OdsModelService dataTypeService;
 
 
     @Override

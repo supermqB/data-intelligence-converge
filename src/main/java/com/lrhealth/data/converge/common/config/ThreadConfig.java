@@ -1,0 +1,46 @@
+package com.lrhealth.data.converge.common.config;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.concurrent.ThreadPoolExecutor;
+
+/**
+ * 线程池
+ *
+ * @author lr
+ * @date 2022-11-28
+ */
+@Configuration
+@Slf4j
+public class ThreadConfig {
+    public static final String DATA_SAVE_POOL = "dataSaveThreadPool";
+
+    /**
+     * 文档解析用
+     *
+     * @return ThreadPoolTaskExecutor
+     */
+    @Bean(name = DATA_SAVE_POOL)
+    public ThreadPoolTaskExecutor fileParsingThreadPool() {
+        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+        int cpuCount = Runtime.getRuntime().availableProcessors();
+        //核心线程数量
+        threadPoolTaskExecutor.setCorePoolSize(cpuCount * 2);
+        //最大线程数量
+        threadPoolTaskExecutor.setMaxPoolSize(cpuCount * 4);
+        //队列中最大任务数
+        threadPoolTaskExecutor.setQueueCapacity(10000);
+        //线程名称前缀
+        threadPoolTaskExecutor.setThreadNamePrefix("dataSaveThreadPool-");
+        //拒绝策略
+        threadPoolTaskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        //线程空闲后最大存活时间
+        threadPoolTaskExecutor.setKeepAliveSeconds(60);
+        //初始化线程池
+        threadPoolTaskExecutor.initialize();
+        return threadPoolTaskExecutor;
+    }
+}
