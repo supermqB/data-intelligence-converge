@@ -1,10 +1,10 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
+import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.file.LargeFileUtil;
 import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
@@ -77,6 +77,10 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                     xdsFileSave(taskResultView);
                 } catch (Exception e) {
                     log.error("(dataSave)log error,{}", ExceptionUtils.getStackTrace(e));
+                    throw new CommonException("数据入库失败");
+                }finally {
+                    dataSaveHandleMap.remove(taskResultView.getTaskId());
+                    log.info("数据处理失败，taskResultViewId: {}", taskResultView.getId());
                 }
             });
         });
@@ -123,13 +127,19 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         ConvTask convTask = taskService.getById(taskResultView.getTaskId());
         // 创建xds
         Xds xds = createXds(taskResultView, convTask);
+        long dataSize = 0;
         // 数据落库，获得数据容量
-        long dataSize = fileDataHandle(xds);
+        try {
+             dataSize = fileDataHandle(xds);
+        }catch (Exception e){
+            log.error("data save error, {}", ExceptionUtils.getStackTrace(e));
+            taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(4).build());
+            throw new CommonException("error in data save, " + ExceptionUtils.getMessage(e));
+        }
         // 更新xds
         updateXds(xds.getId(), dataSize);
         // 更新resultview表
         taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(5).build());
-        dataSaveHandleMap.remove(taskResultView.getTaskId());
         // 发送kafka
 //         kafkaService.xdsSendKafka(xds);
     }
@@ -148,6 +158,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 jdbcRepository.execSql(tableSql);
             }
         }
+
         Integer countNumber = largeFileUtil.csvParseAndInsert(xds.getStoredFilePath(), xds.getStoredFileName(), xds.getId(), xds.getOdsTableName(), originalModelColumns);
         // 获得数据的大概存储大小
         log.info("数据入库完成，时间：{}， 条数：{}", (System.currentTimeMillis() - startTime), countNumber);
@@ -166,7 +177,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 .dataConvergeStatus(XdsStatusEnum.INIT.getCode())
                 .odsModelName(taskResultView.getTableName())
                 .oriFileName(taskResultView.getFeStoredFilename())
-                .storedFilePath(taskResultView.getStoredPath() + FileUtil.FILE_SEPARATOR + taskResultView.getFeStoredFilename())
+                .storedFilePath(taskResultView.getStoredPath())
                 .storedFileName(taskResultView.getFeStoredFilename())
                 .storedFileType("csv")
                 .storedFileMode(0)

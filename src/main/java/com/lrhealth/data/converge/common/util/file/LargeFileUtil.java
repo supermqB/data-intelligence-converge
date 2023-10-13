@@ -59,6 +59,7 @@ public class LargeFileUtil {
               countNumber = fileParseAndSave(filePath, xdsId, odsTableName, originalModelColumns);
         } catch (Exception e) {
             log.error("{}csv文件入库异常:", fileName, e);
+            throw new CommonException("数据入库异常");
         }
         return countNumber;
     }
