@@ -58,6 +58,8 @@ public class ConvTaskResultCdc implements Serializable {
      */
     private Integer updateCount;
 
+    private String flinkJobId;
+
     /**
      * 删除标识
      */

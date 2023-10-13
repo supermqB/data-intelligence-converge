@@ -216,7 +216,7 @@ public class FeNodeServiceImpl implements FeNodeService {
 
         // @formatter:off
         convTaskResultCdcService.saveOrUpdate(convTaskResultCdc, new LambdaQueryWrapper<ConvTaskResultCdc>()
-            .eq(ConvTaskResultCdc::getTaskId, convTask.getId())
+            .eq(ConvTaskResultCdc::getFlinkJobId, cdcInfoDTO.getFlinkJobId())
             .eq(ConvTaskResultCdc::getTableName, cdcInfoDTO.getTableName()));
         // @formatter:on
         return convTaskResultCdc;
