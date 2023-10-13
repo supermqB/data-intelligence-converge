@@ -117,12 +117,12 @@ public class DownloadFileTask {
             }
             long endTime = System.currentTimeMillis();
 
-            log.info("开始删除文件：" + fileTask);
-            if (!taskFileService.deleteFile(taskFileConfig)){
-                log.error("文件删除失败：" + fileTask);
-                resetFileTask(fileTask, taskFileConfig);
-                continue;
-            }
+//            log.info("开始删除文件：" + fileTask);
+//            if (!taskFileService.deleteFile(taskFileConfig)){
+//                log.error("文件删除失败：" + fileTask);
+//                resetFileTask(fileTask, taskFileConfig);
+//                continue;
+//            }
 
             //更新文件状态
             if (!convergeService.updateFileStatus(taskFileConfig,endTime - startTime)){
@@ -131,12 +131,11 @@ public class DownloadFileTask {
                 continue;
             }
             log.info("文件状态更新成功！" + fileTask);
-            taskDeque.pollFirst();
         }
     }
 
     private FileTask getFileTask() {
-        FileTask fileTask = taskDeque.peekFirst();
+        FileTask fileTask = taskDeque.pollFirst();
         if (fileTask == null) {
             try {
                 Thread.sleep(3000);
@@ -161,7 +160,6 @@ public class DownloadFileTask {
 
     private void resetFileTask(FileTask fileTask, TaskFileConfig taskFileConfig) {
         taskDeque.add(fileTask);
-        taskDeque.pollFirst();
         convergeService.resetStatus(taskFileConfig.getConvTask(), taskFileConfig.getTaskResultView());
     }
 }
