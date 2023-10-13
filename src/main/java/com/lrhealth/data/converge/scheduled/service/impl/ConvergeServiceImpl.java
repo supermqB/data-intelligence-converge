@@ -2,15 +2,25 @@ package com.lrhealth.data.converge.scheduled.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.scheduled.config.ConvergeConfig;
-import com.lrhealth.data.converge.scheduled.dao.entity.*;
-import com.lrhealth.data.converge.scheduled.dao.service.*;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvFeNodeService;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
 import com.lrhealth.data.converge.scheduled.model.TaskFileConfig;
-import com.lrhealth.data.converge.scheduled.model.dto.*;
+import com.lrhealth.data.converge.scheduled.model.dto.FrontendStatusDto;
+import com.lrhealth.data.converge.scheduled.model.dto.ResultCDCInfoDTO;
+import com.lrhealth.data.converge.scheduled.model.dto.ResultViewInfoDto;
+import com.lrhealth.data.converge.scheduled.model.dto.TaskLogDto;
+import com.lrhealth.data.converge.scheduled.model.dto.TaskStatusDto;
+import com.lrhealth.data.converge.scheduled.model.dto.TunnelStatusDto;
 import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.service.FeNodeService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -112,6 +122,9 @@ public class ConvergeServiceImpl implements ConvergeService {
 
                 List<ResultViewInfoDto> fileInfoList = taskStatusDto.getFileInfoList();
                 for (ResultViewInfoDto resultViewInfoDto : fileInfoList) {
+                    if (resultViewInfoDto == null) {
+                        continue;
+                    }
                     //更新 file
                     ConvTaskResultView taskResultView = feNodeService.saveOrUpdateFile(resultViewInfoDto, convTask);
 
