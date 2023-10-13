@@ -35,6 +35,7 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.io.File;
@@ -195,10 +196,12 @@ public class FeNodeServiceImpl implements FeNodeService {
         convTaskResultView.setTaskId(convTask.getId());
         convTaskResultView.setDataItemCount(resultViewInfoDto.getRecordCount());
         convTaskResultView.setFeStoredPath(resultViewInfoDto.getFilePath());
-        String destPath = convergeConfig.getOutputPath() + File.separator + convTask.getId()
-                + File.separator + resultViewInfoDto.getFileName().replace(".","_") + File.separator;
-        convTaskResultView.setStoredPath(destPath + resultViewInfoDto.getFileName());
-        convTaskResultView.setFeStoredFilename(resultViewInfoDto.getFileName());
+        if(!StringUtils.isEmpty(resultViewInfoDto.getFileName())){
+            String destPath = convergeConfig.getOutputPath() + File.separator + convTask.getId()
+                    + File.separator + resultViewInfoDto.getFileName().replace(".","_") + File.separator;
+            convTaskResultView.setStoredPath(destPath + resultViewInfoDto.getFileName());
+            convTaskResultView.setFeStoredFilename(resultViewInfoDto.getFileName());
+        }
         convTaskResultView.setDataSize(resultViewInfoDto.getFileSize());
         convTaskResultView.setDelFlag(0);
 
