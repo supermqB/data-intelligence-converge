@@ -143,11 +143,20 @@ public class LargeFileUtil {
                 }
                 // 给xds_id赋值
                 pst.setLong(data.length + 1, xdsId);
-                pst.addBatch();
+                try {
+                    pst.addBatch();
+                }catch (Exception e){
+                    log.error(ExceptionUtils.getStackTrace(e));
+                }
                 lineCnt++;
                 if (lineCnt % BATCH_SIZE == 0) {
                     // 达到每批数据的大小，进行入库操作
-                    pst.executeBatch();
+                    try {
+                        pst.executeBatch();
+                    }catch (Exception e){
+                        log.error(ExceptionUtils.getStackTrace(e));
+                    }
+
                 }
                 if (lineCnt % (50000) == 0){
                     log.info("{}已写入[{}]条", odsTableName, lineCnt);
@@ -171,14 +180,22 @@ public class LargeFileUtil {
 
     private void parameterSet(String fieldType, PreparedStatement stmt, Integer index, String value) {
         try {
-            if (CharSequenceUtil.isNotBlank(fieldType) && !value.equals("null")){
+            if (value.equals("null") || value.equals("")){
+                stmt.setString(index, null);
+                return;
+            }
+            if (CharSequenceUtil.isNotBlank(fieldType)){
                 switch (fieldType) {
                     case "char":
                     case "varchar":
                         stmt.setString(index, value);
                         break;
                     case "int":
-                        stmt.setInt(index, Integer.parseInt(value));
+                        try {
+                            stmt.setInt(index, Integer.parseInt(value));
+                        }catch (Exception e){
+                            log.error(ExceptionUtils.getStackTrace(e));
+                        }
                         break;
                     case "bigint":
                         stmt.setLong(index, Long.parseLong(value));
@@ -193,7 +210,11 @@ public class LargeFileUtil {
                         stmt.setDate(index, Date.valueOf(value));
                         break;
                     case "timestamp":
-                        stmt.setTimestamp(index, Timestamp.valueOf(value));
+                        try {
+                            stmt.setTimestamp(index, Timestamp.valueOf(value));
+                        }catch (Exception e){
+                            log.error(ExceptionUtils.getStackTrace(e));
+                        }
                         break;
                     case "time":
                         stmt.setTime(index, Time.valueOf(value));
@@ -201,11 +222,10 @@ public class LargeFileUtil {
                     case "decimal":
                     case "bigDecimal":
                         stmt.setBigDecimal(index, new BigDecimal(value));
+                        break;
                     default:
                         log.error("不存在的数据类型, {}", fieldType);
                 }
-            }else {
-                stmt.setString(index, value);
             }
         }catch (Exception e){
             log.error("type match error: {}",ExceptionUtils.getStackTrace(e));

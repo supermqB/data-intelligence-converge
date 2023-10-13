@@ -2,7 +2,6 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
@@ -20,6 +19,7 @@ import com.lrhealth.data.converge.service.OdsModelService;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -60,10 +60,9 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     @Resource
     private KafkaService kafkaService;
 
-//    @Scheduled(cron = "${lrhealth.converge.scheduledCron}")
+    @Scheduled(cron = "${lrhealth.converge.dataSaveCron}")
     @Override
     public void fileParseAndSave() {
-        log.info("数据入库流程");
         // 先更新task表, 返回待处理任务实例
         List<ConvTaskResultView> taskResultViewList = generateTaskAndResultView();
         if (CollUtil.isEmpty(taskResultViewList)){
@@ -73,6 +72,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         taskResultViewList.forEach(taskResultView -> {
             dataSaveThreadPool.execute(() -> {
                 try {
+                    dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
                     log.info("开始taskResultViewId:[{}]的xds入库流程", taskResultView.getId());
                     xdsFileSave(taskResultView);
                 } catch (Exception e) {
@@ -111,7 +111,6 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         List<ConvTaskResultView> newResultViewList = new ArrayList<>();
         downloadedTaskResultViewList.forEach(taskResultView -> {
             if (!dataSaveHandleMap.containsKey(taskResultView.getId())){
-                dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
                 newResultViewList.add(taskResultView);
             }
         });
@@ -130,6 +129,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         updateXds(xds.getId(), dataSize);
         // 更新resultview表
         taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(5).build());
+        dataSaveHandleMap.remove(taskResultView.getTaskId());
         // 发送kafka
 //         kafkaService.xdsSendKafka(xds);
     }
@@ -140,11 +140,13 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         List<OriginalModelColumn> originalModelColumns = odsModelService.getcolumnList(xds.getOdsModelName(), xds.getSysCode());
         long startTime = System.currentTimeMillis();
         // 表是否存在的判断
-        if (!checkTableExists(xds.getOdsTableName())){
-            // 创建表
-            String tableSql = createTableSql(originalModelColumns, xds.getOdsTableName());
-            jdbcRepository.execSql(tableSql);
-            log.info("table [{}] create success", xds.getOdsTableName());
+        synchronized (this){
+            if (!checkTableExists(xds.getOdsTableName())){
+                // 创建表
+                String tableSql = createTableSql(originalModelColumns, xds.getOdsTableName());
+                log.info("table [{}]  sql:{}", xds.getOdsTableName(), tableSql);
+                jdbcRepository.execSql(tableSql);
+            }
         }
         Integer countNumber = largeFileUtil.csvParseAndInsert(xds.getStoredFilePath(), xds.getStoredFileName(), xds.getId(), xds.getOdsTableName(), originalModelColumns);
         // 获得数据的大概存储大小
@@ -197,12 +199,12 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
      private boolean checkTableExists(String odsTableName){
         String checkSql = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '" + odsTableName + "';";
          String result = jdbcRepository.execSql(checkSql);
-         return result.equals(odsTableName);
+         return (result != null);
      }
 
 
      private String createTableSql(List<OriginalModelColumn> originalModelColumns, String odsTableName){
-        StringBuilder createSql = new StringBuilder("CREATE TABLE " + odsTableName + " (");
+        StringBuilder createSql = new StringBuilder("CREATE TABLE " + odsTableName + " (\n");
         StringBuilder columnSql = new StringBuilder();
         for (OriginalModelColumn modelColumn : originalModelColumns){
             // 字段名称
@@ -214,11 +216,12 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
             }else {
                 columnSql.append(modelColumn.getFieldType()).append(" ");
             }
-            if (CharSequenceUtil.isNotBlank(modelColumn.getRequiredFlag()) && modelColumn.getRequiredFlag().equals("1")){
-                columnSql.append("NOT NULL,").append("\n");
-            }else {
-                columnSql.append("DEFAULT NULL").append("\n");
-            }
+//            if (CharSequenceUtil.isNotBlank(modelColumn.getRequiredFlag()) && modelColumn.getRequiredFlag().equals("1")){
+//                columnSql.append("NOT NULL,").append("\n");
+//            }else {
+//                columnSql.append("DEFAULT NULL,").append("\n");
+//            }
+            columnSql.append("DEFAULT NULL,").append("\n");
         }
         //xds_id和row_id
         columnSql.append("xds_id bigint(20) NOT NULL,").append("\n");

@@ -38,7 +38,7 @@ public class ThreadConfig {
         //拒绝策略
         threadPoolTaskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         //线程空闲后最大存活时间
-        threadPoolTaskExecutor.setKeepAliveSeconds(60);
+        threadPoolTaskExecutor.setKeepAliveSeconds(30);
         //初始化线程池
         threadPoolTaskExecutor.initialize();
         return threadPoolTaskExecutor;
