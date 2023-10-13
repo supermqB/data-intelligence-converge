@@ -40,15 +40,26 @@ public class OdsModelServiceImpl implements OdsModelService {
     }
 
     @Override
-    public Map<String, String> getOdsColumnTypeMap(String odsModelName, String sysType) {
+    public Map<String, String> getOdsColumnTypeMap(String odsModelName, String sysCode) {
         List<OriginalModel> modelList = originalModelService.list(new LambdaQueryWrapper<OriginalModel>()
                 .eq(OriginalModel::getNameEn, odsModelName)
-                .eq(OriginalModel::getSysCode, sysType));
+                .eq(OriginalModel::getSysCode, sysCode));
         if (modelList.size() != 1){
             throw new CommonException("originalModel查询{}错误", odsModelName);
         }
         List<OriginalModelColumn> modelColumns = modelColumnService.list(new LambdaQueryWrapper<OriginalModelColumn>()
                 .eq(OriginalModelColumn::getModelId, modelList.get(0).getId()));
         return modelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getElementFormat));
+    }
+
+    @Override
+    public List<OriginalModelColumn> getcolumnList(String odsModelName, String sysCode) {
+        List<OriginalModel> originalModel = originalModelService.list(new LambdaQueryWrapper<OriginalModel>()
+                .eq(OriginalModel::getNameEn, odsModelName).eq(OriginalModel::getSysCode, sysCode));
+        if (originalModel.size() != 1){
+            throw new CommonException("原始模型数据错误:{}", odsModelName + "-" + sysCode);
+        }
+        return modelColumnService.list(new LambdaQueryWrapper<OriginalModelColumn>()
+                .eq(OriginalModelColumn::getModelId, originalModel.get(0).getId()));
     }
 }

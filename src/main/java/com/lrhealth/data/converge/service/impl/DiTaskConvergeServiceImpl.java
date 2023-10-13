@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
@@ -16,9 +17,9 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.service.DiTaskConvergeService;
 import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.OdsModelService;
+import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -59,9 +60,10 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     @Resource
     private KafkaService kafkaService;
 
-    @Scheduled(cron = "${lrhealth.converge.scheduledCron}")
+//    @Scheduled(cron = "${lrhealth.converge.scheduledCron}")
     @Override
     public void fileParseAndSave() {
+        log.info("数据入库流程");
         // 先更新task表, 返回待处理任务实例
         List<ConvTaskResultView> taskResultViewList = generateTaskAndResultView();
         if (CollUtil.isEmpty(taskResultViewList)){
@@ -71,6 +73,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         taskResultViewList.forEach(taskResultView -> {
             dataSaveThreadPool.execute(() -> {
                 try {
+                    log.info("开始taskResultViewId:[{}]的xds入库流程", taskResultView.getId());
                     xdsFileSave(taskResultView);
                 } catch (Exception e) {
                     log.error("(dataSave)log error,{}", ExceptionUtils.getStackTrace(e));
@@ -99,7 +102,10 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 .filter(entry -> taskNotDoneSet.contains(entry.getKey()))
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
         // 更新状态为done
-        finishedTaskList.forEach(taskId -> taskService.updateById(ConvTask.builder().id(taskId).status(5).build()));
+        finishedTaskList.forEach(taskId -> {
+            taskService.updateById(ConvTask.builder().id(taskId).status(5).build());
+            log.info("task[{}]更新为已完成!", taskId);
+        });
 
         List<ConvTaskResultView> downloadedTaskResultViewList = taskResultViewList.stream().filter(taskResultView -> taskResultView.getStatus() == 3).collect(Collectors.toList());
         List<ConvTaskResultView> newResultViewList = new ArrayList<>();
@@ -131,14 +137,16 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
 
     private long fileDataHandle(Xds xds){
-        Map<String, String> odsColumnTypeMap = odsModelService.getOdsColumnTypeMap(xds.getOdsModelName(), xds.getSysCode());
+        List<OriginalModelColumn> originalModelColumns = odsModelService.getcolumnList(xds.getOdsModelName(), xds.getSysCode());
         long startTime = System.currentTimeMillis();
         // 表是否存在的判断
         if (!checkTableExists(xds.getOdsTableName())){
             // 创建表
-
+            String tableSql = createTableSql(originalModelColumns, xds.getOdsTableName());
+            jdbcRepository.execSql(tableSql);
+            log.info("table [{}] create success", xds.getOdsTableName());
         }
-        Integer countNumber = largeFileUtil.csvParseAndInsert(xds.getStoredFilePath(), xds.getStoredFileName(), xds.getId(), xds.getOdsTableName(), odsColumnTypeMap);
+        Integer countNumber = largeFileUtil.csvParseAndInsert(xds.getStoredFilePath(), xds.getStoredFileName(), xds.getId(), xds.getOdsTableName(), originalModelColumns);
         // 获得数据的大概存储大小
         log.info("数据入库完成，时间：{}， 条数：{}", (System.currentTimeMillis() - startTime), countNumber);
         String avgRowLength = getAvgRowLength(xds.getOdsTableName());
@@ -171,7 +179,9 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
     private void updateXds(Long xdsId, Long dataSize){
         Xds updateXds = Xds.builder().id(xdsId).dataSize(dataSize)
-                .dataConvergeEndTime(LocalDateTime.now()).updateTime(LocalDateTime.now()).build();
+                .dataConvergeEndTime(LocalDateTime.now())
+                .updateTime(LocalDateTime.now())
+                .dataConvergeStatus(1).build();
         xdsService.updateById(updateXds);
     }
 
@@ -189,4 +199,35 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
          String result = jdbcRepository.execSql(checkSql);
          return result.equals(odsTableName);
      }
+
+
+     private String createTableSql(List<OriginalModelColumn> originalModelColumns, String odsTableName){
+        StringBuilder createSql = new StringBuilder("CREATE TABLE " + odsTableName + " (");
+        StringBuilder columnSql = new StringBuilder();
+        for (OriginalModelColumn modelColumn : originalModelColumns){
+            // 字段名称
+            columnSql.append(modelColumn.getNameEn()).append(" ");
+            // 字段类型
+            if (modelColumn.getFieldTypeLength() != null){
+                columnSql.append(modelColumn.getFieldType()).append("(")
+                        .append(modelColumn.getFieldTypeLength()).append(") ");
+            }else {
+                columnSql.append(modelColumn.getFieldType()).append(" ");
+            }
+            if (CharSequenceUtil.isNotBlank(modelColumn.getRequiredFlag()) && modelColumn.getRequiredFlag().equals("1")){
+                columnSql.append("NOT NULL,").append("\n");
+            }else {
+                columnSql.append("DEFAULT NULL").append("\n");
+            }
+        }
+        //xds_id和row_id
+        columnSql.append("xds_id bigint(20) NOT NULL,").append("\n");
+        columnSql.append("row_id bigint(20) NOT NULL AUTO_INCREMENT,").append("\n");
+        columnSql.append("KEY ").append(odsTableName).append("_idx1 ").append("(row_id) LOCAL").append("\n");
+        createSql.append(columnSql).append(") ")
+                .append("AUTO_INCREMENT = 0 AUTO_INCREMENT_MODE = 'ORDER' DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC ")
+                .append("COMPRESSION = 'zstd_1.3.8' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 0;");
+        return createSql.toString();
+     }
+
 }

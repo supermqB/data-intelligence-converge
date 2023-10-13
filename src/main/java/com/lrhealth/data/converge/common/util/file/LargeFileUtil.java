@@ -1,12 +1,13 @@
 package com.lrhealth.data.converge.common.util.file;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.Feature;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
-import com.lrhealth.data.converge.model.FieldMatch;
+import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -16,13 +17,13 @@ import org.teasoft.honey.osql.core.BeeFactory;
 import javax.annotation.Resource;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author jinmengyu
@@ -51,11 +52,11 @@ public class LargeFileUtil {
         }
     }
 
-    public Integer csvParseAndInsert(String filePath, String fileName, Long xdsId, String odsTableName, Map<String, String> odsColumnTypeMap) {
+    public Integer csvParseAndInsert(String filePath, String fileName, Long xdsId, String odsTableName, List<OriginalModelColumn> originalModelColumns) {
         Integer countNumber = null;
         try {
 //            countNumber = convertToJson(filePath, fileName, xdsId, odsTableName);
-              countNumber = fileParseAndSave(filePath, xdsId, odsTableName, odsColumnTypeMap);
+              countNumber = fileParseAndSave(filePath, xdsId, odsTableName, originalModelColumns);
         } catch (Exception e) {
             log.error("{}csv文件入库异常:", fileName, e);
         }
@@ -120,10 +121,10 @@ public class LargeFileUtil {
         return lineCnt;
     }
 
-    private Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> odsColumnTypeMap) {
+    private Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, List<OriginalModelColumn> originalModelColumns) {
         int lineCnt = 0;
         PreparedStatement pst = null;
-        Map<String, FieldMatch> fieldMatchMap = parseFieldFormat(odsColumnTypeMap);
+        Map<String, String> fieldMatchMap = parseFieldFormat(originalModelColumns);
 
         BeeFactory instance = BeeFactory.getInstance();
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath));
@@ -168,38 +169,40 @@ public class LargeFileUtil {
     }
 
 
-    private void parameterSet(FieldMatch fieldMatch, PreparedStatement stmt, Integer index, String value) {
+    private void parameterSet(String fieldType, PreparedStatement stmt, Integer index, String value) {
         try {
-            if (fieldMatch.getFieldType() != null && !value.equals("null")){
-                switch (fieldMatch.getFieldType()) {
-                    case "A":
-                    case "AN":
+            if (CharSequenceUtil.isNotBlank(fieldType) && !value.equals("null")){
+                switch (fieldType) {
+                    case "char":
+                    case "varchar":
                         stmt.setString(index, value);
                         break;
-                    case "N":
-                        if (fieldMatch.isHasDecimalPlaces()){
-                            // 有小数
-                            stmt.setDouble(index, Double.parseDouble(value));
-                            break;
-                        }
-                        if (Long.parseLong(value) > Integer.MAX_VALUE){
-                            // 长度较长，按照long进行处理
-                            stmt.setLong(index, Long.parseLong(value));
-                            break;
-                        }
+                    case "int":
                         stmt.setInt(index, Integer.parseInt(value));
                         break;
-                    case "D":
+                    case "bigint":
+                        stmt.setLong(index, Long.parseLong(value));
+                        break;
+                    case "double":
+                        stmt.setDouble(index, Double.parseDouble(value));
+                        break;
+                    case "boolean":
+                        stmt.setBoolean(index, Boolean.getBoolean(value));
+                        break;
+                    case "date":
                         stmt.setDate(index, Date.valueOf(value));
                         break;
-                    case "DT":
+                    case "timestamp":
                         stmt.setTimestamp(index, Timestamp.valueOf(value));
                         break;
-                    case "T":
+                    case "time":
                         stmt.setTime(index, Time.valueOf(value));
                         break;
+                    case "decimal":
+                    case "bigDecimal":
+                        stmt.setBigDecimal(index, new BigDecimal(value));
                     default:
-                        log.error("不存在的数据类型, {}", fieldMatch.getFieldFormat());
+                        log.error("不存在的数据类型, {}", fieldType);
                 }
             }else {
                 stmt.setString(index, value);
@@ -209,24 +212,12 @@ public class LargeFileUtil {
         }
     }
 
-    private Map<String, FieldMatch> parseFieldFormat(Map<String, String> odsColumnTypeMap){
-        if (CollUtil.isEmpty(odsColumnTypeMap)){
-            log.error("ods column elementType is null");
+    private Map<String, String> parseFieldFormat(List<OriginalModelColumn> originalModelColumns){
+        if (CollUtil.isEmpty(originalModelColumns)){
+            log.error("ods column list is null");
             return new HashMap<>();
         }
-        Map<String, FieldMatch> fieldMatchMap = new HashMap<>();
-        odsColumnTypeMap.forEach((header, fieldFormat) -> {
-            String fieldType = null;
-            boolean hasDecimalPlaces = false;
-            Pattern pattern = Pattern.compile("^(AN|A|D|DT|T|N)((?:\\.\\.\\d+)?|\\d+)?(?:,(\\d+))?$");
-            Matcher matcher = pattern.matcher(fieldFormat);
-            if (matcher.find()){
-                fieldType = matcher.group(1);
-                hasDecimalPlaces = matcher.group(3) != null;
-            }
-            fieldMatchMap.put(header, FieldMatch.builder().fieldFormat(fieldFormat).fieldType(fieldType).hasDecimalPlaces(hasDecimalPlaces).build());
-        });
-        return fieldMatchMap;
+        return originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getFieldType));
     }
 
 

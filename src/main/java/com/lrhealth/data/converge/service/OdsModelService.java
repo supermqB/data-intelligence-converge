@@ -1,5 +1,8 @@
 package com.lrhealth.data.converge.service;
 
+import com.lrhealth.data.model.original.model.OriginalModelColumn;
+
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -10,5 +13,7 @@ public interface OdsModelService {
 
     String getTableDataType(String odsTableName, String sysCode);
 
-    Map<String, String> getOdsColumnTypeMap(String odsModelName, String sysType);
+    Map<String, String> getOdsColumnTypeMap(String odsModelName, String sysCode);
+
+    List<OriginalModelColumn> getcolumnList(String odsModelName, String sysCode);
 }
