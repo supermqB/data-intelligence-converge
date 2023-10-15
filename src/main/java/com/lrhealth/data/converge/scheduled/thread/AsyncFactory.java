@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.TimerTask;
 
 /**
@@ -34,6 +35,8 @@ public class AsyncFactory
             {
                 log.info(convTaskLog.getLogDetail());
                 convTaskLog.setTimestamp(LocalDateTime.now());
+                DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                convTaskLog.setLogDetail(LocalDateTime.now().format(df) + " | " + convTaskLog.getLogDetail());
                 SpringUtils.getBean(ConvTaskLogServiceImpl.class).save(convTaskLog);
             }
         };
