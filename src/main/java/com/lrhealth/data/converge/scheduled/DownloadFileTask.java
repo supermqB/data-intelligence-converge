@@ -89,11 +89,7 @@ public class DownloadFileTask {
                 continue;
             }
 
-            AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
-                    .taskId(fileTask.getTaskId())
-                    .logDetail("通知拆分文件：" + fileTask)
-                    .build()));
-
+            convTaskLog(fileTask.getTaskId(), "通知拆分文件：" + fileTask);
             if (!taskFileService.splitFile(taskFileConfig)) {
                 log.error("通知拆分文件异常：" + fileTask);
                 resetFileTask(fileTask, taskFileConfig);
@@ -108,10 +104,7 @@ public class DownloadFileTask {
                 continue;
             }
 
-            AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
-                    .taskId(fileTask.getTaskId())
-                    .logDetail("开始下载：" + fileTask)
-                    .build()));
+            convTaskLog(fileTask.getTaskId(), "开始下载：" + fileTask);
             long startTime = System.currentTimeMillis();
             if (!taskFileService.downloadFile(preFileStatusDto,taskFileConfig)){
                 log.error("文件下载失败：" + fileTask);
@@ -119,10 +112,7 @@ public class DownloadFileTask {
                 continue;
             }
 
-            AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
-                    .taskId(fileTask.getTaskId())
-                    .logDetail("开始合并文件：" + fileTask)
-                    .build()));
+            convTaskLog(fileTask.getTaskId(), "开始合并文件：" + fileTask);
             if (!taskFileService.mergeFile(taskFileConfig)){
                 log.error("文件合并失败：" + fileTask);
                 resetFileTask(fileTask, taskFileConfig);
@@ -143,11 +133,7 @@ public class DownloadFileTask {
                 resetFileTask(fileTask, taskFileConfig);
                 continue;
             }
-
-            AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
-                    .taskId(fileTask.getTaskId())
-                    .logDetail("文件状态更新成功！" + fileTask)
-                    .build()));
+            convTaskLog(fileTask.getTaskId(), "文件状态更新成功！" + fileTask);
         }
     }
 
@@ -178,6 +164,14 @@ public class DownloadFileTask {
     private void resetFileTask(FileTask fileTask, TaskFileConfig taskFileConfig) {
         taskDeque.add(fileTask);
         convergeService.resetStatus(taskFileConfig.getConvTask(), taskFileConfig.getTaskResultView());
+        convTaskLog(fileTask.getTaskId(), "文件传输异常，正在重试！ | " + fileTask);
+    }
+
+    public static void convTaskLog(Integer taskId, String message){
+        AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
+                .taskId(taskId)
+                .logDetail(message)
+                .build()));
     }
 }
 
