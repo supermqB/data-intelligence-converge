@@ -4,12 +4,15 @@ import cn.hutool.core.codec.Base64Decoder;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.util.file.FileUtils;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskLog;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.dao.service.*;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
 import com.lrhealth.data.converge.scheduled.model.TaskFileConfig;
 import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
 import com.lrhealth.data.converge.scheduled.service.*;
+import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
+import com.lrhealth.data.converge.scheduled.thread.AsyncManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -86,7 +89,11 @@ public class DownloadFileTask {
                 continue;
             }
 
-            log.info("通知拆分文件：" + fileTask);
+            AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
+                    .taskId(fileTask.getTaskId())
+                    .logDetail("通知拆分文件：" + fileTask)
+                    .build()));
+
             if (!taskFileService.splitFile(taskFileConfig)) {
                 log.error("通知拆分文件异常：" + fileTask);
                 resetFileTask(fileTask, taskFileConfig);
@@ -101,7 +108,10 @@ public class DownloadFileTask {
                 continue;
             }
 
-            log.info("开始下载：" + fileTask);
+            AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
+                    .taskId(fileTask.getTaskId())
+                    .logDetail("开始下载：" + fileTask)
+                    .build()));
             long startTime = System.currentTimeMillis();
             if (!taskFileService.downloadFile(preFileStatusDto,taskFileConfig)){
                 log.error("文件下载失败：" + fileTask);
@@ -109,7 +119,10 @@ public class DownloadFileTask {
                 continue;
             }
 
-            log.info("开始合并文件：" + fileTask);
+            AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
+                    .taskId(fileTask.getTaskId())
+                    .logDetail("开始合并文件：" + fileTask)
+                    .build()));
             if (!taskFileService.mergeFile(taskFileConfig)){
                 log.error("文件合并失败：" + fileTask);
                 resetFileTask(fileTask, taskFileConfig);
@@ -130,7 +143,11 @@ public class DownloadFileTask {
                 resetFileTask(fileTask, taskFileConfig);
                 continue;
             }
-            log.info("文件状态更新成功！" + fileTask);
+
+            AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
+                    .taskId(fileTask.getTaskId())
+                    .logDetail("文件状态更新成功！" + fileTask)
+                    .build()));
         }
     }
 
