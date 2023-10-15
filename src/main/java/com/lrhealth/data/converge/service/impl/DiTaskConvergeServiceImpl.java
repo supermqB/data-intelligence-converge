@@ -80,8 +80,8 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                     throw new CommonException("数据入库失败");
                 }finally {
                     dataSaveHandleMap.remove(taskResultView.getTaskId());
-                    log.info("数据处理失败，taskResultViewId: {}", taskResultView.getId());
                 }
+                log.info("data save success, taskResultViewId: {}", taskResultView.getId());
             });
         });
     }
