@@ -2,7 +2,6 @@ package com.lrhealth.data.converge.scheduled.thread;
 
 
 import com.lrhealth.data.converge.common.util.SpringUtils;
-import com.lrhealth.data.converge.scheduled.DownloadFileTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskLog;
 import com.lrhealth.data.converge.scheduled.dao.service.impl.ConvTaskLogServiceImpl;
 import org.slf4j.Logger;
@@ -40,5 +39,13 @@ public class AsyncFactory
                 SpringUtils.getBean(ConvTaskLogServiceImpl.class).save(convTaskLog);
             }
         };
+    }
+
+
+    public static void convTaskLog(Integer taskId, String message){
+        AsyncManager.me().execute(AsyncFactory.recordTaskLog(ConvTaskLog.builder()
+                .taskId(taskId)
+                .logDetail(message)
+                .build()));
     }
 }

@@ -13,6 +13,7 @@ import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
+import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
 import com.lrhealth.data.converge.service.DiTaskConvergeService;
 import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.OdsModelService;
@@ -70,14 +71,19 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         }
         // 多线程处理任务实例
         taskResultViewList.forEach(taskResultView -> {
+            ConvTask convTask = taskService.getById(taskResultView.getTaskId());
+            AsyncFactory.convTaskLog(convTask.getId(), "开始[" + taskResultView.getTableName() + "]表的入库流程！");
+
             dataSaveThreadPool.execute(() -> {
                 try {
                     dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
                     log.info("开始taskResultViewId:[{}]的xds入库流程", taskResultView.getId());
-                    xdsFileSave(taskResultView);
+                    xdsFileSave(taskResultView, convTask);
                 } catch (Exception e) {
                     log.error("(dataSave)log error,{}", ExceptionUtils.getStackTrace(e));
-                    throw new CommonException("数据入库失败");
+                    AsyncFactory.convTaskLog(convTask.getId(), ExceptionUtils.getStackTrace(e));
+                    taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(4).build());
+                    throw new CommonException("数据入库失败, message: {}", ExceptionUtils.getStackTrace(e));
                 }finally {
                     dataSaveHandleMap.remove(taskResultView.getTaskId());
                 }
@@ -123,43 +129,40 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
 
 
-    private void xdsFileSave(ConvTaskResultView taskResultView){
-        ConvTask convTask = taskService.getById(taskResultView.getTaskId());
+    private void xdsFileSave(ConvTaskResultView taskResultView, ConvTask convTask){
         // 创建xds
         Xds xds = createXds(taskResultView, convTask);
-        long dataSize = 0;
+        long dataSize;
         // 数据落库，获得数据容量
-        try {
-             dataSize = fileDataHandle(xds);
-        }catch (Exception e){
-            log.error("data save error, {}", ExceptionUtils.getStackTrace(e));
-            taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(4).build());
-            throw new CommonException("error in data save, " + ExceptionUtils.getMessage(e));
-        }
+        dataSize = fileDataHandle(xds, convTask.getId());
         // 更新xds
         updateXds(xds.getId(), dataSize);
-        // 更新resultview表
-        taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(5).build());
+        // 更新resultView表
+        taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(5).storedTime(LocalDateTime.now()).build());
+        AsyncFactory.convTaskLog(convTask.getId(), "[" + taskResultView.getTableName() + "]表入库成功！");
+
         // 发送kafka
-//         kafkaService.xdsSendKafka(xds);
+         kafkaService.xdsSendKafka(xds);
     }
 
 
 
-    private long fileDataHandle(Xds xds){
+    private long fileDataHandle(Xds xds, Integer taskId){
         List<OriginalModelColumn> originalModelColumns = odsModelService.getcolumnList(xds.getOdsModelName(), xds.getSysCode());
         long startTime = System.currentTimeMillis();
         // 表是否存在的判断
-        synchronized (this){
-            if (!checkTableExists(xds.getOdsTableName())){
+        synchronized (this) {
+            if (!checkTableExists(xds.getOdsTableName())) {
                 // 创建表
                 String tableSql = createTableSql(originalModelColumns, xds.getOdsTableName());
                 log.info("table [{}]  sql:{}", xds.getOdsTableName(), tableSql);
                 jdbcRepository.execSql(tableSql);
+                AsyncFactory.convTaskLog(taskId,  "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
             }
         }
 
-        Integer countNumber = largeFileUtil.csvParseAndInsert(xds.getStoredFilePath(), xds.getStoredFileName(), xds.getId(), xds.getOdsTableName(), originalModelColumns);
+        Map<String, String> fieldTypeMap = originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getFieldType));
+        Integer countNumber = largeFileUtil.fileParseAndSave(xds.getStoredFilePath(), xds.getId(), xds.getOdsTableName(), fieldTypeMap, taskId);
         // 获得数据的大概存储大小
         log.info("数据入库完成，时间：{}， 条数：{}", (System.currentTimeMillis() - startTime), countNumber);
         String avgRowLength = getAvgRowLength(xds.getOdsTableName());
@@ -243,5 +246,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 .append("COMPRESSION = 'zstd_1.3.8' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 0;");
         return createSql.toString();
      }
+
+
 
 }

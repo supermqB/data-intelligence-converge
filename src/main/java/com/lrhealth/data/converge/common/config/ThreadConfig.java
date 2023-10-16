@@ -28,9 +28,9 @@ public class ThreadConfig {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         int cpuCount = Runtime.getRuntime().availableProcessors();
         //核心线程数量
-        threadPoolTaskExecutor.setCorePoolSize(cpuCount * 2);
+        threadPoolTaskExecutor.setCorePoolSize(4);
         //最大线程数量
-        threadPoolTaskExecutor.setMaxPoolSize(cpuCount * 4);
+        threadPoolTaskExecutor.setMaxPoolSize(8);
         //队列中最大任务数
         threadPoolTaskExecutor.setQueueCapacity(10000);
         //线程名称前缀
@@ -38,7 +38,7 @@ public class ThreadConfig {
         //拒绝策略
         threadPoolTaskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         //线程空闲后最大存活时间
-        threadPoolTaskExecutor.setKeepAliveSeconds(30);
+        threadPoolTaskExecutor.setKeepAliveSeconds(15);
         //初始化线程池
         threadPoolTaskExecutor.initialize();
         return threadPoolTaskExecutor;

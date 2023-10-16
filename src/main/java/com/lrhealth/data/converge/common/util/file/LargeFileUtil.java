@@ -1,13 +1,13 @@
 package com.lrhealth.data.converge.common.util.file;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.Feature;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
-import com.lrhealth.data.model.original.model.OriginalModelColumn;
+import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
+import com.opencsv.CSVReader;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.teasoft.honey.osql.core.BeeFactory;
 
 import javax.annotation.Resource;
-import java.io.BufferedReader;
 import java.io.FileReader;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -23,7 +22,6 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 /**
  * @author jinmengyu
@@ -52,120 +50,111 @@ public class LargeFileUtil {
         }
     }
 
-    public Integer csvParseAndInsert(String filePath, String fileName, Long xdsId, String odsTableName, List<OriginalModelColumn> originalModelColumns) {
-        Integer countNumber = null;
-        try {
-//            countNumber = convertToJson(filePath, fileName, xdsId, odsTableName);
-              countNumber = fileParseAndSave(filePath, xdsId, odsTableName, originalModelColumns);
-        } catch (Exception e) {
-            log.error("{}csv文件入库异常:", fileName, e);
-            throw new CommonException("数据入库异常");
-        }
-        return countNumber;
-    }
 
-    private Integer convertToJson(String filePath, String fileName, Long xdsId, String odsTableName) {
-        List<Map<String, Object>> batchData = new ArrayList<>(); // 存储每批数据
-        int lineCnt = 0;
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            List<String> header;
-            if (ObjectUtil.isNotNull(headerMap.get(fileName))) {
-                header = headerMap.get(fileName);
-            } else {
-                //将csv表格第一行构建成string
-                String headerStr = reader.readLine();
-                if (headerStr.trim().isEmpty()) {
-                    log.error("csv文件表格头不能为空");
-                    throw new CommonException("csv表格头不能为空");
-                }
-                //将String字符串通过split（","）csv是以，作分隔符
-                // 进行切割输出成List
-                header = stringToList(headerStr);
-                headerMap.put(fileName, header);
-            }
-            while ((line = reader.readLine()) != null) {
-                lineCnt++;
-                if (line.trim().isEmpty()) {
-                    continue;
-                }
-                List<String> lineData = stringToList(line);
-                if (lineData.size() != header.size()) {
-                    log.error("第{}行数据列和表头列个数不一致{}{}", lineCnt, line, lineData);
-                    continue;
-                }
 
-                String jsonStr = stringToJson(header, lineData);
-                //逗号去掉
-                jsonStr = jsonStr.replaceAll(".$", "");
+//    private Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, List<OriginalModelColumn> originalModelColumns) {
+//        int lineCnt = 0;
+//        PreparedStatement pst = null;
+//        Map<String, String> fieldMatchMap = parseFieldFormat(originalModelColumns);
+//
+//        BeeFactory instance = BeeFactory.getInstance();
+//        try (BufferedReader reader = new BufferedReader(new FileReader(filePath));
+//             Connection connection = instance.getDataSource().getConnection()) {
+//            String line;
+//            String header = reader.readLine();
+//            // csv表头
+//            String[] headerList = header.split(",");
+//            // 过滤出来的原始字段对应的csv表头索引
+//            Map<String, Integer> odsHeaderMap = new HashMap<>();
+//            for (int i = 0;i < headerList.length;i++){
+//                if (!fieldMatchMap.containsKey(headerList[i])){
+//                    continue;
+//                }
+//                odsHeaderMap.put(headerList[i], i);
+//            }
+//            pst = connection.prepareStatement(assembleSql(odsHeaderMap, odsTableName));
+//
+//            while ((line = reader.readLine()) != null) {
+//                String[] data = line.split(",");
+//                log.info("[{}]行数据量：[{}]", odsTableName, data.length);
+//                Integer statementIndex = 1;
+//                // 设置字段的类型
+//                for (Map.Entry<String, Integer> odsHeader: odsHeaderMap.entrySet()){
+//                    String fieldName = odsHeader.getKey();
+//                    parameterSet(fieldName, fieldMatchMap.get(fieldName), pst, statementIndex, data[odsHeader.getValue()], odsTableName);
+//                    statementIndex++;
+//                }
+//                // 给xds_id赋值
+//                pst.setLong(statementIndex, xdsId);
+//                pst.addBatch();
+//
+//                lineCnt++;
+//                if (lineCnt % BATCH_SIZE == 0) {
+//                    // 达到每批数据的大小，进行入库操作
+//                    pst.executeBatch();
+//
+//                }
+//                if (lineCnt % (50000) == 0){
+//                    log.info("{}已写入[{}]条", odsTableName, lineCnt);
+//                }
+//            }
+//            pst.executeBatch();
+//        }catch (Exception e){
+//            log.error("csv数据入库异常：{}", ExceptionUtils.getStackTrace(e));
+//            throw new CommonException("数据异常, 错误信息:{}", ExceptionUtils.getStackTrace(e));
+//        }finally {
+//            if(pst!=null) {
+//                try {
+//                    pst.close();
+//                } catch (SQLException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//        return lineCnt;
+//    }
 
-                Map<String, Object> stringObjectMap = stringToJsonObjKeepSequence(jsonStr);
-                stringObjectMap.put("xds_id", xdsId);
-                batchData.add(stringObjectMap);
-
-                if (lineCnt % BATCH_SIZE == 0) {
-                    // 达到每批数据的大小，进行入库操作
-                     insertBatchData(batchData, odsTableName);
-                    // 清空批数据列表，准备处理下一批数据
-                    batchData.clear();
-                }
-            }
-
-            // 处理剩余的数据（可能不足一批）
-            if (!batchData.isEmpty()) {
-                insertBatchData(batchData, odsTableName);
-                batchData.clear();
-            }
-        }catch (Exception e){
-            log.error("csv数据转换异常：{}", ExceptionUtils.getStackTrace(e));
-        }
-        return lineCnt;
-    }
-
-    private Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, List<OriginalModelColumn> originalModelColumns) {
+    public Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> fieldTypeMap, Integer taskId) {
         int lineCnt = 0;
         PreparedStatement pst = null;
-        Map<String, String> fieldMatchMap = parseFieldFormat(originalModelColumns);
-
         BeeFactory instance = BeeFactory.getInstance();
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath));
+
+        try (CSVReader reader = new CSVReader(new FileReader(filePath));
              Connection connection = instance.getDataSource().getConnection()) {
-            String line;
-            String header = reader.readLine();
-            String[] headerList = header.split(",");
+            // csv表头
+            String[] headerList = reader.readNext();
+            // 过滤出来的原始字段对应的csv表头索引
+            Map<String, DataFieldInfo> odsHeaderMap = getFieldInfoMap(headerList, fieldTypeMap);
 
-            pst = connection.prepareStatement(assembleSql(headerList, odsTableName));
+            pst = connection.prepareStatement(assembleSql(odsHeaderMap, odsTableName));
 
-            while ((line = reader.readLine()) != null) {
-                String[] data = line.split(",");
+            String[] dataLine;
+            while ((dataLine = reader.readNext()) != null) {
+                Integer statementIndex = 1;
                 // 设置字段的类型
-                for (int i = 0;i < data.length;i++){
-                    parameterSet(fieldMatchMap.get(headerList[i]), pst, (i + 1), data[i]);
+                for (Map.Entry<String, DataFieldInfo> odsHeader: odsHeaderMap.entrySet()){
+                    parameterSet(odsHeader.getValue(), pst, statementIndex, dataLine[odsHeader.getValue().getFieldIndex()], odsTableName, taskId);
+                    statementIndex++;
                 }
                 // 给xds_id赋值
-                pst.setLong(data.length + 1, xdsId);
-                try {
-                    pst.addBatch();
-                }catch (Exception e){
-                    log.error(ExceptionUtils.getStackTrace(e));
-                }
+                pst.setLong(statementIndex, xdsId);
+                pst.addBatch();
+
                 lineCnt++;
                 if (lineCnt % BATCH_SIZE == 0) {
                     // 达到每批数据的大小，进行入库操作
-                    try {
-                        pst.executeBatch();
-                    }catch (Exception e){
-                        log.error(ExceptionUtils.getStackTrace(e));
-                    }
-
+                    pst.executeBatch();
                 }
                 if (lineCnt % (50000) == 0){
                     log.info("{}已写入[{}]条", odsTableName, lineCnt);
+                    AsyncFactory.convTaskLog(taskId, "[" + odsTableName + "]表已写入[" + lineCnt + "]条");
                 }
             }
             pst.executeBatch();
         }catch (Exception e){
             log.error("csv数据入库异常：{}", ExceptionUtils.getStackTrace(e));
+            AsyncFactory.convTaskLog(taskId, ExceptionUtils.getStackTrace(e));
+            throw new CommonException("数据异常, 错误信息:{}", ExceptionUtils.getStackTrace(e));
         }finally {
             if(pst!=null) {
                 try {
@@ -178,13 +167,38 @@ public class LargeFileUtil {
         return lineCnt;
     }
 
+    @Data
+    static class DataFieldInfo{
+        private String fieldName;
 
-    private void parameterSet(String fieldType, PreparedStatement stmt, Integer index, String value) {
+        private Integer fieldIndex;
+
+        private String fieldType;
+    }
+
+    private Map<String, DataFieldInfo> getFieldInfoMap(String[] headerList, Map<String, String> fieldTypeMap){
+        Map<String, DataFieldInfo> odsHeaderMap = new HashMap<>();
+        for (int i = 0;i < headerList.length;i++){
+            if (!fieldTypeMap.containsKey(headerList[i])){
+                continue;
+            }
+            DataFieldInfo dataFieldInfo = new DataFieldInfo();
+            dataFieldInfo.setFieldName(headerList[i]);
+            dataFieldInfo.setFieldIndex(i);
+            dataFieldInfo.setFieldType(fieldTypeMap.get(headerList[i]));
+            odsHeaderMap.put(headerList[i], dataFieldInfo);
+        }
+        return odsHeaderMap;
+    }
+
+
+    private void parameterSet(DataFieldInfo dataFieldInfo, PreparedStatement stmt, Integer index, String value, String odsTableName, Integer taskId) {
         try {
             if (value.equals("null") || value.equals("")){
                 stmt.setString(index, null);
                 return;
             }
+            String fieldType = dataFieldInfo.getFieldType();
             if (CharSequenceUtil.isNotBlank(fieldType)){
                 switch (fieldType) {
                     case "char":
@@ -192,11 +206,7 @@ public class LargeFileUtil {
                         stmt.setString(index, value);
                         break;
                     case "int":
-                        try {
-                            stmt.setInt(index, Integer.parseInt(value));
-                        }catch (Exception e){
-                            log.error(ExceptionUtils.getStackTrace(e));
-                        }
+                        stmt.setInt(index, Integer.parseInt(value));
                         break;
                     case "bigint":
                         stmt.setLong(index, Long.parseLong(value));
@@ -211,11 +221,7 @@ public class LargeFileUtil {
                         stmt.setDate(index, Date.valueOf(value));
                         break;
                     case "timestamp":
-                        try {
-                            stmt.setTimestamp(index, Timestamp.valueOf(value));
-                        }catch (Exception e){
-                            log.error(ExceptionUtils.getStackTrace(e));
-                        }
+                        stmt.setTimestamp(index, Timestamp.valueOf(value));
                         break;
                     case "time":
                         stmt.setTime(index, Time.valueOf(value));
@@ -229,23 +235,19 @@ public class LargeFileUtil {
                 }
             }
         }catch (Exception e){
-            log.error("type match error: {}",ExceptionUtils.getStackTrace(e));
+            String errorMessage = "prepareStatement type set error: "
+                    + "table:[" + odsTableName + "], field:[" + dataFieldInfo.getFieldName() + "], type:["
+                    + dataFieldInfo.getFieldType() + "], value:[" + value + "\n" + ExceptionUtils.getStackTrace(e);
+            log.error("data save error: {}", errorMessage);
+            AsyncFactory.convTaskLog(taskId, errorMessage);
         }
     }
 
-    private Map<String, String> parseFieldFormat(List<OriginalModelColumn> originalModelColumns){
-        if (CollUtil.isEmpty(originalModelColumns)){
-            log.error("ods column list is null");
-            return new HashMap<>();
-        }
-        return originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getFieldType));
-    }
 
-
-    private String assembleSql(String[] headerList, String odsTableName){
+    private String assembleSql(Map<String, DataFieldInfo> odsHeaderMap, String odsTableName){
         StringBuilder fieldSql = new StringBuilder();
         StringBuilder valueSql = new StringBuilder();
-        for (String str : headerList) {
+        for (String str : odsHeaderMap.keySet()) {
             fieldSql.append(str).append(",");
             valueSql.append("?").append(",");
         }

@@ -25,7 +25,6 @@ public class JDBCRepository {
         ResultSet rs = null;
         try {
             BeeFactory instance = BeeFactory.getInstance();
-            instance.getDataSource().getConnection();
             conn = instance.getDataSource().getConnection();
             String execSql = HoneyUtil.deleteLastSemicolon(sql);
             pst = conn.prepareStatement(execSql);
