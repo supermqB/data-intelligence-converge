@@ -89,17 +89,17 @@ public class DownloadFileTask {
                 continue;
             }
 
-            convTaskLog(fileTask.getTaskId(), "通知拆分文件：" + fileTask);
+            convTaskLog(fileTask.getTaskId(), "通知前置机文件分片：" + fileTask);
             if (!taskFileService.splitFile(taskFileConfig)) {
                 log.error("通知拆分文件异常：" + fileTask);
                 resetFileTask(fileTask, taskFileConfig);
                 continue;
             }
 
-            log.info("轮询状态：" + fileTask);
+            convTaskLog(fileTask.getTaskId(), "正在压缩、加密文件：" + fileTask);
             PreFileStatusDto preFileStatusDto = taskFileService.getFileStatus(taskFileConfig);
             if (preFileStatusDto == null){
-                log.error("轮询状态异常：" + fileTask);
+                log.error("文件拆分异常：" + fileTask);
                 resetFileTask(fileTask, taskFileConfig);
                 continue;
             }

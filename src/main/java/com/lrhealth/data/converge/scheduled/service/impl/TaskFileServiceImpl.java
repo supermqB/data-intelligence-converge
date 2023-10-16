@@ -72,7 +72,7 @@ public class TaskFileServiceImpl implements TaskFileService {
     }
 
     @Override
-    @Retryable(value = {FileStatusException.class}, maxAttempts = 20, backoff = @Backoff(delay = 2000, multiplier =
+    @Retryable(value = {FileStatusException.class}, maxAttempts = 12, backoff = @Backoff(delay = 2000, multiplier =
             1.5))
     public PreFileStatusDto getFileStatus(TaskFileConfig taskFileConfig) {
         RSA instance = RsaUtils.getInstance(convergeConfig.getPrivateKeyStr());
