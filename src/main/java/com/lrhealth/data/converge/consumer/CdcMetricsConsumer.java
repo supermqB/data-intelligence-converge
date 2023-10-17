@@ -16,6 +16,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -41,12 +42,9 @@ public class CdcMetricsConsumer {
     @Resource
     private ConvTaskResultCdcService convTaskResultCdcService;
 
-    // @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = "metrics", containerFactory = "kafkaListenerContainerFactory")
+    @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = "metrics", containerFactory = "kafkaListenerContainerFactory")
     @PostConstruct
-    public void consumer() {
-        String message =
-            "[{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"delete\",\"value\":{\"age\":null,\"class\":null,\"gender\":null,\"id\":3,\"name\":null},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8},{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"delete\",\"value\":{\"age\":null,\"class\":null,\"gender\":null,\"id\":5,\"name\":null},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8},{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"delete\",\"value\":{\"age\":null,\"class\":null,\"gender\":null,\"id\":4,\"name\":null},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8},{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"update\",\"value\":{\"age\":19,\"class\":null,\"gender\":\"male\",\"id\":2,\"name\":\"bbbbb\"},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8},{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"insert\",\"value\":{\"age\":null,\"class\":null,\"gender\":null,\"id\":10,\"name\":\"aaaaa\"},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8}]";
-
+    public void consumer(String message) {
         List<CdcRecord> records = JSON.parseArray(message, CdcRecord.class);
         if (CollUtil.isEmpty(records)) {
             return;
