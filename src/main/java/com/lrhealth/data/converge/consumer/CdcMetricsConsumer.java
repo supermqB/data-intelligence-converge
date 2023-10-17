@@ -19,7 +19,6 @@ import org.apache.commons.compress.utils.Lists;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -43,7 +42,6 @@ public class CdcMetricsConsumer {
     private ConvTaskResultCdcService convTaskResultCdcService;
 
     @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = "metrics", containerFactory = "kafkaListenerContainerFactory")
-    @PostConstruct
     public void consumer(String message) {
         List<CdcRecord> records = JSON.parseArray(message, CdcRecord.class);
         if (CollUtil.isEmpty(records)) {
