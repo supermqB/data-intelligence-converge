@@ -16,9 +16,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -41,9 +41,11 @@ public class CdcMetricsConsumer {
     @Resource
     private ConvTaskResultCdcService convTaskResultCdcService;
 
-    @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = "metrics", containerFactory = "kafkaListenerContainerFactory")
-    public void consumer(String message) {
-        log.info("{}", message);
+    // @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = "metrics", containerFactory = "kafkaListenerContainerFactory")
+    @PostConstruct
+    public void consumer() {
+        String message =
+            "[{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"delete\",\"value\":{\"age\":null,\"class\":null,\"gender\":null,\"id\":3,\"name\":null},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8},{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"delete\",\"value\":{\"age\":null,\"class\":null,\"gender\":null,\"id\":5,\"name\":null},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8},{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"delete\",\"value\":{\"age\":null,\"class\":null,\"gender\":null,\"id\":4,\"name\":null},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8},{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"update\",\"value\":{\"age\":19,\"class\":null,\"gender\":\"male\",\"id\":2,\"name\":\"bbbbb\"},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8},{\"database\":\"rdcp_ext\",\"schema\":\"test\",\"table\":\"astudents\",\"operation\":\"insert\",\"value\":{\"age\":null,\"class\":null,\"gender\":null,\"id\":10,\"name\":\"aaaaa\"},\"tunnelId\":86,\"jid\":\"0d86cb9b86f7102a2d8daaa989e5ad91\",\"taskId\":8}]";
 
         List<CdcRecord> records = JSON.parseArray(message, CdcRecord.class);
         if (CollUtil.isEmpty(records)) {
@@ -57,10 +59,10 @@ public class CdcMetricsConsumer {
             map.put(key, list);
         }
 
-        CdcRecord first = records.get(0);
-
         for (Map.Entry<String, List<CdcRecord>> entry : map.entrySet()) {
-            List<CdcRecord> v = entry.getValue();
+            records = entry.getValue();
+            CdcRecord first = records.get(0);
+
             ConvTunnel tunnel = updateConvTunnel(first);
             if (tunnel == null) {
                 continue;
@@ -69,7 +71,7 @@ public class CdcMetricsConsumer {
             if (task == null) {
                 continue;
             }
-            flushConvCdcRecord(task, first, v);
+            flushConvCdcRecord(task, first, records);
         }
     }
 
@@ -77,6 +79,7 @@ public class CdcMetricsConsumer {
         // @formatter:off
         ConvTaskResultCdc cdc = ConvTaskResultCdc.builder()
             .taskId(Long.valueOf(task.getId()))
+            .tableName(first.getTable())
             .flinkJobId(first.getJid())
             .delFlag(0)
             .build();
@@ -94,28 +97,30 @@ public class CdcMetricsConsumer {
             if (optional.isPresent()) {
                 origin = optional.get();
             }
+        } else if (CollUtil.size(cdcList) == 1) {
+            origin = cdcList.get(0);
         }
 
         for (CdcRecord record : records) {
-            Integer addCount = cdc.getAddCount();
-            Integer deleteCount = cdc.getDeleteCount();
-            Integer updateCount = cdc.getUpdateCount();
-
             switch (record.getOperation()) {
                 case "insert":
-                    cdc.setAddCount((addCount == null ? 0 : addCount) + 1 + origin.getAddCount());
+                    cdc.setAddCount(add(cdc.getAddCount(), 1));
                     break;
                 case "update":
-                    cdc.setUpdateCount((updateCount == null ? 0 : updateCount) + 1 + origin.getUpdateCount());
+                    cdc.setUpdateCount(add(cdc.getUpdateCount(), 1));
                     break;
                 case "delete":
-                    cdc.setDeleteCount((deleteCount == null ? 0 : deleteCount) + 1 + origin.getDeleteCount());
+                    cdc.setDeleteCount(add(cdc.getDeleteCount(), 1));
                     break;
                 default:
                     break;
             }
-            cdc.setDataCount(cdc.getDeleteCount() + cdc.getAddCount() + cdc.getUpdateCount() + origin.getDataCount());
         }
+        cdc.setDeleteCount(add(cdc.getDeleteCount(), origin.getDeleteCount()));
+        cdc.setAddCount(add(cdc.getAddCount(), origin.getAddCount()));
+        cdc.setUpdateCount(add(cdc.getUpdateCount(), origin.getUpdateCount()));
+        cdc.setDataCount(add(cdc.getDeleteCount(), cdc.getUpdateCount(), cdc.getAddCount()));
+
         convTaskResultCdcService.saveOrUpdate(cdc, wrapper);
     }
 
@@ -159,6 +164,14 @@ public class CdcMetricsConsumer {
             .eq(ConvTask::getFedTaskId, fedTaskId));
         // @formatter:on
         return task;
+    }
+
+    private int add(Integer... arr) {
+        int sum = 0;
+        for (Integer i : arr) {
+            sum += Optional.ofNullable(i).orElse(0);
+        }
+        return sum;
     }
 
     @Data
