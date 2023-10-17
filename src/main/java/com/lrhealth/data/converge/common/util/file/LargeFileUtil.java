@@ -203,6 +203,7 @@ public class LargeFileUtil {
                 switch (fieldType) {
                     case "char":
                     case "varchar":
+                    case "text":
                         stmt.setString(index, value);
                         break;
                     case "int":

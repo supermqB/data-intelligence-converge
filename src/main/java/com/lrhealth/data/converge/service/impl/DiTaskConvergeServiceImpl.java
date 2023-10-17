@@ -1,8 +1,10 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.common.enums.conv.CollectDataTypeEnum;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.file.LargeFileUtil;
@@ -73,12 +75,16 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         taskResultViewList.forEach(taskResultView -> {
             ConvTask convTask = taskService.getById(taskResultView.getTaskId());
             AsyncFactory.convTaskLog(convTask.getId(), "开始[" + taskResultView.getTableName() + "]表的入库流程！");
+            if (dataSaveHandleMap.containsKey(taskResultView.getId())){
+                return;
+            }
+            dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
 
             dataSaveThreadPool.execute(() -> {
                 try {
-                    dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
                     log.info("开始taskResultViewId:[{}]的xds入库流程", taskResultView.getId());
                     xdsFileSave(taskResultView, convTask);
+                    log.info("data save success, taskResultViewId: {}", taskResultView.getId());
                 } catch (Exception e) {
                     log.error("(dataSave)log error,{}", ExceptionUtils.getStackTrace(e));
                     AsyncFactory.convTaskLog(convTask.getId(), ExceptionUtils.getStackTrace(e));
@@ -87,7 +93,6 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 }finally {
                     dataSaveHandleMap.remove(taskResultView.getTaskId());
                 }
-                log.info("data save success, taskResultViewId: {}", taskResultView.getId());
             });
         });
     }
@@ -171,11 +176,16 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
 
     private Xds createXds(ConvTaskResultView taskResultView, ConvTask convTask){
+        String dataType = odsModelService.getTableDataType(taskResultView.getTableName(), convTask.getSysCode());
+        if (CharSequenceUtil.isBlank(dataType)){
+            dataType = CollectDataTypeEnum.BUSINESS.getCode();
+        }
         Xds xds =  Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .orgCode(convTask.getOrgCode())
                 .sysCode(convTask.getSysCode())
                 .convergeMethod(convTask.getConvergeMethod())
+                .dataType(dataType)
                 .dataConvergeStartTime(convTask.getStartTime())
                 .dataConvergeStatus(XdsStatusEnum.INIT.getCode())
                 .odsModelName(taskResultView.getTableName())

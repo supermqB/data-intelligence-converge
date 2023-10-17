@@ -1,21 +1,18 @@
 package com.lrhealth.data.converge.scheduled;
 
-import cn.hutool.core.codec.Base64Decoder;
-import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.common.util.file.FileUtils;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskLog;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.dao.service.*;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
 import com.lrhealth.data.converge.scheduled.model.TaskFileConfig;
 import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
-import com.lrhealth.data.converge.scheduled.service.*;
+import com.lrhealth.data.converge.scheduled.service.ConvergeService;
+import com.lrhealth.data.converge.scheduled.service.TaskFileService;
 import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
 import com.lrhealth.data.converge.scheduled.thread.AsyncManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,7 +22,8 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 /**

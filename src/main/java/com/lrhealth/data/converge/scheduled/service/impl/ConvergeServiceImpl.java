@@ -111,7 +111,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                 //更新 task
                 ConvTask convTask = feNodeService.saveOrUpdateTask(taskStatusDto,tunnel);
                 if (StrUtil.equals(convTask.getConvergeMethod(), "1") && convTask.getStatus() > 3) {
-                    log.info("当前任务已完成，无需更新！" + convTask);
+//                    log.info("当前任务已完成，无需更新！" + convTask);
                     continue;
                 }
 
