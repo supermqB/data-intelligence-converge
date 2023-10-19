@@ -51,69 +51,6 @@ public class LargeFileUtil {
     }
 
 
-
-//    private Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, List<OriginalModelColumn> originalModelColumns) {
-//        int lineCnt = 0;
-//        PreparedStatement pst = null;
-//        Map<String, String> fieldMatchMap = parseFieldFormat(originalModelColumns);
-//
-//        BeeFactory instance = BeeFactory.getInstance();
-//        try (BufferedReader reader = new BufferedReader(new FileReader(filePath));
-//             Connection connection = instance.getDataSource().getConnection()) {
-//            String line;
-//            String header = reader.readLine();
-//            // csv表头
-//            String[] headerList = header.split(",");
-//            // 过滤出来的原始字段对应的csv表头索引
-//            Map<String, Integer> odsHeaderMap = new HashMap<>();
-//            for (int i = 0;i < headerList.length;i++){
-//                if (!fieldMatchMap.containsKey(headerList[i])){
-//                    continue;
-//                }
-//                odsHeaderMap.put(headerList[i], i);
-//            }
-//            pst = connection.prepareStatement(assembleSql(odsHeaderMap, odsTableName));
-//
-//            while ((line = reader.readLine()) != null) {
-//                String[] data = line.split(",");
-//                log.info("[{}]行数据量：[{}]", odsTableName, data.length);
-//                Integer statementIndex = 1;
-//                // 设置字段的类型
-//                for (Map.Entry<String, Integer> odsHeader: odsHeaderMap.entrySet()){
-//                    String fieldName = odsHeader.getKey();
-//                    parameterSet(fieldName, fieldMatchMap.get(fieldName), pst, statementIndex, data[odsHeader.getValue()], odsTableName);
-//                    statementIndex++;
-//                }
-//                // 给xds_id赋值
-//                pst.setLong(statementIndex, xdsId);
-//                pst.addBatch();
-//
-//                lineCnt++;
-//                if (lineCnt % BATCH_SIZE == 0) {
-//                    // 达到每批数据的大小，进行入库操作
-//                    pst.executeBatch();
-//
-//                }
-//                if (lineCnt % (50000) == 0){
-//                    log.info("{}已写入[{}]条", odsTableName, lineCnt);
-//                }
-//            }
-//            pst.executeBatch();
-//        }catch (Exception e){
-//            log.error("csv数据入库异常：{}", ExceptionUtils.getStackTrace(e));
-//            throw new CommonException("数据异常, 错误信息:{}", ExceptionUtils.getStackTrace(e));
-//        }finally {
-//            if(pst!=null) {
-//                try {
-//                    pst.close();
-//                } catch (SQLException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//        return lineCnt;
-//    }
-
     public Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> fieldTypeMap, Integer taskId) {
         int lineCnt = 0;
         PreparedStatement pst = null;
@@ -148,7 +85,7 @@ public class LargeFileUtil {
                     }
                     statementIndex++;
                 }
-                if (!setFlag){
+                if (setFlag){
                     // 给xds_id赋值
                     pst.setLong(statementIndex, xdsId);
                     pst.addBatch();

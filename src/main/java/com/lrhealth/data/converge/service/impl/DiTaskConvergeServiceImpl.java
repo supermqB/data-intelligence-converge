@@ -178,7 +178,8 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         Map<String, String> fieldTypeMap = originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getFieldType));
         Integer countNumber = largeFileUtil.fileParseAndSave(xds.getStoredFilePath(), xds.getId(), xds.getOdsTableName(), fieldTypeMap, taskId);
         // 获得数据的大概存储大小
-        log.info("数据入库完成，时间：{}， 条数：{}", (System.currentTimeMillis() - startTime), countNumber);
+        AsyncFactory.convTaskLog(taskId, "数据入库完成，时间：[" + (System.currentTimeMillis() - startTime)
+                + "]， 条数：[" + countNumber + "]");
         String avgRowLength = getAvgRowLength(xds.getOdsTableName());
         return countNumber * Long.parseLong(avgRowLength);
     }
