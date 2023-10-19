@@ -74,27 +74,36 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         // 多线程处理任务实例
         taskResultViewList.forEach(taskResultView -> {
             ConvTask convTask = taskService.getById(taskResultView.getTaskId());
-            AsyncFactory.convTaskLog(convTask.getId(), "开始[" + taskResultView.getTableName() + "]表的入库流程！");
             if (dataSaveHandleMap.containsKey(taskResultView.getId())){
                 return;
             }
-            dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
 
             dataSaveThreadPool.execute(() -> {
                 try {
-                    log.info("开始taskResultViewId:[{}]的xds入库流程", taskResultView.getId());
+                    dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
+                    AsyncFactory.convTaskLog(convTask.getId(), "开始[" + taskResultView.getTableName() + "]表的入库流程！");
                     xdsFileSave(taskResultView, convTask);
                     log.info("data save success, taskResultViewId: {}", taskResultView.getId());
                 } catch (Exception e) {
-                    log.error("(dataSave)log error,{}", ExceptionUtils.getStackTrace(e));
-                    AsyncFactory.convTaskLog(convTask.getId(), ExceptionUtils.getStackTrace(e));
+                    AsyncFactory.convTaskLog(convTask.getId(), "(dataSave)log error, " + ExceptionUtils.getStackTrace(e));
                     taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(4).build());
                     throw new CommonException("数据入库失败, message: {}", ExceptionUtils.getStackTrace(e));
                 }finally {
-                    dataSaveHandleMap.remove(taskResultView.getTaskId());
+                    dataSaveHandleMap.remove(taskResultView.getId());
                 }
             });
         });
+    }
+
+    @Override
+    public Map<Integer, List<ConvTaskResultView>> getDataSaveMap() {
+        return dataSaveHandleMap.values().stream().collect(Collectors.groupingBy(ConvTaskResultView::getTaskId));
+
+    }
+
+    @Override
+    public void clearDataSaveMap() {
+        dataSaveHandleMap.clear();
     }
 
     /**
@@ -234,9 +243,12 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
             // 字段名称
             columnSql.append(modelColumn.getNameEn()).append(" ");
             // 字段类型
-            if (modelColumn.getFieldTypeLength() != null){
+            if (modelColumn.getFieldTypeLength() != null) {
                 columnSql.append(modelColumn.getFieldType()).append("(")
                         .append(modelColumn.getFieldTypeLength()).append(") ");
+            } else if (modelColumn.getFieldType().equals("varchar")){
+                columnSql.append(modelColumn.getFieldType()).append("(")
+                        .append(255).append(") ");
             }else {
                 columnSql.append(modelColumn.getFieldType()).append(" ");
             }

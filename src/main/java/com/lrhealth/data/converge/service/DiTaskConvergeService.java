@@ -1,5 +1,10 @@
 package com.lrhealth.data.converge.service;
 
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
+
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author jinmengyu
  * @date 2023-10-12
@@ -13,4 +18,8 @@ public interface DiTaskConvergeService {
      * 异步执行
      */
     void fileParseAndSave();
+
+    Map<Integer, List<ConvTaskResultView>> getDataSaveMap();
+
+    void clearDataSaveMap();
 }

@@ -129,28 +129,43 @@ public class LargeFileUtil {
             pst = connection.prepareStatement(assembleSql(odsHeaderMap, odsTableName));
 
             String[] dataLine;
+            Map<String, String> setErrorMap = new HashMap<>();
             while ((dataLine = reader.readNext()) != null) {
+                boolean setFlag = true;
                 Integer statementIndex = 1;
                 // 设置字段的类型
                 for (Map.Entry<String, DataFieldInfo> odsHeader: odsHeaderMap.entrySet()){
-                    parameterSet(odsHeader.getValue(), pst, statementIndex, dataLine[odsHeader.getValue().getFieldIndex()], odsTableName, taskId);
+                    DataFieldInfo dataFieldInfo = odsHeader.getValue();
+                    String value = dataLine[odsHeader.getValue().getFieldIndex()];
+                    setFlag = parameterSet(dataFieldInfo, pst, statementIndex, value);
+                    if ((!setFlag) && (!setErrorMap.containsKey(dataFieldInfo.getFieldName()))){
+                        String errorMessage = "prepareStatement type set error: "
+                                + "table:[" + odsTableName
+                                + "], field:[" + dataFieldInfo.getFieldName()
+                                + "], type:[" + dataFieldInfo.getFieldType()
+                                + "], value:[" + value + "]";
+                        setErrorMap.put(dataFieldInfo.getFieldName(), errorMessage);
+                    }
                     statementIndex++;
                 }
-                // 给xds_id赋值
-                pst.setLong(statementIndex, xdsId);
-                pst.addBatch();
+                if (!setFlag){
+                    // 给xds_id赋值
+                    pst.setLong(statementIndex, xdsId);
+                    pst.addBatch();
+                    lineCnt++;
+                }
 
-                lineCnt++;
                 if (lineCnt % BATCH_SIZE == 0) {
                     // 达到每批数据的大小，进行入库操作
                     pst.executeBatch();
                 }
                 if (lineCnt % (50000) == 0){
-                    log.info("{}已写入[{}]条", odsTableName, lineCnt);
                     AsyncFactory.convTaskLog(taskId, "[" + odsTableName + "]表已写入[" + lineCnt + "]条");
                 }
             }
             pst.executeBatch();
+            setErrorMap.forEach((key, value) -> AsyncFactory.convTaskLog(taskId, value));
+
         }catch (Exception e){
             log.error("csv数据入库异常：{}", ExceptionUtils.getStackTrace(e));
             AsyncFactory.convTaskLog(taskId, ExceptionUtils.getStackTrace(e));
@@ -192,11 +207,11 @@ public class LargeFileUtil {
     }
 
 
-    private void parameterSet(DataFieldInfo dataFieldInfo, PreparedStatement stmt, Integer index, String value, String odsTableName, Integer taskId) {
+    private boolean parameterSet(DataFieldInfo dataFieldInfo, PreparedStatement stmt, Integer index, String value) {
         try {
             if (value.equals("null") || value.equals("")){
                 stmt.setString(index, null);
-                return;
+                return true;
             }
             String fieldType = dataFieldInfo.getFieldType();
             if (CharSequenceUtil.isNotBlank(fieldType)){
@@ -232,16 +247,15 @@ public class LargeFileUtil {
                         stmt.setBigDecimal(index, new BigDecimal(value));
                         break;
                     default:
-                        log.error("不存在的数据类型, {}", fieldType);
+                        log.error("不存在的数据类型: {}, 字段名称: {}",fieldType, dataFieldInfo.getFieldName());
+                        return false;
                 }
+                return true;
             }
         }catch (Exception e){
-            String errorMessage = "prepareStatement type set error: "
-                    + "table:[" + odsTableName + "], field:[" + dataFieldInfo.getFieldName() + "], type:["
-                    + dataFieldInfo.getFieldType() + "], value:[" + value + "\n" + ExceptionUtils.getStackTrace(e);
-            log.error("data save error: {}", errorMessage);
-            AsyncFactory.convTaskLog(taskId, errorMessage);
+            log.error("type set error: {}", ExceptionUtils.getMessage(e));
         }
+        return false;
     }
 
 
