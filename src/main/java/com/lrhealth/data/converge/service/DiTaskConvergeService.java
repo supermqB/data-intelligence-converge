@@ -22,4 +22,6 @@ public interface DiTaskConvergeService {
     Map<Integer, List<ConvTaskResultView>> getDataSaveMap();
 
     void clearDataSaveMap();
+
+    void dataSave(ConvTaskResultView taskResultView);
 }

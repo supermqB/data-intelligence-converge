@@ -72,26 +72,29 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
             return;
         }
         // 多线程处理任务实例
-        taskResultViewList.forEach(taskResultView -> {
-            ConvTask convTask = taskService.getById(taskResultView.getTaskId());
-            if (dataSaveHandleMap.containsKey(taskResultView.getId())){
-                return;
-            }
+        taskResultViewList.forEach(this::dataSave);
+    }
 
-            dataSaveThreadPool.execute(() -> {
-                try {
-                    dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
-                    AsyncFactory.convTaskLog(convTask.getId(), "开始[" + taskResultView.getTableName() + "]表的入库流程！");
-                    xdsFileSave(taskResultView, convTask);
-                    log.info("data save success, taskResultViewId: {}", taskResultView.getId());
-                } catch (Exception e) {
-                    AsyncFactory.convTaskLog(convTask.getId(), "(dataSave)log error, " + ExceptionUtils.getStackTrace(e));
-                    taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(4).build());
-                    throw new CommonException("数据入库失败, message: {}", ExceptionUtils.getStackTrace(e));
-                }finally {
-                    dataSaveHandleMap.remove(taskResultView.getId());
-                }
-            });
+
+    public void dataSave(ConvTaskResultView taskResultView){
+        ConvTask convTask = taskService.getById(taskResultView.getTaskId());
+        if (dataSaveHandleMap.containsKey(taskResultView.getId())){
+            return;
+        }
+
+        dataSaveThreadPool.execute(() -> {
+            try {
+                dataSaveHandleMap.put(taskResultView.getId(), taskResultView);
+                AsyncFactory.convTaskLog(convTask.getId(), "开始[" + taskResultView.getTableName() + "]表的入库流程！");
+                xdsFileSave(taskResultView, convTask);
+                log.info("data save success, taskResultViewId: {}", taskResultView.getId());
+            } catch (Exception e) {
+                AsyncFactory.convTaskLog(convTask.getId(), "(dataSave)log error, " + ExceptionUtils.getStackTrace(e));
+                taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(4).build());
+                throw new CommonException("数据入库失败, message: {}", ExceptionUtils.getStackTrace(e));
+            }finally {
+                dataSaveHandleMap.remove(taskResultView.getId());
+            }
         });
     }
 

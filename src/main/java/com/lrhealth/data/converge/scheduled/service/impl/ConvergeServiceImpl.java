@@ -13,14 +13,10 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
 import com.lrhealth.data.converge.scheduled.model.TaskFileConfig;
-import com.lrhealth.data.converge.scheduled.model.dto.FrontendStatusDto;
-import com.lrhealth.data.converge.scheduled.model.dto.ResultCDCInfoDTO;
-import com.lrhealth.data.converge.scheduled.model.dto.ResultViewInfoDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TaskLogDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TaskStatusDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TunnelStatusDto;
+import com.lrhealth.data.converge.scheduled.model.dto.*;
 import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.service.FeNodeService;
+import com.lrhealth.data.converge.service.DiTaskConvergeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +52,8 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     @Resource
     private ConvergeConfig convergeConfig;
+    @Resource
+    private DiTaskConvergeService diTaskConvergeService;
 
     @Override
     public void updateDownLoadFileTask(ConcurrentLinkedDeque<FileTask> taskDeque) {
@@ -153,6 +151,10 @@ public class ConvergeServiceImpl implements ConvergeService {
             taskResultView.setTransferTime(costTime);
             taskResultView.setStatus(3);
             convTaskResultViewService.updateById(taskResultView);
+
+            // 通知入库
+            diTaskConvergeService.dataSave(taskResultView);
+
             List<ConvTaskResultView> taskResultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
                     .eq(ConvTaskResultView::getTaskId, taskResultView.getTaskId())
                     .ne(ConvTaskResultView::getId, taskResultView.getId()));

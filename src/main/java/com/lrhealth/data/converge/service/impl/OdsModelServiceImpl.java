@@ -55,7 +55,8 @@ public class OdsModelServiceImpl implements OdsModelService {
     @Override
     public List<OriginalModelColumn> getcolumnList(String odsModelName, String sysCode) {
         List<OriginalModel> originalModel = originalModelService.list(new LambdaQueryWrapper<OriginalModel>()
-                .eq(OriginalModel::getNameEn, odsModelName).eq(OriginalModel::getSysCode, sysCode));
+                .eq(OriginalModel::getNameEn, odsModelName).eq(OriginalModel::getSysCode, sysCode)
+                .eq(OriginalModel::getDelFlag, 0));
         if (originalModel.size() != 1){
             throw new CommonException("原始模型数据错误:{}", odsModelName + "-" + sysCode);
         }

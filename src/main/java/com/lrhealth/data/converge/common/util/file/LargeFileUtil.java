@@ -1,27 +1,20 @@
 package com.lrhealth.data.converge.common.util.file;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.parser.Feature;
 import com.lrhealth.data.common.exception.CommonException;
-import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
 import com.opencsv.CSVReader;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 import org.teasoft.honey.osql.core.BeeFactory;
 
-import javax.annotation.Resource;
 import java.io.FileReader;
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author jinmengyu
@@ -30,25 +23,9 @@ import java.util.concurrent.ConcurrentMap;
 @Slf4j
 @Service
 public class LargeFileUtil {
-    @Resource
-    private BeeBaseRepository beeBaseRepository;
-
 
     private LargeFileUtil(){}
-
-    private static final int BATCH_SIZE = 10000; // 每批数据的大小
-
-    static ConcurrentMap<String, List<String>> headerMap = new ConcurrentHashMap<>();
-
-
-    private void insertBatchData(List<Map<String, Object>> odsDataList, String odsTableName){
-        try {
-            beeBaseRepository.insertBatch(odsTableName, odsDataList);
-        }catch (Exception e) {
-            log.error("file data to db sql exception,{}", ExceptionUtils.getStackTrace(e));
-            throw new CommonException("数据插入异常, odsTableName: {}", odsTableName);
-        }
-    }
+    private static final int BATCH_SIZE = 2000; // 每批数据的大小
 
 
     public Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> fieldTypeMap, Integer taskId) {
@@ -211,58 +188,6 @@ public class LargeFileUtil {
                 fieldSql.substring(0, fieldSql.toString().length() - 1) + ")" +
                 " VALUES " + "(" +
                 valueSql.substring(0, valueSql.toString().length() - 1) + ")";
-    }
-
-
-
-    /**
-     * String转JSON对象，并保持key-value的顺序
-     *
-     * @param strJson JSON字符创
-     *
-     * @return JSON对象
-     */
-    private Map<String, Object> stringToJsonObjKeepSequence(String strJson) {
-        LinkedHashMap<String, Object> json = JSON.parseObject(strJson, LinkedHashMap.class, Feature.OrderedField);
-        Map<String, Object> jsonObject = new HashMap<>(json);
-        return jsonObject;
-    }
-
-    private List<String> stringToList(String s) {
-        if (s == null) {
-            return Lists.newArrayList();
-        }
-        //正则：避免切割英文双引号内的英文逗号，-1代表结尾为空的字段不舍弃
-        String[] parts = s.split(",(?=([^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1);
-        return Arrays.asList(parts);
-    }
-
-    /**
-     * 将分割的第一行的表头list和后面的值list进行拼接,拼接完后以string返回
-     * @param header 表头
-     * @param lineData csv一行数据
-     */
-    private String stringToJson(List<String> header, List<String> lineData) {
-
-        if (header == null || lineData == null) {
-            throw new CommonException("输入不能为null");
-        } else if (header.size() != lineData.size()) {
-            throw new CommonException("表头个数和数据列个数不等");
-        }
-        StringBuilder sBuilder = new StringBuilder();
-        sBuilder.append("{ ");
-        for (int i = 0; i < header.size(); i++) {
-            //存在值自带双引号的情况
-            header.set(i, header.get(i).replace("\"", ""));
-            lineData.set(i, lineData.get(i).replace("\"", ""));
-            String mString = String.format("\"%s\": \"%s\"", header.get(i), lineData.get(i));
-            sBuilder.append(mString);
-            if (i != header.size() - 1) {
-                sBuilder.append(", ");
-            }
-        }
-        sBuilder.append(" },");
-        return sBuilder.toString();
     }
 
 }
