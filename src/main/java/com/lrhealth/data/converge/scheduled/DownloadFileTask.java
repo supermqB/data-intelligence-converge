@@ -57,7 +57,8 @@ public class DownloadFileTask {
         log.info("定时更新前置机任务状态！" + LocalDateTime.now());
         List<ConvTunnel> tunnelList = convTunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
                 .ne(ConvTunnel::getStatus, 0)
-                .ne(ConvTunnel::getStatus, 4));
+                .ne(ConvTunnel::getStatus, 4)
+                .ne(ConvTunnel::getFrontendId, -1L));
         List<Long> frontendIdList =
                 tunnelList.stream().map(ConvTunnel::getFrontendId).distinct().collect(Collectors.toList());
         convergeService.updateDownLoadFileTask(taskDeque);
