@@ -1,11 +1,8 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.DataBaseMessageDTO;
 import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.TaskDto;
-
-import java.util.List;
 
 /**
  * dataX采集方式
@@ -26,8 +23,6 @@ public interface DataXService {
     FileExecInfoDTO createTask(TaskDto taskDto);
 
     Xds updateTask(TaskDto taskDto);
-
-    List<String> createJson(DataBaseMessageDTO dto, String oriFilePath);
 
     void execDataX(String jsonList, String jsonSavePath);
 }

@@ -1,8 +1,7 @@
 package com.lrhealth.data.converge.scheduled.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -18,6 +17,9 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @TableName("di_conv_tunnel")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ConvTunnel implements Serializable {
 
     private static final long serialVersionUID = 1L;

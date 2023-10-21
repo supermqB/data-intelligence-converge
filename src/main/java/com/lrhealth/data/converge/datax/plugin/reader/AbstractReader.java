@@ -1,66 +1,102 @@
 package com.lrhealth.data.converge.datax.plugin.reader;
 
-import cn.hutool.log.Log;
-import com.lrhealth.data.converge.common.enums.DataXPluginEnum;
-import com.lrhealth.data.converge.model.DataBaseMessageDTO;
+import cn.hutool.core.text.CharSequenceUtil;
+import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.model.vo.JdbcUrlMatchVo;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.scheduled.utils.QueryParserUtil;
+import com.lrhealth.data.converge.scheduled.utils.TemplateMakerUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.io.*;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * @author jinmengyu
  * @date 2023-08-31
  */
+@Slf4j
 public abstract class AbstractReader {
-    private static final Log log = Log.get(AbstractReader.class);
     protected AbstractReader(){
     }
 
-    public List<String> generateDatabaseReader(DataBaseMessageDTO dto, String oriFilePath){
-        long stepStart = System.currentTimeMillis();
+    public void generateDatabaseReader(ConvTunnel tunnel, String tableName, String sqlQuery, String dataXJsonPath, String frontendFilePath){
         Connection con = null;
-        Statement st = null;
-        ResultSet rs = null;
-        String url = getJdbcUrl(dto.getHost(), dto.getPort(), dto.getDatabaseName());
-        dto.setJdbcUrl(url);
         try {
             Class.forName(getDataBase());
-            con= DriverManager.getConnection(url, dto.getUserName(), dto.getUserPassword());
-            st=con.createStatement();
-            rs=st.executeQuery(tableSql(dto.getSchemaName()));
-            List<String> tableList = new ArrayList<>();
-            while(rs.next()) {
-                String tableName = rs.getString(1);
-                tableList.add(tableName);
+            con= DriverManager.getConnection(tunnel.getJdbcUrl(), tunnel.getDbUserName(), tunnel.getDbPasswd());
+            boolean connectStatus = con.isValid(10);
+            if (!connectStatus){
+                log.error("数据库连接异常, 连接信息: {}, 用户名: {}, 密码: {}", tunnel.getJdbcUrl(), tunnel.getDbUserName(), tunnel.getDbPasswd());
+                throw new CommonException("数据库连接异常，检查连接信息");
             }
-            log.info("tableNumber: {}, name: {}", tableList.size(), tableList);
-            for (String table : tableList){
-                List<String> columnList = new ArrayList<>();
-                rs=st.executeQuery(columnSql(dto.getSchemaName(), table));
-                while(rs.next()) {
-                    String tableName = rs.getString(1);
-                    columnList.add(tableName);
+            List<String> columnList = new ArrayList<>();
+            if (CharSequenceUtil.isBlank(sqlQuery)){
+                sqlQuery = "select * from " + tableName;
+            }
+            if (sqlQuery.contains("*")){
+                try (Statement statement = con.createStatement()){
+                    JdbcUrlMatchVo matchVo = matchJdbc(tunnel.getJdbcUrl());
+                    String columnSql = columnSql(matchVo.getSchemaName() != null ? matchVo.getSchemaName() : null, tableName);
+                    ResultSet resultSet = statement.executeQuery(columnSql);
+                    while(resultSet.next()) {
+                        String columnName = resultSet.getString(1);
+                        columnList.add(columnName);
+                    }
+                    String collect = columnList.stream().map(s -> "\\\"" + s + "\\\"").collect(Collectors.joining(","));
+                    sqlQuery = sqlQuery.replace("*", collect);
+                    log.info("更新之后的采集语句: {}", sqlQuery);
+                }catch (Exception e){
+                    log.error("log error,{}", ExceptionUtils.getStackTrace(e));
                 }
-                log.info("table: {}, columnSize: {}, name: {}",table, columnList.size(), columnList);
-                readerJson(columnList, table, dto, oriFilePath);
+            }else {
+                columnList = QueryParserUtil.queryColumnParser(sqlQuery);
             }
+            // 开始生成json
+            createDataXJson(tableName, sqlQuery, tunnel, dataXJsonPath, frontendFilePath, columnList);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("log error,{}", ExceptionUtils.getStackTrace(e));
         } finally {
-            if(rs!=null) {
+            if(con!=null) {
                 try {
-                    rs.close();
+                    con.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
             }
-            if(st!=null) {
+        }
+    }
+
+    public String readerTableSeqFieldIndex(ConvTunnel tunnel, String tableName, String seqField, String index){
+        Connection con = null;
+        Statement statement = null;
+        try {
+            Class.forName(getDataBase());
+            con = DriverManager.getConnection(tunnel.getJdbcUrl(), tunnel.getDbUserName(), tunnel.getDbPasswd());
+            statement = con.createStatement();
+            String queryIndex;
+            if (index.equals("startIndex")){
+                queryIndex = getStartIndex(tableName, seqField);
+            }else {
+                queryIndex = getEndIndex(tableName, seqField);
+            }
+            ResultSet resultSet = statement.executeQuery(queryIndex);
+            String endIndex = null;
+            while(resultSet.next()) {
+                endIndex = resultSet.getString(1);
+            }
+            return endIndex;
+        }catch (Exception e){
+            log.error("log error,{}", ExceptionUtils.getStackTrace(e));
+        }finally {
+            if(statement!=null) {
                 try {
-                    st.close();
+                    con.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -73,65 +109,56 @@ public abstract class AbstractReader {
                 }
             }
         }
-        File[] fileList = new File(dto.getJsonSavePath()).listFiles();
-        return Arrays.stream(fileList).filter(File::isFile).filter(file -> file.lastModified() >= stepStart)
-                .map(File::getName).collect(Collectors.toList());
+        return null;
     }
 
-    private void readerJson(List<String> columnList, String table, DataBaseMessageDTO dto, String oriFilePath){
+    public boolean databaseCheck(ConvTunnel tunnel){
+        Connection con = null;
         try {
-            InputStream is = AbstractReader.class.getClassLoader().getResourceAsStream("dataX/csv.txt");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            // tmpfile为缓存文件，代码运行完毕后此文件将重命名为源文件名字。
-            File tmpfile = new File(dto.getJsonSavePath() + "/" + table + ".json");
-            // 内存流, 作为临时流
-            CharArrayWriter tempStream = new CharArrayWriter();
-            String str = null;
-            while ((str = reader.readLine()) != null) {// 替换每行中, 符合条件的字符串
-                if (str.contains("readerPlugin-")) {
-                    str = str.replace("readerPlugin-", DataXPluginEnum.getDatabasePlugin(dto.getDatabase()));
-                }else if (str.contains("readerTableName")) {
-                    str = str.replace("readerTableName", table);
-                }else if (str.contains("csvHeader")) {
-                    String collect = columnList.stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(","));
-                    str = str.replace("csvHeader", collect);
-                }else if (str.contains("readerUsername")){
-                    str = str.replace("readerUsername", dto.getUserName());
-                }else if (str.contains("readerPassword")){
-                    str = str.replace("readerPassword", dto.getUserPassword());
-                }else if (str.contains("readerJdbcUrl")){
-                    str = str.replace("readerJdbcUrl", dto.getJdbcUrl());
-                }else if (str.contains("fileSavePath")){
-                    str = str.replace("fileSavePath", oriFilePath);
-                }else if (str.contains("readerQuerySql")){
-                    str = str.replace("readerQuerySql", readerQuerySql(dto.getSchemaName(), table, dto.getCondition()));
+            Class.forName(getDataBase());
+            con = DriverManager.getConnection(tunnel.getJdbcUrl(), tunnel.getDbUserName(), tunnel.getDbPasswd());
+            return con.isValid(10);
+        }catch (Exception e){
+            log.error("log error,{}", ExceptionUtils.getStackTrace(e));
+        }finally {
+            if(con!=null) {
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
-                // 将该行写入内存
-                tempStream.write(str);
-                // 添加换行符
-                tempStream.append(System.getProperty("line.separator"));
             }
-            is.close();
-            // 将内存中的流 写入 文件
-            FileWriter out = new FileWriter(tmpfile);
-            tempStream.writeTo(out);
-            out.close();
+        }
+        return false;
+    }
+
+    private void createDataXJson(String table, String sqlQuery, ConvTunnel tunnel, String dataXJsonPath, String frontendFilePath, List<String> columnList){
+        try {
+            TemplateMakerUtil makerUtil = new TemplateMakerUtil();
+            makerUtil.init();
+            Map<String, Object> podMap = new HashMap<>();
+            podMap.put("dbType", QueryParserUtil.getDbType(tunnel.getJdbcUrl()));
+            podMap.put("dbUserName", tunnel.getDbUserName());
+            podMap.put("dbPasswd", tunnel.getDbPasswd());
+            podMap.put("sqlQuery", sqlQuery);
+            podMap.put("jdbcUrl", tunnel.getJdbcUrl());
+            podMap.put("frontendFilePath", frontendFilePath);
+            podMap.put("table", table);
+            log.info("(tunnel-datax)table: {}, columnSize: {}", table, columnList.size());
+            String collect = columnList.stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(","));
+            podMap.put("columnHeader", collect);
+            log.info("***开始生成文件!***");
+            makerUtil.process(podMap, dataXJsonPath);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("log error,{}", ExceptionUtils.getStackTrace(e));
         }
     }
 
+    protected abstract String getStartIndex(String tableName, String seqField);
+    protected abstract String getEndIndex(String tableName, String seqField);
     protected abstract String getDataBase();
-
-    protected abstract String getJdbcUrl(String host, String port, String databaseName);
-
-    protected abstract String tableSql(String schemaName);
-
+    protected abstract JdbcUrlMatchVo matchJdbc(String jdbcUrl);
     protected abstract String columnSql(String schemaName, String tableName);
-
-    protected abstract String readerQuerySql(String schemaName, String tableName, String condition);
-
-
 
 
 }

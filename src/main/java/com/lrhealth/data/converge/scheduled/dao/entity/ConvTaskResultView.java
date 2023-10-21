@@ -118,4 +118,11 @@ public class ConvTaskResultView implements Serializable {
      * 文件名
      */
     private String feStoredFilename;
+
+    private Long dataxConfigId;
+
+    /**
+     * dataxJobId
+     */
+    private Long dataxJobId;
 }

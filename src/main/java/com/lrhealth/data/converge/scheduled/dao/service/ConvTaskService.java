@@ -1,10 +1,9 @@
 package com.lrhealth.data.converge.scheduled.dao.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
-
-import java.util.List;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 
 /**
  * <p>
@@ -16,5 +15,11 @@ import java.util.List;
  */
 public interface ConvTaskService extends IService<ConvTask> {
 
+    ConvTask createTask(ConvTunnel tunnel, boolean isCdc);
 
+    void updateTaskStatus(Integer taskId, TaskStatusEnum taskStatusEnum);
+
+    void taskWaitingTransfer(Integer taskId);
+
+    void taskDownloaded(Integer taskId);
 }

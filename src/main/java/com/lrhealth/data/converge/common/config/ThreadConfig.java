@@ -18,15 +18,41 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ThreadConfig {
     public static final String DATA_SAVE_POOL = "dataSaveThreadPool";
 
+    public static final String DATAX_COLLECT_POOL = "dataxThreadPool";
+
     /**
-     * 文档解析用
+     * datax抽取使用
+     *
+     * @return ThreadPoolTaskExecutor
+     */
+    @Bean(name = DATAX_COLLECT_POOL)
+    public ThreadPoolTaskExecutor dataCollectThreadPool() {
+        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+        //核心线程数量
+        threadPoolTaskExecutor.setCorePoolSize(4);
+        //最大线程数量
+        threadPoolTaskExecutor.setMaxPoolSize(8);
+        //队列中最大任务数
+        threadPoolTaskExecutor.setQueueCapacity(10000);
+        //线程名称前缀
+        threadPoolTaskExecutor.setThreadNamePrefix("dataxThreadPool-");
+        //拒绝策略
+        threadPoolTaskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        //线程空闲后最大存活时间
+        threadPoolTaskExecutor.setKeepAliveSeconds(15);
+        //初始化线程池
+        threadPoolTaskExecutor.initialize();
+        return threadPoolTaskExecutor;
+    }
+
+    /**
+     * 数据落库使用
      *
      * @return ThreadPoolTaskExecutor
      */
     @Bean(name = DATA_SAVE_POOL)
-    public ThreadPoolTaskExecutor fileParsingThreadPool() {
+    public ThreadPoolTaskExecutor dataSaveThreadPool() {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-        int cpuCount = Runtime.getRuntime().availableProcessors();
         //核心线程数量
         threadPoolTaskExecutor.setCorePoolSize(4);
         //最大线程数量
