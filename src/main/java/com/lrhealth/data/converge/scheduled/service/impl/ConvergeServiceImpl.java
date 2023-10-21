@@ -100,7 +100,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             //更新 tunnel
             ConvTunnel tunnel = feNodeService.updateTunnel(tunnelStatusDto);
             if(tunnel == null){
-                log.error("管道信息更新失败！" + tunnelStatusDto);
+                log.warn("不存在的管道信息！" + tunnelStatusDto);
                 continue;
             }
 
