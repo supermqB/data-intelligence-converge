@@ -151,11 +151,9 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         Xds xds = createXds(taskResultView, convTask);
         long dataSize;
         // 数据落库，获得数据容量
-        dataSize = fileDataHandle(xds, convTask.getId());
+        dataSize = fileDataHandle(xds, convTask.getId(), taskResultView);
         // 更新xds
         updateXds(xds.getId(), dataSize);
-        // 更新resultView表
-        taskResultViewService.updateById(ConvTaskResultView.builder().id(taskResultView.getId()).status(5).storedTime(LocalDateTime.now()).build());
         AsyncFactory.convTaskLog(convTask.getId(), "[" + taskResultView.getTableName() + "]表入库成功！");
 
         // 发送kafka
@@ -164,7 +162,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
 
 
-    private long fileDataHandle(Xds xds, Integer taskId){
+    private long fileDataHandle(Xds xds, Integer taskId, ConvTaskResultView taskResultView){
         List<OriginalModelColumn> originalModelColumns = odsModelService.getcolumnList(xds.getOdsModelName(), xds.getSysCode());
         long startTime = System.currentTimeMillis();
         // 表是否存在的判断
@@ -184,6 +182,11 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         AsyncFactory.convTaskLog(taskId, "数据入库完成，时间：[" + (System.currentTimeMillis() - startTime)
                 + "]， 条数：[" + countNumber + "]");
         String avgRowLength = getAvgRowLength(xds.getOdsTableName());
+        taskResultViewService.updateById(ConvTaskResultView.builder()
+                .id(taskResultView.getId()).status(5).storedTime(LocalDateTime.now())
+                .dataItemCount(countNumber)
+                .build());
+
         return countNumber * Long.parseLong(avgRowLength);
     }
 

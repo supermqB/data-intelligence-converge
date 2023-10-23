@@ -16,4 +16,6 @@ public interface DataXExecService {
     void run(Long tunnelId, Integer taskId, Integer execStatus, Integer oldTaskId) throws InterruptedException;
 
     void dataXConfig(ConvTunnel tunnel, List<TableInfoDto> tableInfoDtoList);
+
+    void tunnelExec(ConvTunnel tunnel, Integer taskId, Integer execStatus, Integer oldTaskId);
 }

@@ -2,7 +2,6 @@ package com.lrhealth.data.converge.scheduled.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.ExecStatusEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
@@ -81,18 +80,7 @@ public class convergeTaskServiceImpl implements convergeTaskService {
         Integer oldTaskId = execStatus == 0 ? null : taskId;
         ConvTask frontendTask = frontendTaskService.createTask(ft, isCdc);
         taskId = frontendTask.getId();
-        if (TunnelCMEnum.LIBRARY_TABLE.getCode().equals(ft.getConvergeMethod())) {
-            try {
-                dataXService.run(tunnelId, taskId, execStatus, oldTaskId);
-            }catch (InterruptedException e){
-                throw new CommonException("线程中断异常");
-            }finally {
-                tunnelService.updateById(ConvTunnel.builder().id(tunnelId).status(TunnelStatusEnum.SCHEDULING.getValue()).build());
-            }
-        }
-        // 更新文件大小
-        updateFileSize(taskId);
-        statusService.updateTaskCompleted(tunnelId, taskId);
+        dataXService.tunnelExec(ft, taskId, execStatus, oldTaskId);
     }
 
 

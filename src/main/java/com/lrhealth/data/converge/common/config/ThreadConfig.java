@@ -29,9 +29,9 @@ public class ThreadConfig {
     public ThreadPoolTaskExecutor dataCollectThreadPool() {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         //核心线程数量
-        threadPoolTaskExecutor.setCorePoolSize(4);
+        threadPoolTaskExecutor.setCorePoolSize(10);
         //最大线程数量
-        threadPoolTaskExecutor.setMaxPoolSize(8);
+        threadPoolTaskExecutor.setMaxPoolSize(20);
         //队列中最大任务数
         threadPoolTaskExecutor.setQueueCapacity(10000);
         //线程名称前缀
@@ -54,9 +54,9 @@ public class ThreadConfig {
     public ThreadPoolTaskExecutor dataSaveThreadPool() {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         //核心线程数量
-        threadPoolTaskExecutor.setCorePoolSize(4);
+        threadPoolTaskExecutor.setCorePoolSize(10);
         //最大线程数量
-        threadPoolTaskExecutor.setMaxPoolSize(8);
+        threadPoolTaskExecutor.setMaxPoolSize(20);
         //队列中最大任务数
         threadPoolTaskExecutor.setQueueCapacity(10000);
         //线程名称前缀

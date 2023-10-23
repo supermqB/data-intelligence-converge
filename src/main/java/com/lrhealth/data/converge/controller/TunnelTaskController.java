@@ -4,6 +4,7 @@ import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.scheduled.service.convergeTaskService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -24,9 +25,15 @@ public class TunnelTaskController {
      * @param tunnelMessageDTO
      */
     @PostMapping("/tunnel/upsert")
-    public ResultBase<Void> upsertTunnel(@RequestBody TunnelMessageDTO tunnelMessageDTO){
-        convergeTaskService.tunnelConfig(tunnelMessageDTO);
-        return ResultBase.success();
+    public ResultBase<String> upsertTunnel(@RequestBody TunnelMessageDTO tunnelMessageDTO){
+        try {
+            convergeTaskService.tunnelConfig(tunnelMessageDTO);
+            return ResultBase.success("管道更新失败");
+        }catch (Exception e){
+            log.error("upsert tunnel error: {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail();
+        }
+
     }
 
     /**
@@ -35,10 +42,16 @@ public class TunnelTaskController {
      * @return
      */
     @PostMapping("/tunnel/exec")
-    public ResultBase<Void> tunnelExec(@RequestParam("tunnelId") Long tunnelId,
+    public ResultBase<String> tunnelExec(@RequestParam("tunnelId") Long tunnelId,
                                         @RequestParam("taskId") Integer taskId){
-        convergeTaskService.taskExec(taskId, tunnelId);
-        return ResultBase.success();
+        try {
+            convergeTaskService.taskExec(taskId, tunnelId);
+            return ResultBase.success("执行成功");
+        }catch (Exception e){
+            log.error("task exec error: {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail();
+        }
+
     }
 
 }

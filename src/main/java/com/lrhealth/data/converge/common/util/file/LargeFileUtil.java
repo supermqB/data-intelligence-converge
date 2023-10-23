@@ -32,6 +32,7 @@ public class LargeFileUtil {
         int lineCnt = 0;
         PreparedStatement pst = null;
         BeeFactory instance = BeeFactory.getInstance();
+        Map<String, String> setErrorMap = new HashMap<>();
 
         try (CSVReader reader = new CSVReader(new FileReader(filePath));
              Connection connection = instance.getDataSource().getConnection()) {
@@ -43,7 +44,6 @@ public class LargeFileUtil {
             pst = connection.prepareStatement(assembleSql(odsHeaderMap, odsTableName));
 
             String[] dataLine;
-            Map<String, String> setErrorMap = new HashMap<>();
             while ((dataLine = reader.readNext()) != null) {
                 boolean setFlag = true;
                 Integer statementIndex = 1;
@@ -85,6 +85,7 @@ public class LargeFileUtil {
             AsyncFactory.convTaskLog(taskId, ExceptionUtils.getStackTrace(e));
             throw new CommonException("数据异常, 错误信息:{}", ExceptionUtils.getStackTrace(e));
         }finally {
+            setErrorMap.forEach((key, value) -> AsyncFactory.convTaskLog(taskId, value));
             if(pst!=null) {
                 try {
                     pst.close();

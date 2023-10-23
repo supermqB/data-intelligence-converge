@@ -6,6 +6,8 @@ import com.alibaba.datax.core.Engine;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
+import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
+import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.datax.plugin.reader.AbstractReader;
 import com.lrhealth.data.converge.datax.plugin.reader.ReaderFactory;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvDataXJob;
@@ -17,6 +19,7 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.dto.TableInfoDto;
 import com.lrhealth.data.converge.scheduled.service.DataXExecService;
+import com.lrhealth.data.converge.scheduled.service.StatusService;
 import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
 import com.lrhealth.data.converge.scheduled.utils.QueryParserUtil;
 import com.lrhealth.data.converge.scheduled.utils.TemplateMakerUtil;
@@ -25,6 +28,7 @@ import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -70,7 +74,8 @@ public class DataXExecServiceImpl implements DataXExecService {
     private Executor dataxThreadPool;
     @Value("${datax.collect-multith}")
     private String dataxCollectMultith;
-
+    @Resource
+    private StatusService statusService;
     public static ConcurrentMap<Integer, CountDownLatch> DOWN_LATCH_MAP = new ConcurrentHashMap<>();
 
     @Override
@@ -192,6 +197,46 @@ public class DataXExecServiceImpl implements DataXExecService {
         } catch (Exception e) {
             log.error("(dataxConfig)log error,{}", ExceptionUtils.getStackTrace(e));
         }
+    }
+
+    @Override
+    @Async
+    public void tunnelExec(ConvTunnel tunnel, Integer taskId, Integer execStatus, Integer oldTaskId) {
+        if (TunnelCMEnum.LIBRARY_TABLE.getCode().equals(tunnel.getConvergeMethod())) {
+            try {
+                run(tunnel.getId(), taskId, execStatus, oldTaskId);
+            }catch (InterruptedException e){
+                throw new CommonException("线程中断异常");
+            }finally {
+                tunnelService.updateById(ConvTunnel.builder().id(tunnel.getId()).status(TunnelStatusEnum.SCHEDULING.getValue()).build());
+            }
+        }
+        // 更新文件大小
+        updateFileSize(taskId);
+        statusService.updateTaskCompleted(tunnel.getId(), taskId);
+    }
+
+    private void updateFileSize(Integer taskId){
+        List<ConvTaskResultView> jobList = resultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>().eq(ConvTaskResultView::getTaskId, taskId));
+        if (ObjectUtil.isNull(jobList)){
+            return;
+        }
+        try {
+            Thread.sleep(5000);
+        }catch (Exception e){
+            log.error("(dataxConfig)log error,{}", ExceptionUtils.getStackTrace(e));
+            Thread.currentThread().interrupt();
+        }
+        jobList.forEach(jobExecInstance -> {
+            File taskFile = new File(jobExecInstance.getStoredPath());
+            if (taskFile.exists() && taskFile.isFile()){
+                resultViewService.updateById(ConvTaskResultView.builder().id(jobExecInstance.getId())
+                        .dataSize((int) taskFile.length()).status(3).build());
+                log.info("file: {}, fileSize: {}", taskFile.getName(), taskFile.length());
+            } else {
+                log.error("文件不存在，resultViewId: {}", jobExecInstance.getId());
+            }
+        });
     }
 
     @Override
