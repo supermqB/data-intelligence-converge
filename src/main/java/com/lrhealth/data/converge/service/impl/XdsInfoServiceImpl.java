@@ -1,13 +1,11 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.net.NetUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.lrhealth.data.common.constant.CommonConstant;
-import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
-import com.lrhealth.data.common.enums.conv.LogicDelFlagIntEnum;
-import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
-import com.lrhealth.data.common.enums.conv.XdsStoredFileModeEnum;
+import com.lrhealth.data.common.enums.conv.*;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.Xds;
@@ -19,8 +17,10 @@ import com.lrhealth.data.converge.model.TaskDto;
 import com.lrhealth.data.converge.service.OdsModelService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -142,6 +142,24 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .build();
         xdsService.save(xds);
         return xds;
+    }
+
+    @Override
+    public Xds createDictXds(String orgCode, String sysCode, MultipartFile file) {
+        Xds xds = Xds.builder()
+                .id(IdUtil.getSnowflakeNextId())
+                .orgCode(orgCode).sysCode(sysCode)
+                .convergeMethod(ConvMethodEnum.FILE.getCode()).dataType(CollectDataTypeEnum.DICT.getCode())
+                .dataConvergeStartTime(LocalDateTime.now()).dataConvergeStatus(XdsStatusEnum.INIT.getCode())
+                .oriFileFromIp(NetUtil.getLocalhostStr()).odsModelName("dict")
+                .oriFileName(file.getName()).oriFileType("xlsx")
+                .oriFileSize(BigDecimal.valueOf(file.getSize()))
+                .odsTableName(sysCode + "_" + "dict")
+                .createTime(LocalDateTime.now()).delFlag(0)
+                .kafkaSendFlag(0)
+                .build();
+        xdsService.save(xds);
+        return xdsService.getById(xds.getId());
     }
 
     /**

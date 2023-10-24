@@ -66,7 +66,10 @@ public class FileToJsonUtil {
         try {
             List<ReadSheet> readSheets = EasyExcelFactory.read(stream).build().excelExecutor().sheetList();
             for (ReadSheet sheet : readSheets) {
-                putSheetData(jsonObject, sheet, stream);
+                List<Object> dataList = EasyExcelFactory.read(stream).sheet(sheet.getSheetNo()).headRowNumber(0).doReadSync();
+                JSONArray dataArray = JSON.parseArray(JSON.toJSONString(dataList));
+                JSONObject header = dataArray.getJSONObject(0);
+                putSheetData(jsonObject, dataArray, header, sheet.getSheetName());
             }
         } catch (Exception e) {
             log.error("[EXCEL] {}解析异常:{}", file.getFileName(), e.getMessage());
@@ -126,37 +129,24 @@ public class FileToJsonUtil {
         return jsonObject;
     }
 
-    private static void putSheetData(JSONObject jsonObject, ReadSheet sheet, InputStream stream){
-        try {
-            List<Object> dataList = EasyExcelFactory.read(stream).sheet(sheet.getSheetNo()).headRowNumber(0).doReadSync();
-            JSONArray dataArray = JSON.parseArray(JSON.toJSONString(dataList));
-            JSONObject header = dataArray.getJSONObject(0);
-            JSONArray result = new JSONArray();
-            for (int i = 1; i < dataArray.size(); i++) {
-                JSONObject temp = dataArray.getJSONObject(i);
-                JSONObject index = new JSONObject(new LinkedHashMap<>());
-                for (int j = 0; j < header.size(); j++) {
-                    if (ObjectUtil.isNotNull(header.get(String.valueOf(j)))) {
-                        index.put(ObjectUtil.isEmpty(header.get(String.valueOf(j))) ? "" : (String) header.get(String.valueOf(j)),
-                                ObjectUtil.isEmpty(temp.get(String.valueOf(j))) ? "" : temp.get(String.valueOf(j)));
-                    }
-                }
-                if (!index.isEmpty() && index.get(header.get(0).toString()) != null && !index.get(header.get(0).toString()).equals("")) {
-                    result.add(index);
+
+    public static void putSheetData(JSONObject jsonObject, JSONArray dataArray, JSONObject header, String sheetName){
+        JSONArray result = new JSONArray();
+        // 数据从第1行开始，0是表头
+        for (int i = 1; i < dataArray.size(); i++) {
+            JSONObject temp = dataArray.getJSONObject(i);
+            JSONObject index = new JSONObject(new LinkedHashMap<>());
+            for (int j = 0; j < header.size(); j++) {
+                if (ObjectUtil.isNotNull(header.get(String.valueOf(j)))) {
+                    index.put(ObjectUtil.isEmpty(header.get(String.valueOf(j))) ? "" : (String) header.get(String.valueOf(j)),
+                            ObjectUtil.isEmpty(temp.get(String.valueOf(j))) ? "" : temp.get(String.valueOf(j)));
                 }
             }
-            jsonObject.put(sheet.getSheetName(), result);
-        }catch (Exception e){
-            e.getStackTrace();
-        } finally {
-            if (stream != null) {
-                try {
-                    stream.close();
-                } catch (IOException e) {
-                    log.error("close resource error,{}", ExceptionUtils.getStackTrace(e));
-                }
+            if (!index.isEmpty() && CharSequenceUtil.isNotBlank(header.get(0).toString())) {
+                result.add(index);
             }
         }
+        jsonObject.put(sheetName, result);
     }
 
     /**

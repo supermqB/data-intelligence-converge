@@ -175,8 +175,10 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 AsyncFactory.convTaskLog(taskId,  "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
             }
         }
-
-        Map<String, String> fieldTypeMap = originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getFieldType));
+        // 过滤original_model_column里面的name_en重复数据
+        List<OriginalModelColumn> filterModelColumns = new ArrayList<>(originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, column -> column, (column1, column2) -> column1))
+                .values());
+        Map<String, String> fieldTypeMap = filterModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getFieldType));
         Integer countNumber = largeFileUtil.fileParseAndSave(xds.getStoredFilePath(), xds.getId(), xds.getOdsTableName(), fieldTypeMap, taskId);
         // 获得数据的大概存储大小
         AsyncFactory.convTaskLog(taskId, "数据入库完成，时间：[" + (System.currentTimeMillis() - startTime)

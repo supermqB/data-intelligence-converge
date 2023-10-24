@@ -5,6 +5,7 @@ import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * <p>
@@ -85,4 +86,6 @@ public interface XdsInfoService {
      * @return xds
      */
     Xds createFlinkXds(FlinkTaskDto dto, FileExecInfoDTO fileExecInfoDTO);
+
+    Xds createDictXds(String orgCode, String sysCode, MultipartFile file);
 }

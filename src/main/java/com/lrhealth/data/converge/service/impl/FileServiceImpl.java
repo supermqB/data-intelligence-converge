@@ -217,7 +217,8 @@ public class FileServiceImpl implements FileService {
         return odsAllJsonData;
     }
 
-    private Integer jsonDataSave(JSONObject jsonObject, Xds xds){
+    @Override
+    public Integer jsonDataSave(JSONObject jsonObject, Xds xds){
         Set<String> odsTableNames = jsonObject.keySet();
         int countNumber = 0;
         for (String odsTableName : odsTableNames) {

@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,4 +30,6 @@ public interface FileService {
      * @return
      */
     Xds flinkFileConverge(FileConvergeInfoDTO fileConfig, Long xdsId);
+
+    Integer jsonDataSave(JSONObject jsonObject, Xds xds);
 }
