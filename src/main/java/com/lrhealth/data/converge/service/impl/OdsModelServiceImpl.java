@@ -9,9 +9,16 @@ import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import com.lrhealth.data.model.original.service.OriginalModelColumnService;
 import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.PBEParameterSpec;
+import java.security.Key;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -61,6 +68,41 @@ public class OdsModelServiceImpl implements OdsModelService {
             throw new CommonException("原始模型数据错误:{}", odsModelName + "-" + sysCode);
         }
         return modelColumnService.list(new LambdaQueryWrapper<OriginalModelColumn>()
-                .eq(OriginalModelColumn::getModelId, originalModel.get(0).getId()));
+                .eq(OriginalModelColumn::getModelId, originalModel.get(0).getId())
+                .eq(OriginalModelColumn::getDelFlag, 0));
+    }
+
+    public static void main(String[] args) {
+        String original="LRSH@2022";
+        System.out.println("原文=\t"+original);
+
+        try {
+            // 生产密钥
+            String password="PEB123@321BEP";// 口令
+            PBEKeySpec pbeKeySpec = new PBEKeySpec(password.toCharArray());
+            SecretKeyFactory factory=SecretKeyFactory.getInstance("PBEWITHMD5andDES");
+            Key key =factory.generateSecret(pbeKeySpec);// 密钥，下面加密解密都要用到
+            System.out.println("密钥=\t"+Base64.encodeBase64String(key.getEncoded()));
+
+            // 初始化盐
+            SecureRandom random=new SecureRandom();
+            byte [] salt=random.generateSeed(8);
+            PBEParameterSpec pbeParameterSpec=new PBEParameterSpec(salt, 100);
+
+            // 加密
+            Cipher cipher =Cipher.getInstance("PBEWITHMD5andDES");
+            cipher.init(Cipher.ENCRYPT_MODE,key, pbeParameterSpec);
+            byte[] bytes = cipher.doFinal(original.getBytes());
+            System.out.println("密文=\t"+ Base64.encodeBase64String(bytes));
+
+            // 解密
+            cipher.init(Cipher.DECRYPT_MODE,key,pbeParameterSpec);
+            bytes=cipher.doFinal(bytes);
+            System.out.println("解密后=\t"+new String(bytes));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 }
