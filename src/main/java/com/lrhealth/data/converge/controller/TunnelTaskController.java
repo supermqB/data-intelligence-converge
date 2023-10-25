@@ -2,7 +2,7 @@ package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
-import com.lrhealth.data.converge.scheduled.service.convergeTaskService;
+import com.lrhealth.data.converge.service.ConvergeTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +18,7 @@ import javax.annotation.Resource;
 @RequestMapping("/task")
 public class TunnelTaskController {
     @Resource
-    private convergeTaskService convergeTaskService;
+    private ConvergeTaskService convergeTaskService;
 
     /**
      * 管道任务下发
@@ -28,7 +28,7 @@ public class TunnelTaskController {
     public ResultBase<String> upsertTunnel(@RequestBody TunnelMessageDTO tunnelMessageDTO){
         try {
             convergeTaskService.tunnelConfig(tunnelMessageDTO);
-            return ResultBase.success("管道更新失败");
+            return ResultBase.success("管道更新成功");
         }catch (Exception e){
             log.error("upsert tunnel error: {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail();

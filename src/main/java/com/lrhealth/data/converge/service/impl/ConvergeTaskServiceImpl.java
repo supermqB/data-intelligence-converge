@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.scheduled.service.impl;
+package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -12,9 +12,8 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewServic
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
-import com.lrhealth.data.converge.scheduled.service.DataXExecService;
-import com.lrhealth.data.converge.scheduled.service.StatusService;
-import com.lrhealth.data.converge.scheduled.service.convergeTaskService;
+import com.lrhealth.data.converge.service.ConvergeTaskService;
+import com.lrhealth.data.converge.service.DataXExecService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
@@ -29,15 +28,13 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class convergeTaskServiceImpl implements convergeTaskService {
+public class ConvergeTaskServiceImpl implements ConvergeTaskService {
     @Resource
     private DataXExecService dataXService;
     @Resource
     private ConvTaskService frontendTaskService;
     @Resource
     private ConvTunnelService tunnelService;
-    @Resource
-    private StatusService statusService;
     @Resource
     private ConvTaskResultViewService resultViewService;
     @Resource

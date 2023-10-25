@@ -152,7 +152,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .convergeMethod(ConvMethodEnum.FILE.getCode()).dataType(CollectDataTypeEnum.DICT.getCode())
                 .dataConvergeStartTime(LocalDateTime.now()).dataConvergeStatus(XdsStatusEnum.INIT.getCode())
                 .oriFileFromIp(NetUtil.getLocalhostStr()).odsModelName("dict")
-                .oriFileName(file.getName()).oriFileType("xlsx")
+                .oriFileName(file.getOriginalFilename()).oriFileType("xlsx")
                 .oriFileSize(BigDecimal.valueOf(file.getSize()))
                 .odsTableName(sysCode + "_" + "dict")
                 .createTime(LocalDateTime.now()).delFlag(0)

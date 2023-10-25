@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.scheduled.service.impl;
+package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -18,13 +18,10 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewServic
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.dto.TableInfoDto;
-import com.lrhealth.data.converge.scheduled.service.DataXExecService;
-import com.lrhealth.data.converge.scheduled.service.StatusService;
 import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
 import com.lrhealth.data.converge.scheduled.utils.QueryParserUtil;
 import com.lrhealth.data.converge.scheduled.utils.TemplateMakerUtil;
-import com.lrhealth.data.model.original.service.OriginalModelColumnService;
-import com.lrhealth.data.model.original.service.OriginalModelService;
+import com.lrhealth.data.converge.service.DataXExecService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,9 +56,9 @@ public class DataXExecServiceImpl implements DataXExecService {
     @Resource
     private ConvTaskResultViewService resultViewService;
     @Resource
-    private OriginalModelService originalModelService;
-    @Resource
-    private OriginalModelColumnService modelColumnService;
+    private Executor dataxThreadPool;
+    @Value("${datax.collect-multith}")
+    private String dataxCollectMultith;
     @Value("${datax.execute-number-limit}")
     private Integer limitNumber;
     @Value("${datax.home}")
@@ -70,12 +67,6 @@ public class DataXExecServiceImpl implements DataXExecService {
     private String dataxJsonPath;
     @Value("${datax.dest-path}")
     private String fileDestPath;
-    @Resource
-    private Executor dataxThreadPool;
-    @Value("${datax.collect-multith}")
-    private String dataxCollectMultith;
-    @Resource
-    private StatusService statusService;
     public static ConcurrentMap<Integer, CountDownLatch> DOWN_LATCH_MAP = new ConcurrentHashMap<>();
 
     @Override
@@ -213,7 +204,7 @@ public class DataXExecServiceImpl implements DataXExecService {
         }
         // 更新文件大小
         updateFileSize(taskId);
-        statusService.updateTaskCompleted(tunnel.getId(), taskId);
+        taskService.updateTaskCompleted(tunnel.getId(), taskId);
     }
 
     private void updateFileSize(Integer taskId){

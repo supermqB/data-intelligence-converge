@@ -22,4 +22,6 @@ public interface ConvTaskService extends IService<ConvTask> {
     void taskWaitingTransfer(Integer taskId);
 
     void taskDownloaded(Integer taskId);
+
+    void updateTaskCompleted(Long tunnelId, Integer taskId);
 }

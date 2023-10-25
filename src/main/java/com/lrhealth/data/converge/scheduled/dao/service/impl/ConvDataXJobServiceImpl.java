@@ -1,5 +1,7 @@
 package com.lrhealth.data.converge.scheduled.dao.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -37,16 +39,17 @@ public class ConvDataXJobServiceImpl extends ServiceImpl<ConvDataxJobMapper, Con
                     .jsonPath(jsonPath)
                     .tableName(tableName)
                     .sqlQuery(tableInfoDto.getSqlQuery())
-                    .seqFields(ObjectUtil.isEmpty(tableInfoDto.getSeqFields()) ?  null : tableInfoDto.getSeqFields().get(0))
+                    .seqFields(CollUtil.isEmpty(tableInfoDto.getSeqFields()) ?  null : tableInfoDto.getSeqFields().get(0))
                     .delFlag(0)
                     .createTime(LocalDateTime.now())
                     .build();
             this.save(dataXJob);
         }else {
             // 更新
-            this.updateById(ConvDataXJob.builder().id(jobList.get(0).getId()).sqlQuery(tableInfoDto.getSqlQuery())
-                    .seqFields(ObjectUtil.isEmpty(tableInfoDto.getSeqFields()) ?  null : tableInfoDto.getSeqFields().get(0))
-                    .updateTime(LocalDateTime.now()).build());
+            this.lambdaUpdate().eq(ConvDataXJob::getId, jobList.get(0).getId())
+                    .set(ConvDataXJob::getSqlQuery, tableInfoDto.getSqlQuery())
+                    .set(ConvDataXJob::getSeqFields, CollUtil.isEmpty(tableInfoDto.getSeqFields()) ?  null : tableInfoDto.getSeqFields().get(0))
+                    .set(ConvDataXJob::getUpdateTime, DateUtil.now()).update();
         }
         return this.getOne(new LambdaQueryWrapper<ConvDataXJob>().eq(ConvDataXJob::getTunnelId, tunnelId)
                 .eq(ConvDataXJob::getTableName, tableName));

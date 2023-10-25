@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.scheduled.service;
+package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
 
@@ -6,7 +6,7 @@ import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
  * @author jinmengyu
  * @date 2023-09-26
  */
-public interface convergeTaskService {
+public interface ConvergeTaskService {
 
     /**
      * 调度生成任务

@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.scheduled.service.impl;
+package com.lrhealth.data.converge.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.util.DateUtil;
@@ -6,8 +6,8 @@ import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
-import com.lrhealth.data.converge.scheduled.service.convergeTaskService;
 import com.lrhealth.data.converge.scheduled.utils.SchedulerUtil;
+import com.lrhealth.data.converge.service.ConvergeTaskService;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ public class SchedulerConfig implements SchedulingConfigurer {
     @Resource
     private ConvTunnelService frontendTunnelService;
     @Resource
-    private convergeTaskService convergeTaskService;
+    private ConvergeTaskService convergeTaskService;
 
     private ScheduledTaskRegistrar taskRegistrar;
     private Set<ScheduledFuture<?>> scheduledFutures = null;

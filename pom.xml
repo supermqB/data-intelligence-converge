@@ -194,6 +194,7 @@
         </dependency>
 
         <!--dataX组件-->
+        <!--TODO: 目前33的库是0.0.3， 81的库是0.0.2 前置机sqlite是0.0.1 -->
         <dependency>
             <groupId>com.alibaba.datax</groupId>
             <artifactId>datax-core</artifactId>

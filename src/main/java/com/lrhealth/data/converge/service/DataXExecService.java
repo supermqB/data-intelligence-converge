@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.scheduled.service;
+package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.model.dto.TableInfoDto;
