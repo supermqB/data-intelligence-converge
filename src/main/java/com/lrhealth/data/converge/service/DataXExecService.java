@@ -17,5 +17,4 @@ public interface DataXExecService {
 
     void dataXConfig(ConvTunnel tunnel, List<TableInfoDto> tableInfoDtoList);
 
-    void tunnelExec(ConvTunnel tunnel, Integer taskId, Integer execStatus, Integer oldTaskId);
 }

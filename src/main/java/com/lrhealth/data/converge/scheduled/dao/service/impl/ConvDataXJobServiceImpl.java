@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.scheduled.dao.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -49,7 +48,7 @@ public class ConvDataXJobServiceImpl extends ServiceImpl<ConvDataxJobMapper, Con
             this.lambdaUpdate().eq(ConvDataXJob::getId, jobList.get(0).getId())
                     .set(ConvDataXJob::getSqlQuery, tableInfoDto.getSqlQuery())
                     .set(ConvDataXJob::getSeqFields, CollUtil.isEmpty(tableInfoDto.getSeqFields()) ?  null : tableInfoDto.getSeqFields().get(0))
-                    .set(ConvDataXJob::getUpdateTime, DateUtil.now()).update();
+                    .set(ConvDataXJob::getUpdateTime, LocalDateTime.now()).update();
         }
         return this.getOne(new LambdaQueryWrapper<ConvDataXJob>().eq(ConvDataXJob::getTunnelId, tunnelId)
                 .eq(ConvDataXJob::getTableName, tableName));

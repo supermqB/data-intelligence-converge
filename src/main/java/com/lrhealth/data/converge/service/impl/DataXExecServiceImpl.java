@@ -6,8 +6,7 @@ import com.alibaba.datax.core.Engine;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
-import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
-import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
+import com.lrhealth.data.converge.common.enums.TunnelConnectStatusEnum;
 import com.lrhealth.data.converge.datax.plugin.reader.AbstractReader;
 import com.lrhealth.data.converge.datax.plugin.reader.ReaderFactory;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvDataXJob;
@@ -25,7 +24,6 @@ import com.lrhealth.data.converge.service.DataXExecService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -67,6 +65,12 @@ public class DataXExecServiceImpl implements DataXExecService {
     private String dataxJsonPath;
     @Value("${datax.dest-path}")
     private String fileDestPath;
+    @Value("${spring.datasource.rdcp-ext.jdbcUrl}")
+    private String jdbcUrl;
+    @Value("${spring.datasource.rdcp-ext.username}")
+    private String username;
+    @Value("${spring.datasource.rdcp-ext.password}")
+    private String password;
     public static ConcurrentMap<Integer, CountDownLatch> DOWN_LATCH_MAP = new ConcurrentHashMap<>();
 
     @Override
@@ -75,7 +79,6 @@ public class DataXExecServiceImpl implements DataXExecService {
 
         // 创建或更新dataXJob
         List<ConvDataXJob> jobList = jobService.list(new LambdaQueryWrapper<ConvDataXJob>().eq(ConvDataXJob::getTunnelId, tunnel.getId()));
-//        List<ConvDataXJob> jobList = getOrCreateDataXJob(tunnel);
 
         DOWN_LATCH_MAP.put(taskId, new CountDownLatch(jobList.size()));
         long dataxStart = System.currentTimeMillis();
@@ -151,30 +154,6 @@ public class DataXExecServiceImpl implements DataXExecService {
         taskService.updateTaskStatus(taskId, TaskStatusEnum.DUMPING);
     }
 
-//    private List<ConvDataXJob> getOrCreateDataXJob(ConvTunnel tunnel){
-//        // 组装table信息
-//        List<String> tableList = Arrays.asList(tunnel.getCollectRange().split(","));
-//        List<OriginalModel> modelList = originalModelService.list(new LambdaQueryWrapper<OriginalModel>().in(OriginalModel::getNameEn, tableList)
-//                .eq(OriginalModel::getSysCode, tunnel.getSysCode()));
-//        List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
-//        modelList.forEach(originalModel -> {
-//            TableInfoDto tableInfoDto = new TableInfoDto();
-//            tableInfoDto.setTableName(originalModel.getNameEn());
-//            tableInfoDto.setSqlQuery(originalModel.getModelQuerySql());
-//            List<OriginalModelColumn> modelColumns = modelColumnService.list(new LambdaQueryWrapper<OriginalModelColumn>()
-//                    .eq(OriginalModelColumn::getDelFlag, 0)
-//                    .eq(OriginalModelColumn::getSeqFlag, 1));
-//            if (CollUtil.isNotEmpty(modelColumns)){
-//                List<String> seqFields = modelColumns.stream().map(OriginalModelColumn::getNameEn).collect(Collectors.toList());
-//                tableInfoDto.setSeqFields(seqFields);
-//            }
-//            tableInfoDtoList.add(tableInfoDto);
-//        });
-//        // 删除
-//        dataXConfig(tunnel, tableInfoDtoList);
-//        return jobService.list(new LambdaQueryWrapper<ConvDataXJob>().eq(ConvDataXJob::getTunnelId, tunnel.getId()));
-//    }
-
     @Override
     public void dataXConfig(ConvTunnel tunnel, List<TableInfoDto> tableInfoDtoList) {
         try {
@@ -190,50 +169,15 @@ public class DataXExecServiceImpl implements DataXExecService {
         }
     }
 
-    @Override
-    @Async
-    public void tunnelExec(ConvTunnel tunnel, Integer taskId, Integer execStatus, Integer oldTaskId) {
-        if (TunnelCMEnum.LIBRARY_TABLE.getCode().equals(tunnel.getConvergeMethod())) {
-            try {
-                run(tunnel.getId(), taskId, execStatus, oldTaskId);
-            }catch (InterruptedException e){
-                throw new CommonException("线程中断异常");
-            }finally {
-                tunnelService.updateById(ConvTunnel.builder().id(tunnel.getId()).status(TunnelStatusEnum.SCHEDULING.getValue()).build());
-            }
-        }
-        // 更新文件大小
-        updateFileSize(taskId);
-        taskService.updateTaskCompleted(tunnel.getId(), taskId);
-    }
-
-    private void updateFileSize(Integer taskId){
-        List<ConvTaskResultView> jobList = resultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>().eq(ConvTaskResultView::getTaskId, taskId));
-        if (ObjectUtil.isNull(jobList)){
-            return;
-        }
-        try {
-            Thread.sleep(5000);
-        }catch (Exception e){
-            log.error("(dataxConfig)log error,{}", ExceptionUtils.getStackTrace(e));
-            Thread.currentThread().interrupt();
-        }
-        jobList.forEach(jobExecInstance -> {
-            File taskFile = new File(jobExecInstance.getStoredPath());
-            if (taskFile.exists() && taskFile.isFile()){
-                resultViewService.updateById(ConvTaskResultView.builder().id(jobExecInstance.getId())
-                        .dataSize((int) taskFile.length()).status(3).build());
-                log.info("file: {}, fileSize: {}", taskFile.getName(), taskFile.length());
-            } else {
-                log.error("文件不存在，resultViewId: {}", jobExecInstance.getId());
-            }
-        });
-    }
 
     @Override
     public String dataXExec(String jsonPath, Long jobExecResultId, String mode, Integer taskId) {
         try {
             System.setProperty("datax.home", dataxHome);
+            System.setProperty("datax.task.dbType", TunnelConnectStatusEnum.DIRECT.getValue());
+            System.setProperty("datax.task.jdbcUrl", jdbcUrl);
+            System.setProperty("datax.task.dbUserName", username);
+            System.setProperty("datax.task.dbPassword", password);
             String[] dataXArgs2 = {"-job", jsonPath, "-mode", mode, "-jobid", String.valueOf(jobExecResultId)};
             Engine.entry(dataXArgs2);
         } catch (Throwable e) {

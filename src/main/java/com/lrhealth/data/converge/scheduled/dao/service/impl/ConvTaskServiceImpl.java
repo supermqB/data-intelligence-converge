@@ -42,7 +42,9 @@ public class ConvTaskServiceImpl extends ServiceImpl<DiConvTaskMapper, ConvTask>
                 .convergeMethod(tunnel.getConvergeMethod())
                 .build();
         this.save(task);
-        return this.getById(task.getId());
+        ConvTask convTask = this.getById(task.getId());
+        this.updateById(ConvTask.builder().id(convTask.getId()).name(tunnel.getName() + "-任务" + convTask.getId()).build());
+        return convTask;
     }
 
     @Override

@@ -19,12 +19,13 @@ spring:
           subscriptionConnectionPoolSize: 50
           connectionMinimumIdleSize: 32
           connectionPoolSize: 64
-          database: 2
+          database: 0
           dnsMonitoringInterval: 5000
+
   datasource:
     ods:
       type: com.zaxxer.hikari.HikariDataSource
-      jdbcUrl: jdbc:oceanbase://172.16.29.14:2883/ods?rewriteBatchedStatements=TRUE
+      jdbcUrl: jdbc:oceanbase://172.16.29.14:2883/ods_test?rewriteBatchedStatements=TRUE
       driver-class-name: com.oceanbase.jdbc.Driver
       username: ENC(dzlQtlalf2wmim1mILlZAbaIrOABKer8)
       password: ENC(poiqgUqqGcqKD2zPoyBXC7xSR6E1XbyK)
@@ -46,9 +47,9 @@ spring:
     rdcp-ext:
       type: com.zaxxer.hikari.HikariDataSource
       driver-class-name: org.postgresql.Driver
-      jdbcUrl: jdbc:postgresql://172.16.29.81:5432/rdcp_ext?currentSchema=test&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&allowMultiQueries=true
-      username: ENC(KpYZy5oP8ZdcY8UGrxBIqU/RjV2WPyCk)
-      password: ENC(6kbmjxJFnUKyri6o2psqkRNbhHDea1UA)
+      jdbcUrl: jdbc:postgresql://172.16.29.33:5432/rdcp_ext?currentSchema=test&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&allowMultiQueries=true
+      username: ENC(ow4uAAjEcKiszfWdUDJ8O4r/tKpx0pL+)
+      password: ENC(mv+m1KiMKN9uw8WNWKNrL62RnsC0Ow43)
       pool-name: HikariCP-rdcp-ext
       #最小空闲连接数
       minimum-idle: 5
@@ -147,7 +148,7 @@ lrhealth:
     dataSaveCron: 0/5 * * * * *
 
 datax:
-  softpath: /opt/soft/datax/
+  softpath: D:\\Users\\admin\\Desktop\\datax
   exec: bin/datax.py
   home: D:\\Users\\admin\\Desktop\\datax
   json-path: D:\\Users\\admin\\Desktop\\datax\\job
