@@ -2,7 +2,9 @@ package com.lrhealth.data.converge.common.config.db;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisXMLLanguageDriver;
+import com.baomidou.mybatisplus.core.config.GlobalConfig;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.lrhealth.data.converge.scheduled.mybatis.handler.MybatisFillHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
@@ -48,6 +50,9 @@ public class RdcpExtDataSourceConfig {
         configuration.setJdbcTypeForNull(JdbcType.NULL);
         sqlSessionFactoryBean.setConfiguration(configuration);
         sqlSessionFactoryBean.setTransactionFactory(new SpringManagedTransactionFactory());
+        GlobalConfig globalConfig = new GlobalConfig();
+        globalConfig.setMetaObjectHandler(new MybatisFillHandler());
+        sqlSessionFactoryBean.setGlobalConfig(globalConfig);
         return sqlSessionFactoryBean.getObject();
     }
 

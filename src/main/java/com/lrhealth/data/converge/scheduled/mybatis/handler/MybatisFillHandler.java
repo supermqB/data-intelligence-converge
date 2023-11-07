@@ -1,13 +1,9 @@
 package com.lrhealth.data.converge.scheduled.mybatis.handler;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
@@ -19,9 +15,7 @@ import java.util.Date;
  * @description: TODO
  * @date 2022/8/9 9:56
  */
-@Slf4j
 @Component
-@Primary
 public class MybatisFillHandler implements MetaObjectHandler {
 
     @Override
