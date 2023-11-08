@@ -51,7 +51,7 @@ public class DownloadFileTask {
     private static final ConcurrentLinkedDeque<FileTask> taskDeque = new ConcurrentLinkedDeque<>();
 
 
-    @Scheduled(cron = "${lrhealth.converge.scheduledCron}")
+   @Scheduled(cron = "${lrhealth.converge.scheduledCron}")
     public void refreshFENodesStatus() {
         //循环前置机
         log.info("定时更新前置机任务状态！" + LocalDateTime.now());
@@ -162,7 +162,7 @@ public class DownloadFileTask {
 
     private void resetFileTask(FileTask fileTask, TaskFileConfig taskFileConfig) {
         taskDeque.add(fileTask);
-        convergeService.resetStatus(taskFileConfig.getConvTask(), taskFileConfig.getTaskResultView());
+        convergeService.resetStatus(taskFileConfig.getConvTask(), taskFileConfig);
         convTaskLog(fileTask.getTaskId(), "文件传输异常，正在重试！ | " + fileTask);
     }
 

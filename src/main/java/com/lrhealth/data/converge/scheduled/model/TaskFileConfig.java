@@ -1,10 +1,7 @@
 package com.lrhealth.data.converge.scheduled.model;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.scheduled.dao.entity.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -27,6 +24,8 @@ public class TaskFileConfig {
     private ConvFeNode feNode;
 
     private ConvTaskResultView taskResultView;
+
+    private ConvTaskResultFile taskResultFile;
 
     private String url;
 

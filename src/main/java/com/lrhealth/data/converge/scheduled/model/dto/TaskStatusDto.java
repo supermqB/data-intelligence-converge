@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.scheduled.model.dto;
 
 import lombok.Data;
-import org.springframework.data.relational.core.sql.In;
 
 import java.util.List;
 
@@ -22,7 +21,9 @@ public class TaskStatusDto {
 
     private List<TaskLogDto> taskLogs;
 
-    private List<ResultViewInfoDto> fileInfoList;
+    private List<ResultViewInfoDto> resultViewInfoDtoList;
 
     private List<ResultCDCInfoDTO> cdcInfoList;
+
+    private List<ResultFileInfoDto> resultFileInfoDtoList;
 }

@@ -9,23 +9,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.scheduled.config.ConvergeConfig;
 import com.lrhealth.data.converge.scheduled.config.exception.FeNodeStatusException;
 import com.lrhealth.data.converge.scheduled.config.exception.PingException;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskLog;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultCdc;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskLogService;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultCdcService;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
-import com.lrhealth.data.converge.scheduled.model.dto.FrontendStatusDto;
-import com.lrhealth.data.converge.scheduled.model.dto.ResultCDCInfoDTO;
-import com.lrhealth.data.converge.scheduled.model.dto.ResultViewInfoDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TaskLogDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TaskStatusDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TunnelStatusDto;
+import com.lrhealth.data.converge.scheduled.dao.entity.*;
+import com.lrhealth.data.converge.scheduled.dao.service.*;
+import com.lrhealth.data.converge.scheduled.model.dto.*;
 import com.lrhealth.data.converge.scheduled.service.FeNodeService;
 import com.lrhealth.data.converge.scheduled.utils.RsaUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +54,9 @@ public class FeNodeServiceImpl implements FeNodeService {
 
     @Resource
     private ConvTaskResultCdcService convTaskResultCdcService;
+
+    @Resource
+    private ConvTaskResultFileService convTaskResultFileService;
 
     @Override
     @Retryable(value = {PingException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -223,5 +212,32 @@ public class FeNodeServiceImpl implements FeNodeService {
             .eq(ConvTaskResultCdc::getTableName, cdcInfoDTO.getTableName()));
         // @formatter:on
         return convTaskResultCdc;
+    }
+
+    @Override
+    @Transactional
+    public ConvTaskResultFile saveOrUpdateFile(ResultFileInfoDto resultFileInfoDto, ConvTask convTask) {
+        ConvTaskResultFile convTaskResultFile = new ConvTaskResultFile();
+        ConvTaskResultFile taskResultFile = convTaskResultFileService.getOne(new LambdaQueryWrapper<ConvTaskResultFile>()
+                .eq(ConvTaskResultFile::getTaskId, convTask.getId())
+                .eq(ConvTaskResultFile::getFeStoredFilename,resultFileInfoDto.getFileName()), false);
+        if (taskResultFile != null  && taskResultFile.getStatus() > 1){
+            return taskResultFile;
+        }
+        BeanUtils.copyProperties(resultFileInfoDto, convTaskResultFile);
+        convTaskResultFile.setTaskId(convTask.getId());
+        convTaskResultFile.setFeStoredPath(resultFileInfoDto.getFilePath());
+        if(!StringUtils.isEmpty(resultFileInfoDto.getFileName())){
+            String destPath = convergeConfig.getOutputPath() + File.separator + convTask.getId()
+                    + File.separator + resultFileInfoDto.getFileName().replace(".","_") + File.separator;
+            convTaskResultFile.setStoredPath(destPath + resultFileInfoDto.getFileName());
+            convTaskResultFile.setFeStoredFilename(resultFileInfoDto.getFileName());
+        }
+        convTaskResultFile.setDelFlag(0);
+
+        convTaskResultFileService.saveOrUpdate(convTaskResultFile,new LambdaQueryWrapper<ConvTaskResultFile>()
+                .eq(ConvTaskResultFile::getTaskId, convTask.getId())
+                .eq(ConvTaskResultFile::getFeStoredFilename, resultFileInfoDto.getFileName()));
+        return convTaskResultFile;
     }
 }

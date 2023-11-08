@@ -2,12 +2,9 @@ package com.lrhealth.data.converge.scheduled.service;
 
 
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
 import com.lrhealth.data.converge.scheduled.model.FileTask;
 import com.lrhealth.data.converge.scheduled.model.TaskFileConfig;
-import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
 
-import java.io.File;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public interface ConvergeService {
@@ -16,7 +13,7 @@ public interface ConvergeService {
 
     void updateDownLoadFileTask(ConcurrentLinkedDeque<FileTask> taskDeque);
 
-    void resetStatus(ConvTask convTask, ConvTaskResultView taskResultView);
+    void resetStatus(ConvTask convTask, TaskFileConfig taskFileConfig);
 
     TaskFileConfig getTaskConfig(FileTask fileTask);
 
