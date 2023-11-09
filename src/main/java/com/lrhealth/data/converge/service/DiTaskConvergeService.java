@@ -1,6 +1,6 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
+import com.lrhealth.data.converge.model.FileMessageDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -19,9 +19,9 @@ public interface DiTaskConvergeService {
      */
     void fileParseAndSave();
 
-    Map<Integer, List<ConvTaskResultView>> getDataSaveMap();
+    Map<Integer, List<FileMessageDTO>> getDataSaveMap();
 
     void clearDataSaveMap();
 
-    void dataSave(ConvTaskResultView taskResultView);
+    void dataSave(String mapKey, FileMessageDTO fileMessageDTO);
 }

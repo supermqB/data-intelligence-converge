@@ -1,14 +1,11 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.enums.ExecStatusEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
@@ -16,12 +13,9 @@ import com.lrhealth.data.converge.service.AsyncExecService;
 import com.lrhealth.data.converge.service.ConvergeTaskService;
 import com.lrhealth.data.converge.service.DataXExecService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.util.List;
 
 /**
  * @author jinmengyu
@@ -38,8 +32,6 @@ public class ConvergeTaskServiceImpl implements ConvergeTaskService {
     private ConvTaskService frontendTaskService;
     @Resource
     private ConvTunnelService tunnelService;
-    @Resource
-    private ConvTaskResultViewService resultViewService;
     @Resource
     private SchedulerConfig schedulerConfig;
 
@@ -81,30 +73,6 @@ public class ConvergeTaskServiceImpl implements ConvergeTaskService {
         ConvTask frontendTask = frontendTaskService.createTask(ft, isCdc);
         taskId = frontendTask.getId();
         asyncExecService.tunnelExec(ft, taskId, execStatus, oldTaskId);
-    }
-
-
-    private void updateFileSize(Integer taskId){
-        List<ConvTaskResultView> jobList = resultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>().eq(ConvTaskResultView::getTaskId, taskId));
-        if (ObjectUtil.isNull(jobList)){
-            return;
-        }
-        try {
-            Thread.sleep(5000);
-        }catch (Exception e){
-            log.error("(dataxConfig)log error,{}", ExceptionUtils.getStackTrace(e));
-            Thread.currentThread().interrupt();
-        }
-        jobList.forEach(jobExecInstance -> {
-            File taskFile = new File(jobExecInstance.getStoredPath());
-            if (taskFile.exists() && taskFile.isFile()){
-                resultViewService.updateById(ConvTaskResultView.builder().id(jobExecInstance.getId())
-                        .dataSize((int) taskFile.length()).status(3).build());
-                log.info("file: {}, fileSize: {}", taskFile.getName(), taskFile.length());
-            } else {
-                log.error("文件不存在，resultViewId: {}", jobExecInstance.getId());
-            }
-        });
     }
 
 }

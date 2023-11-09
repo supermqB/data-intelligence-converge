@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.common.result.ResultBase;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
+import com.lrhealth.data.converge.model.FileMessageDTO;
 import com.lrhealth.data.converge.service.DiTaskConvergeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +26,7 @@ public class CacheController {
     private DiTaskConvergeService diTaskConvergeService;
 
     @GetMapping("/save-map/get")
-    public ResultBase<Map<Integer, List<ConvTaskResultView>>> getDataSaveMap(){
+    public ResultBase<Map<Integer, List<FileMessageDTO>>> getDataSaveMap(){
         try {
             return ResultBase.success(diTaskConvergeService.getDataSaveMap());
         }catch (Exception e){

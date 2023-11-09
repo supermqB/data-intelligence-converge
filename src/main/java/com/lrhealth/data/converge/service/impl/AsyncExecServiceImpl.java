@@ -70,7 +70,7 @@ public class AsyncExecServiceImpl implements AsyncExecService {
             File taskFile = new File(jobExecInstance.getStoredPath());
             if (taskFile.exists() && taskFile.isFile()){
                 resultViewService.updateById(ConvTaskResultView.builder().id(jobExecInstance.getId())
-                        .dataSize((int) taskFile.length()).status(3).build());
+                        .dataSize(taskFile.length()).status(3).build());
                 log.info("file: {}, fileSize: {}", taskFile.getName(), taskFile.length());
             } else {
                 log.error("文件不存在，resultViewId: {}", jobExecInstance.getId());

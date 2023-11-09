@@ -33,4 +33,6 @@ public class ResultFileInfoDto {
      */
     private Integer fileType;
 
+    private Long dataSize;
+
 }

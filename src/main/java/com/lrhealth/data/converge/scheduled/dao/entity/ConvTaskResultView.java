@@ -97,7 +97,7 @@ public class ConvTaskResultView implements Serializable {
     /**
      * 文件大小
      */
-    private Integer dataSize;
+    private Long dataSize;
 
     /**
      * 文件传输时间（单位秒）

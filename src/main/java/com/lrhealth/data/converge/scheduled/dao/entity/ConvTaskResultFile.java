@@ -1,8 +1,7 @@
 package com.lrhealth.data.converge.scheduled.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -16,6 +15,9 @@ import java.time.LocalDateTime;
  * @since 2023-11-06
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @TableName("di_conv_task_result_file")
 public class ConvTaskResultFile implements Serializable {
@@ -49,7 +51,7 @@ public class ConvTaskResultFile implements Serializable {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    private Integer dataSize;
+    private Long dataSize;
 
     private Long transferTime;
 

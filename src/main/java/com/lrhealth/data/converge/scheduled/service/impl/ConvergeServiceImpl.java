@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.scheduled.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.scheduled.config.ConvergeConfig;
@@ -106,7 +107,6 @@ public class ConvergeServiceImpl implements ConvergeService {
                     //更新 log
                     feNodeService.saveOrUpdateLog(taskLog, convTask);
                 }
-
                 updateTaskResultView(taskDeque, taskStatusDto, convTask);
                 updateTaskResultFile(taskDeque, taskStatusDto, convTask);
             }
@@ -254,7 +254,10 @@ public class ConvergeServiceImpl implements ConvergeService {
 
 
     private void updateTaskResultFile(ConcurrentLinkedDeque<FileTask> taskDeque, TaskStatusDto taskStatusDto, ConvTask convTask) {
-        List<ResultFileInfoDto> fileInfoList = taskStatusDto.getResultFileInfoDtoList();
+        List<ResultFileInfoDto> fileInfoList = taskStatusDto.getFileInfoList();
+        if (CollUtil.isEmpty(fileInfoList)){
+            return;
+        }
         for (ResultFileInfoDto resultFileInfoDto : fileInfoList) {
             if (resultFileInfoDto == null) {
                 continue;
@@ -276,7 +279,10 @@ public class ConvergeServiceImpl implements ConvergeService {
     }
 
     private void updateTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, TaskStatusDto taskStatusDto, ConvTask convTask) {
-        List<ResultViewInfoDto> fileInfoList = taskStatusDto.getResultViewInfoDtoList();
+        List<ResultViewInfoDto> fileInfoList = taskStatusDto.getDataxInfoList();
+        if (CollUtil.isEmpty(fileInfoList)){
+            return;
+        }
         for (ResultViewInfoDto resultViewInfoDto : fileInfoList) {
             if (resultViewInfoDto == null) {
                 continue;
