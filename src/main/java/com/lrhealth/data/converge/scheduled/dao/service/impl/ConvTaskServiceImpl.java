@@ -74,7 +74,7 @@ public class ConvTaskServiceImpl extends ServiceImpl<DiConvTaskMapper, ConvTask>
     }
 
     @Override
-    public void updateTaskCompleted(Long tunnelId, Integer taskId) {
+    public void updateTaskCompleted(Integer taskId) {
         taskDownloaded(taskId);
         // 没有任务生成，直接把task更改为done
         if (resultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>().eq(ConvTaskResultView::getTaskId, taskId)).isEmpty()){

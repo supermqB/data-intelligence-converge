@@ -108,6 +108,9 @@ public class DataXExecServiceImpl implements DataXExecService {
         });
         DOWN_LATCH_MAP.get(taskId).await();
         log.info("datax cost time(step1)={},taskId={}", System.currentTimeMillis() - dataxStart, taskId);
+
+        // 更新文件大小
+        updateFileSize(taskId);
     }
 
 
@@ -185,6 +188,29 @@ public class DataXExecServiceImpl implements DataXExecService {
             AsyncFactory.convTaskLog(taskId, ExceptionUtils.getStackTrace(e));
         }
         return null;
+    }
+
+    private void updateFileSize(Integer taskId){
+        List<ConvTaskResultView> jobList = resultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>().eq(ConvTaskResultView::getTaskId, taskId));
+        if (ObjectUtil.isNull(jobList)){
+            return;
+        }
+        try {
+            Thread.sleep(5000);
+        }catch (Exception e){
+            log.error("(dataxConfig)log error,{}", ExceptionUtils.getStackTrace(e));
+            Thread.currentThread().interrupt();
+        }
+        jobList.forEach(jobExecInstance -> {
+            File taskFile = new File(jobExecInstance.getStoredPath());
+            if (taskFile.exists() && taskFile.isFile()){
+                resultViewService.updateById(ConvTaskResultView.builder().id(jobExecInstance.getId())
+                        .dataSize(taskFile.length()).status(3).build());
+                log.info("file: {}, fileSize: {}", taskFile.getName(), taskFile.length());
+            } else {
+                log.error("文件不存在，resultViewId: {}", jobExecInstance.getId());
+            }
+        });
     }
 
     /**

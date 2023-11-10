@@ -66,4 +66,18 @@ public class DbSqlServiceImpl implements DbSqlService {
         String result = jdbcRepository.execSql(checkSql);
         return (result != null);
     }
+
+    @Override
+    public String getAvgRowLength(String odsTableName){
+        // 刷新配置,只需要执行一次
+        // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
+        // 刷新tables表的数据
+        String refreshSql = "ANALYZE TABLE " + odsTableName + " COMPUTE STATISTICS FOR ALL COLUMNS SIZE AUTO;";
+        jdbcRepository.execSql(refreshSql);
+        // 获取每行的平均大小
+        String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
+        return jdbcRepository.execSql(selectSql);
+    }
+
+
 }

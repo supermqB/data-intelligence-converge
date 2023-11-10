@@ -8,6 +8,6 @@ import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
  */
 public interface AsyncExecService {
 
-    void tunnelExec(ConvTunnel tunnel, Integer taskId, Integer execStatus, Integer oldTaskId);
+    void taskExec(ConvTunnel tunnel, Integer taskId);
 
 }

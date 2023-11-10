@@ -157,3 +157,6 @@ datax:
   execute-number-limit: 0
   collect-multith: 0
   dest-path: /tmp/fep/file
+
+file-collect:
+  structure-type: csv

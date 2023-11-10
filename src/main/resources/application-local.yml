@@ -156,3 +156,6 @@ datax:
   collect-multith: 0
   dest-path: D:\\Users\\admin\\Desktop\\datax\\job\\file
 
+file-collect:
+  structure-type: csv
+

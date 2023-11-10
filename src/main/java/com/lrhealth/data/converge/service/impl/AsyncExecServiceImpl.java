@@ -1,25 +1,25 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.common.enums.ExecStatusEnum;
+import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
+import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
 import com.lrhealth.data.converge.service.AsyncExecService;
 import com.lrhealth.data.converge.service.DataXExecService;
+import com.lrhealth.data.converge.service.FileTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.util.List;
 
 /**
  * @author jinmengyu
@@ -34,47 +34,50 @@ public class AsyncExecServiceImpl implements AsyncExecService {
     @Resource
     private ConvTunnelService tunnelService;
     @Resource
-    private ConvTaskResultViewService resultViewService;
-    @Resource
     private ConvTaskService taskService;
+    @Resource
+    private FileTaskService fileTaskService;
 
     @Override
     @Async
-    public void tunnelExec(ConvTunnel tunnel, Integer taskId, Integer execStatus, Integer oldTaskId) {
-        if (TunnelCMEnum.LIBRARY_TABLE.getCode().equals(tunnel.getConvergeMethod())) {
-            try {
-                dataXExecService.run(tunnel.getId(), taskId, execStatus, oldTaskId);
-            }catch (InterruptedException e){
-                throw new CommonException("线程中断异常");
-            }finally {
-                tunnelService.updateById(ConvTunnel.builder().id(tunnel.getId()).status(TunnelStatusEnum.SCHEDULING.getValue()).build());
-            }
+    public void taskExec(ConvTunnel tunnel, Integer taskId) {
+        Long tunnelId = tunnel.getId();
+        // DIRECT：直接调度和定时任务 | REFRESH 重新调度
+        Integer execStatus = taskId == null ? ExecStatusEnum.DIRECT.getValue() : ExecStatusEnum.REFRESH.getValue();
+        // 重新调度生成新的task，之前的task有oldTask保存
+        Integer oldTaskId = execStatus == 0 ? null : taskId;
+        boolean isCdc = TunnelCMEnum.CDC_LOG.getCode().equals(tunnel.getConvergeMethod());
+        ConvTask frontendTask = taskService.createTask(tunnel, isCdc);
+        taskId = frontendTask.getId();
+
+        TunnelCMEnum convergeMethod = TunnelCMEnum.of(tunnel.getConvergeMethod());
+        if (ObjectUtil.isNull(convergeMethod)){
+            throw new CommonException("不支持的汇聚方式");
         }
-        // 更新文件大小
-        updateFileSize(taskId);
-        taskService.updateTaskCompleted(tunnel.getId(), taskId);
+
+        AsyncFactory.convTaskLog(taskId, "采集任务开始执行!");
+        try {
+            switch (convergeMethod){
+                case FILE_MODE:
+                    fileTaskService.run(tunnelId, taskId, ExecStatusEnum.of(execStatus), oldTaskId);
+                    break;
+                case LIBRARY_TABLE:
+                    dataXExecService.run(tunnelId, taskId, execStatus, oldTaskId);
+                    break;
+                default:
+                    log.error("convergeMethod [{}] is not support", convergeMethod);
+            }
+        }catch (Exception e){
+            // 设置任务失败
+            taskService.updateTaskStatus(taskId, TaskStatusEnum.FAILED);
+            AsyncFactory.convTaskLog(taskId, ExceptionUtils.getStackTrace(e));
+            Thread.currentThread().interrupt();
+        }finally {
+            tunnelService.updateTunnelStatus(tunnelId, TunnelStatusEnum.SCHEDULING);
+        }
+
+        taskService.updateTaskCompleted(taskId);
+        AsyncFactory.convTaskLog(taskId, "采集任务执行完成!");
     }
 
-    private void updateFileSize(Integer taskId){
-        List<ConvTaskResultView> jobList = resultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>().eq(ConvTaskResultView::getTaskId, taskId));
-        if (ObjectUtil.isNull(jobList)){
-            return;
-        }
-        try {
-            Thread.sleep(5000);
-        }catch (Exception e){
-            log.error("(dataxConfig)log error,{}", ExceptionUtils.getStackTrace(e));
-            Thread.currentThread().interrupt();
-        }
-        jobList.forEach(jobExecInstance -> {
-            File taskFile = new File(jobExecInstance.getStoredPath());
-            if (taskFile.exists() && taskFile.isFile()){
-                resultViewService.updateById(ConvTaskResultView.builder().id(jobExecInstance.getId())
-                        .dataSize(taskFile.length()).status(3).build());
-                log.info("file: {}, fileSize: {}", taskFile.getName(), taskFile.length());
-            } else {
-                log.error("文件不存在，resultViewId: {}", jobExecInstance.getId());
-            }
-        });
-    }
 }

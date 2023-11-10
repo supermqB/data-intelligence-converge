@@ -135,5 +135,10 @@ public class ConvTunnel implements Serializable {
      */
     private Integer status;
 
+    private String fileModeCollectDir;
+
+    private String mqModeTopicName;
+
+    private Integer structuredDataFlag;
 
 }

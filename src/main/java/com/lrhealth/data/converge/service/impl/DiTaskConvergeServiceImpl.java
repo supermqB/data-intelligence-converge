@@ -8,10 +8,10 @@ import com.lrhealth.data.common.enums.conv.CollectDataTypeEnum;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.util.file.LargeFileUtil;
-import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.FileMessageDTO;
+import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultFile;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
@@ -19,6 +19,7 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultFileServic
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
+import com.lrhealth.data.converge.service.DbSqlService;
 import com.lrhealth.data.converge.service.DiTaskConvergeService;
 import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.OdsModelService;
@@ -34,7 +35,10 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -58,8 +62,6 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     @Resource
     private ConvTaskService taskService;
     @Resource
-    private JDBCRepository jdbcRepository;
-    @Resource
     private Executor dataSaveThreadPool;
     @Resource
     private OdsModelService odsModelService;
@@ -67,6 +69,8 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     private LargeFileUtil largeFileUtil;
     @Resource
     private KafkaService kafkaService;
+    @Resource
+    private DbSqlService dbSqlService;
 
     @Scheduled(cron = "${lrhealth.converge.dataSaveCron}")
     @Override
@@ -76,7 +80,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         generateTaskAndResultView(fileInfoList);
         generateTaskAndResultFile(fileInfoList);
         // 没有任务存在
-        if (CollUtil.isEmpty(fileInfoList)){
+        if (CollUtil.isEmpty(fileInfoList)) {
             return;
         }
         // 多线程处理任务实例
@@ -85,7 +89,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
 
     @Override
-    public void dataSave(String mapKey, FileMessageDTO fileMessageDTO){
+    public void dataSave(String mapKey, FileMessageDTO fileMessageDTO) {
         ConvTask convTask = taskService.getById(fileMessageDTO.getTaskId());
 
         dataSaveThreadPool.execute(() -> {
@@ -96,13 +100,13 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 log.info("data save success, taskResultId: {}", mapKey);
             } catch (Exception e) {
                 AsyncFactory.convTaskLog(convTask.getId(), "(dataSave)log error, " + ExceptionUtils.getStackTrace(e));
-                if (fileMessageDTO.getTunnelCMEnum().equals(TunnelCMEnum.LIBRARY_TABLE)){
+                if (fileMessageDTO.getTunnelCMEnum().equals(TunnelCMEnum.LIBRARY_TABLE)) {
                     taskResultViewService.updateById(ConvTaskResultView.builder().id(fileMessageDTO.getTaskResultId()).status(4).build());
-                }else {
+                } else {
                     taskResultFileService.updateById(ConvTaskResultFile.builder().id(fileMessageDTO.getTaskResultId()).status(4).build());
 
                 }
-            }finally {
+            } finally {
                 dataSaveHandleMap.remove(mapKey);
             }
         });
@@ -121,16 +125,17 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
     /**
      * 查看是否有所有任务实例都落库完成的task,有则更新状态
+     *
      * @return 返回目前状态为downloaded的新增taskResultView数据
      */
-    private void generateTaskAndResultView(List<FileMessageDTO> fileInfoList){
+    private void generateTaskAndResultView(List<FileMessageDTO> fileInfoList) {
         List<ConvTaskResultView> taskResultViewList = taskResultViewService.list();
-        if (CollUtil.isEmpty(taskResultViewList)){
+        if (CollUtil.isEmpty(taskResultViewList)) {
             return;
         }
         Map<Integer, List<ConvTaskResultView>> listMap = taskResultViewList.stream().collect(Collectors.groupingBy(ConvTaskResultView::getTaskId));
         List<ConvTask> convTaskList = taskService.list(new LambdaQueryWrapper<ConvTask>().eq(ConvTask::getStatus, 4));
-        if (CollUtil.isEmpty(convTaskList)){
+        if (CollUtil.isEmpty(convTaskList)) {
             return;
         }
         Set<Integer> taskNotDoneSet = convTaskList.stream().map(ConvTask::getId).collect(Collectors.toSet());
@@ -146,7 +151,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
         List<ConvTaskResultView> downloadedTaskResultViewList = taskResultViewList.stream().filter(taskResultView -> taskResultView.getStatus() == 3).collect(Collectors.toList());
         downloadedTaskResultViewList.forEach(taskResultView -> {
-            if (!dataSaveHandleMap.containsKey(TunnelCMEnum.LIBRARY_TABLE + "-" + taskResultView.getId())){
+            if (!dataSaveHandleMap.containsKey(TunnelCMEnum.LIBRARY_TABLE + "-" + taskResultView.getId())) {
                 FileMessageDTO fileMessageDTO = FileMessageDTO.builder()
                         .tunnelCMEnum(TunnelCMEnum.LIBRARY_TABLE)
                         .taskResultId(taskResultView.getId())
@@ -161,14 +166,14 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         });
     }
 
-    private void generateTaskAndResultFile(List<FileMessageDTO> fileInfoList){
+    private void generateTaskAndResultFile(List<FileMessageDTO> fileInfoList) {
         List<ConvTaskResultFile> taskResultFileList = taskResultFileService.list();
-        if (CollUtil.isEmpty(taskResultFileList)){
+        if (CollUtil.isEmpty(taskResultFileList)) {
             return;
         }
         Map<Integer, List<ConvTaskResultFile>> listMap = taskResultFileList.stream().collect(Collectors.groupingBy(ConvTaskResultFile::getTaskId));
         List<ConvTask> convTaskList = taskService.list(new LambdaQueryWrapper<ConvTask>().eq(ConvTask::getStatus, 4));
-        if (CollUtil.isEmpty(convTaskList)){
+        if (CollUtil.isEmpty(convTaskList)) {
             return;
         }
         Set<Integer> taskNotDoneSet = convTaskList.stream().map(ConvTask::getId).collect(Collectors.toSet());
@@ -184,7 +189,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
 
         List<ConvTaskResultFile> downloadedTaskResultFileList = taskResultFileList.stream().filter(taskResultFile -> taskResultFile.getStatus() == 3).collect(Collectors.toList());
         downloadedTaskResultFileList.forEach(taskResultFile -> {
-            if (!dataSaveHandleMap.containsKey(TunnelCMEnum.FILE_MODE + "-" + taskResultFile.getId())){
+            if (!dataSaveHandleMap.containsKey(TunnelCMEnum.FILE_MODE + "-" + taskResultFile.getId())) {
                 FileMessageDTO fileMessageDTO = FileMessageDTO.builder()
                         .tunnelCMEnum(TunnelCMEnum.FILE_MODE)
                         .taskResultId(taskResultFile.getId())
@@ -199,8 +204,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     }
 
 
-
-    private void xdsFileSave(FileMessageDTO fileMessageDTO, ConvTask convTask){
+    private void xdsFileSave(FileMessageDTO fileMessageDTO, ConvTask convTask) {
         // 创建xds
         Xds xds = createXds(fileMessageDTO, convTask);
         // 数据落库，获得数据条数
@@ -214,10 +218,10 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         AsyncFactory.convTaskLog(convTask.getId(), "[" + fileMessageDTO.getTableName() + "]表入库成功！");
 
         // 发送kafka
-         kafkaService.xdsSendKafka(xds);
+        kafkaService.xdsSendKafka(xds);
     }
 
-    private void updateTaskResult(TunnelCMEnum tunnelCMEnum, Integer taskResultId, Integer countNumber){
+    private void updateTaskResult(TunnelCMEnum tunnelCMEnum, Integer taskResultId, Integer countNumber) {
         if (tunnelCMEnum.equals(TunnelCMEnum.LIBRARY_TABLE)) {
             taskResultViewService.updateById(ConvTaskResultView.builder()
                     .id(taskResultId).status(5).storedTime(LocalDateTime.now())
@@ -234,19 +238,21 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     /**
      * 数据落库，获得入库条数
      * 汇聚端文件删除
+     *
      * @param xds
      * @param taskId
      * @return
      */
     private Integer fileDataHandle(Xds xds, Integer taskId) {
         List<OriginalModelColumn> originalModelColumns = odsModelService.getcolumnList(xds.getOdsModelName(), xds.getSysCode());
+        // 数据写入
         Integer countNumber = dataTableSave(xds, taskId, originalModelColumns);
 
         // todo: 配置化
         try {
             // 删除汇聚端的文件
             Files.delete(Paths.get(xds.getStoredFilePath()));
-        }catch (IOException e){
+        } catch (IOException e) {
             log.error("delete converge file error: {}", ExceptionUtils.getStackTrace(e));
         }
         return countNumber;
@@ -254,16 +260,15 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     }
 
 
-    private Integer dataTableSave(Xds xds, Integer taskId, List<OriginalModelColumn> originalModelColumns){
+    private Integer dataTableSave(Xds xds, Integer taskId, List<OriginalModelColumn> originalModelColumns) {
         long startTime = System.currentTimeMillis();
         // 表是否存在的判断
         synchronized (this) {
-            if (!checkTableExists(xds.getOdsTableName())) {
+            if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName())) {
                 // 创建表
-                String tableSql = createTableSql(originalModelColumns, xds.getOdsTableName());
-                log.info("table [{}]  sql:{}", xds.getOdsTableName(), tableSql);
-                jdbcRepository.execSql(tableSql);
-                AsyncFactory.convTaskLog(taskId,  "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
+                List<ColumnDbBo> collect = originalModelColumns.stream().map(columnInfo -> ColumnDbBo.builder().columnName(columnInfo.getNameEn()).build()).collect(Collectors.toList());
+                dbSqlService.createTable(collect, xds.getOdsTableName());
+                AsyncFactory.convTaskLog(taskId, "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
             }
         }
         // 过滤original_model_column里面的name_en重复数据
@@ -278,15 +283,12 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     }
 
 
-
-
-
-    private Xds createXds(FileMessageDTO fileMessageDto, ConvTask convTask){
+    private Xds createXds(FileMessageDTO fileMessageDto, ConvTask convTask) {
         String dataType = odsModelService.getTableDataType(fileMessageDto.getTableName(), convTask.getSysCode());
-        if (CharSequenceUtil.isBlank(dataType)){
+        if (CharSequenceUtil.isBlank(dataType)) {
             dataType = CollectDataTypeEnum.BUSINESS.getCode();
         }
-        Xds xds =  Xds.builder()
+        Xds xds = Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .orgCode(convTask.getOrgCode())
                 .sysCode(convTask.getSysCode())
@@ -309,8 +311,8 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         return xdsService.getById(xds.getId());
     }
 
-    private void updateXds(Long xdsId, String odsTableName, Integer countNumber){
-        String avgRowLength = getAvgRowLength(odsTableName);
+    private void updateXds(Long xdsId, String odsTableName, Integer countNumber) {
+        String avgRowLength = dbSqlService.getAvgRowLength(odsTableName);
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = countNumber * Long.parseLong(avgRowLength);
         Xds updateXds = Xds.builder().id(xdsId).dataSize(dataSize)
@@ -319,58 +321,4 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 .dataConvergeStatus(1).build();
         xdsService.updateById(updateXds);
     }
-
-    private String getAvgRowLength(String odsTableName){
-        // 刷新配置,只需要执行一次
-        // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
-        // 刷新tables表的数据
-        String refreshSql = "ANALYZE TABLE " + odsTableName + " COMPUTE STATISTICS FOR ALL COLUMNS SIZE AUTO;";
-        jdbcRepository.execSql(refreshSql);
-        // 获取每行的平均大小
-        String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
-        return jdbcRepository.execSql(selectSql);
-    }
-
-     private boolean checkTableExists(String odsTableName){
-        String checkSql = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '" + odsTableName + "';";
-         String result = jdbcRepository.execSql(checkSql);
-         return (result != null);
-     }
-
-
-     private String createTableSql(List<OriginalModelColumn> originalModelColumns, String odsTableName){
-        StringBuilder createSql = new StringBuilder("CREATE TABLE " + odsTableName + " (\n");
-        StringBuilder columnSql = new StringBuilder();
-        for (OriginalModelColumn modelColumn : originalModelColumns){
-            // 字段名称
-            columnSql.append(modelColumn.getNameEn()).append(" ");
-            // 字段类型
-            if (modelColumn.getFieldTypeLength() != null) {
-                columnSql.append(modelColumn.getFieldType()).append("(")
-                        .append(modelColumn.getFieldTypeLength()).append(") ");
-            } else if (modelColumn.getFieldType().equals("varchar")){
-                columnSql.append(modelColumn.getFieldType()).append("(")
-                        .append(255).append(") ");
-            }else {
-                columnSql.append(modelColumn.getFieldType()).append(" ");
-            }
-//            if (CharSequenceUtil.isNotBlank(modelColumn.getRequiredFlag()) && modelColumn.getRequiredFlag().equals("1")){
-//                columnSql.append("NOT NULL,").append("\n");
-//            }else {
-//                columnSql.append("DEFAULT NULL,").append("\n");
-//            }
-            columnSql.append("DEFAULT NULL,").append("\n");
-        }
-        //xds_id和row_id
-        columnSql.append("xds_id bigint(20) NOT NULL,").append("\n");
-        columnSql.append("row_id bigint(20) NOT NULL AUTO_INCREMENT,").append("\n");
-        columnSql.append("KEY ").append(odsTableName).append("_idx1 ").append("(row_id) LOCAL").append("\n");
-        createSql.append(columnSql).append(") ")
-                .append("AUTO_INCREMENT = 0 AUTO_INCREMENT_MODE = 'ORDER' DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC ")
-                .append("COMPRESSION = 'zstd_1.3.8' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 0;");
-        return createSql.toString();
-     }
-
-
-
 }

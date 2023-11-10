@@ -1,17 +1,15 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.lrhealth.data.converge.common.enums.ExecStatusEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.service.AsyncExecService;
-import com.lrhealth.data.converge.service.ConvergeTaskService;
 import com.lrhealth.data.converge.service.DataXExecService;
+import com.lrhealth.data.converge.service.TunnelExecService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +21,7 @@ import javax.annotation.Resource;
  */
 @Slf4j
 @Service
-public class ConvergeTaskServiceImpl implements ConvergeTaskService {
+public class TunnelExecServiceImpl implements TunnelExecService {
     @Resource
     private DataXExecService dataXService;
     @Resource
@@ -50,10 +48,13 @@ public class ConvergeTaskServiceImpl implements ConvergeTaskService {
             }
             dataXService.dataXConfig(tunnel, dto.getJdbcInfoDto().getTableInfoDtoList());
         }
+        // 文件读取和库表采集重新配置调度
+        schedulerConfig.addTask(String.valueOf(tunnel.getId()), schedulerConfig.createTriggerTask(tunnel));
+
     }
 
     @Override
-    public void taskExec(Integer taskId, Long tunnelId) {
+    public void tunnelExec(Integer taskId, Long tunnelId) {
         ConvTunnel ft = tunnelService.getById(tunnelId);
         // 管道暂停/废弃，不指定任务
         if (ft.getStatus().equals(TunnelStatusEnum.PAUSE.getValue()) || ft.getStatus().equals(TunnelStatusEnum.ABANDON.getValue())) {
@@ -66,13 +67,8 @@ public class ConvergeTaskServiceImpl implements ConvergeTaskService {
 
         // 更新tunnel状态为任务执行中
         tunnelService.updateById(ConvTunnel.builder().id(tunnelId).status(TunnelStatusEnum.PROCESSING.getValue()).build());
-        // DIRECT：直接调度和定时任务 | REFRESH 重新调度
-        Integer execStatus = taskId == null ? ExecStatusEnum.DIRECT.getValue() : ExecStatusEnum.REFRESH.getValue();
-        // 重新调度生成新的task，之前的task有oldTask保存
-        Integer oldTaskId = execStatus == 0 ? null : taskId;
-        ConvTask frontendTask = frontendTaskService.createTask(ft, isCdc);
-        taskId = frontendTask.getId();
-        asyncExecService.tunnelExec(ft, taskId, execStatus, oldTaskId);
+
+        asyncExecService.taskExec(ft, taskId);
     }
 
 }

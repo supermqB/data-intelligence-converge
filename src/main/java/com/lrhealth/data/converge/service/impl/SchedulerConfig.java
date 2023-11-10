@@ -7,7 +7,7 @@ import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.utils.SchedulerUtil;
-import com.lrhealth.data.converge.service.ConvergeTaskService;
+import com.lrhealth.data.converge.service.TunnelExecService;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ public class SchedulerConfig implements SchedulingConfigurer {
     @Resource
     private ConvTunnelService frontendTunnelService;
     @Resource
-    private ConvergeTaskService convergeTaskService;
+    private TunnelExecService tunnelExecService;
 
     private ScheduledTaskRegistrar taskRegistrar;
     private Set<ScheduledFuture<?>> scheduledFutures = null;
@@ -70,7 +70,7 @@ public class SchedulerConfig implements SchedulingConfigurer {
     public TriggerTask createTriggerTask(ConvTunnel tunnel){
         return new TriggerTask(()->{
             // 任务执行
-            convergeTaskService.taskExec(null, tunnel.getId());
+            tunnelExecService.tunnelExec(null, tunnel.getId());
             log.info("执行定时任务：时间：{}， 任务：{}", DateUtil.getNow(), tunnel.getId());
         },triggerContext -> {
             log.info("开始执行Cron: {}, tunnelId =  {}", tunnel.getCronStr(), tunnel.getId());

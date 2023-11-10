@@ -62,4 +62,16 @@ public class TunnelMessageDTO {
 
     private Integer status;
 
+    /**
+     * 文件地址
+     */
+    private String fileModeCollectDir;
+
+    /**
+     * 文件采集范围
+     */
+    private String collectRange;
+
+    private String mqModeTopicName;
+
 }
