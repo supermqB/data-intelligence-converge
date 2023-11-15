@@ -1,14 +1,12 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.common.result.ResultBase;
+import com.lrhealth.data.converge.scheduled.model.dto.ActiveFepUploadDto;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -21,7 +19,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/fep")
-public class TunnelConfigController {
+public class FepController {
 
     @Resource
     private FeTunnelConfigService feTunnelConfigService;
@@ -31,6 +29,17 @@ public class TunnelConfigController {
                                                                 @RequestParam("port") Integer port){
         try {
             return ResultBase.success(feTunnelConfigService.getFepTunnelConfig(ip, port));
+        }catch (Exception e){
+            log.error(ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/upload/log")
+    public ResultBase<Void> updateFepStatus(@RequestBody ActiveFepUploadDto activeFepUploadDto){
+        try {
+            feTunnelConfigService.updateFepStatus(activeFepUploadDto);
+            return ResultBase.success();
         }catch (Exception e){
             log.error(ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());

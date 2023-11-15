@@ -92,6 +92,7 @@ public class FeNodeServiceImpl implements FeNodeService {
         RSA instance = RsaUtils.getInstance(convergeConfig.getPrivateKeyStr());
         String token = "lrhealth:" + System.currentTimeMillis();
         try {
+            log.info("开始请求前置机状态：{}", url);
             String result = HttpRequest.get(url)
                     .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                     .timeout(3000)

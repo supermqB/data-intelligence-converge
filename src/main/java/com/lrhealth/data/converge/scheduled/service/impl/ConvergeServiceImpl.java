@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.scheduled.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.scheduled.config.ConvergeConfig;
 import com.lrhealth.data.converge.scheduled.dao.entity.*;
@@ -11,7 +11,6 @@ import com.lrhealth.data.converge.scheduled.model.TaskFileConfig;
 import com.lrhealth.data.converge.scheduled.model.dto.*;
 import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.service.FeNodeService;
-import com.lrhealth.data.converge.service.DiTaskConvergeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,8 +49,6 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     @Resource
     private ConvergeConfig convergeConfig;
-    @Resource
-    private DiTaskConvergeService diTaskConvergeService;
 
     @Override
     public void updateDownLoadFileTask(ConcurrentLinkedDeque<FileTask> taskDeque) {
@@ -83,6 +80,15 @@ public class ConvergeServiceImpl implements ConvergeService {
             return;
         }
 
+        updateFepStatus(frontendStatusDto, taskDeque);
+
+        log.info("前置机：" + node.getIp() + " 状态更新结束！");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateFepStatus(FrontendStatusDto frontendStatusDto, ConcurrentLinkedDeque<FileTask> taskDeque){
+
         List<TunnelStatusDto> tunnelStatusDtoList = frontendStatusDto.getTunnelStatusDtoList();
         for (TunnelStatusDto tunnelStatusDto : tunnelStatusDtoList) {
 
@@ -97,7 +103,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             for (TaskStatusDto taskStatusDto : taskStatusList) {
                 //更新 task
                 ConvTask convTask = feNodeService.saveOrUpdateTask(taskStatusDto,tunnel);
-                if (StrUtil.equals(convTask.getConvergeMethod(), "1") && convTask.getStatus() > 3) {
+                if (CharSequenceUtil.equals(convTask.getConvergeMethod(), "1") && convTask.getStatus() > 3) {
 //                    log.info("当前任务已完成，无需更新！" + convTask);
                     continue;
                 }
@@ -111,17 +117,13 @@ public class ConvergeServiceImpl implements ConvergeService {
                 updateTaskResultFile(taskDeque, taskStatusDto, convTask);
             }
         }
-        log.info("前置机：" + node.getIp() + " 状态更新结束！");
     }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateFileStatus(TaskFileConfig taskFileConfig, long costTime) {
         try {
-
-            // 通知入库
-         //   diTaskConvergeService.dataSave(taskResultView);
-
             boolean flag = getTaskStatusFlag(taskFileConfig,costTime);
             if (flag) {
                 Integer taskId = taskFileConfig.getConvTask().getId();
@@ -227,7 +229,7 @@ public class ConvergeServiceImpl implements ConvergeService {
     private void addTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, ConvTask convTask) {
         List<ConvTaskResultView> taskResultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
                 .eq(ConvTaskResultView::getTaskId, convTask.getId())
-                .and((l) -> l.eq(ConvTaskResultView::getStatus,1)
+                .and(l -> l.eq(ConvTaskResultView::getStatus,1)
                         .or()
                         .eq(ConvTaskResultView::getStatus,2)));
         for (ConvTaskResultView taskResultView : taskResultViews) {
@@ -241,7 +243,7 @@ public class ConvergeServiceImpl implements ConvergeService {
     private void addTaskResultFile(ConcurrentLinkedDeque<FileTask> taskDeque, ConvTask convTask) {
         List<ConvTaskResultFile> taskResultFiles = convTaskResultFileService.list(new LambdaQueryWrapper<ConvTaskResultFile>()
                 .eq(ConvTaskResultFile::getTaskId, convTask.getId())
-                .and((l) -> l.eq(ConvTaskResultFile::getStatus,1)
+                .and(l -> l.eq(ConvTaskResultFile::getStatus,1)
                         .or()
                         .eq(ConvTaskResultFile::getStatus,2)));
         for (ConvTaskResultFile taskResultFile : taskResultFiles) {

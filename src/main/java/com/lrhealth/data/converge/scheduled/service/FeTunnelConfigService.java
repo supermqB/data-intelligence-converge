@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.scheduled.service;
 
+import com.lrhealth.data.converge.scheduled.model.dto.ActiveFepUploadDto;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
 
 import java.util.List;
@@ -11,4 +12,6 @@ import java.util.List;
 public interface FeTunnelConfigService {
 
     List<TunnelMessageDTO> getFepTunnelConfig(String ip, Integer port);
+
+    void updateFepStatus(ActiveFepUploadDto activeFepUploadDto);
 }

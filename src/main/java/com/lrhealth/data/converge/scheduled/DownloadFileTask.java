@@ -48,7 +48,7 @@ public class DownloadFileTask {
     @Resource
     private Executor threadPoolTaskExecutor;
 
-    private static final ConcurrentLinkedDeque<FileTask> taskDeque = new ConcurrentLinkedDeque<>();
+    public static final ConcurrentLinkedDeque<FileTask> taskDeque = new ConcurrentLinkedDeque<>();
 
 
    @Scheduled(cron = "${lrhealth.converge.scheduledCron}")

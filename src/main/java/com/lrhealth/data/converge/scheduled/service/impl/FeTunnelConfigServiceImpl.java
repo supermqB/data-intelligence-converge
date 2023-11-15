@@ -6,31 +6,30 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
+import com.lrhealth.data.converge.scheduled.DownloadFileTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvFeNodeService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
-import com.lrhealth.data.converge.scheduled.model.dto.JdbcInfoDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TableInfoDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
+import com.lrhealth.data.converge.scheduled.model.dto.*;
+import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
 import com.lrhealth.data.model.original.model.OriginalModel;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import com.lrhealth.data.model.original.service.OriginalModelColumnService;
 import com.lrhealth.data.model.original.service.OriginalModelService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * @author jinmengyu
  * @date 2023-11-14
  */
+@Slf4j
 @Service
 public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
 
@@ -42,20 +41,15 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private OriginalModelService originalModelService;
     @Resource
     private OriginalModelColumnService originalModelColumnService;
+    @Resource
+    private ConvergeService convergeService;
 
 
     @Override
     public List<TunnelMessageDTO> getFepTunnelConfig(String ip, Integer port) {
-        if (CharSequenceUtil.isBlank(ip)){
-            throw new CommonException("请输入前置机ip地址");
-        }
         List<TunnelMessageDTO> tunnelMessageList = new ArrayList<>();
-        List<ConvFeNode> fepList = feNodeService.list(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getIp, ip)
-                .eq((port != null), ConvFeNode::getPort, port)
-                .eq(ConvFeNode::getDelFlag, 0));
-        if (CollUtil.isEmpty(fepList)){
-            return null;
-        }
+        List<ConvFeNode> fepList = getFepListByIpAndPort(ip, port);
+        if (CollUtil.isEmpty(fepList)) return CollUtil.newArrayList();
         fepList.forEach(fep -> {
             List<ConvTunnel> tunnelList = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>().eq(ConvTunnel::getFrontendId, fep.getId()));
             if (CollUtil.isEmpty(tunnelList)){
@@ -103,5 +97,30 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             });
         });
         return tunnelMessageList;
+    }
+
+    @Override
+    public void updateFepStatus(ActiveFepUploadDto activeFepUploadDto) {
+        FrontendStatusDto frontendStatusDto = activeFepUploadDto.getFrontendStatusDto();
+        List<ConvFeNode> fepList = getFepListByIpAndPort(activeFepUploadDto.getIp(), activeFepUploadDto.getPort());
+        if (fepList.isEmpty()) return;
+        if (frontendStatusDto == null || frontendStatusDto.getTunnelStatusDtoList() == null) {
+            log.error("fep status返回结果异常: " + frontendStatusDto);
+            return;
+        }
+        convergeService.updateFepStatus(frontendStatusDto, DownloadFileTask.taskDeque);
+    }
+
+    private List<ConvFeNode> getFepListByIpAndPort(String ip, Integer port){
+        if (CharSequenceUtil.isBlank(ip)){
+            throw new CommonException("请输入前置机ip地址");
+        }
+        List<ConvFeNode> fepList = feNodeService.list(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getIp, ip)
+                .eq((port != null), ConvFeNode::getPort, port)
+                .eq(ConvFeNode::getDelFlag, 0));
+        if (CollUtil.isEmpty(fepList)){
+            return Collections.emptyList();
+        }
+        return fepList;
     }
 }
