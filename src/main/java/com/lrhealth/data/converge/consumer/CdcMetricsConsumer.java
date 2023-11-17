@@ -2,24 +2,15 @@ package com.lrhealth.data.converge.consumer;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultCdc;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultCdcService;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -32,18 +23,13 @@ import java.util.Optional;
  */
 @Slf4j
 @Component
-public class CdcMetricsConsumer {
+public class CdcMetricsConsumer extends CdcCon {
 
-    @Resource
-    private ConvTunnelService convTunnelService;
-    @Resource
-    private ConvTaskService convTaskService;
-    @Resource
-    private ConvTaskResultCdcService convTaskResultCdcService;
+    private static final String GROUP_ID = "metrics";
 
-    @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = "metrics", containerFactory = "kafkaListenerContainerFactory")
+    @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = GROUP_ID, containerFactory = "kafkaListenerContainerFactory")
     public void consumer(String message) {
-        List<CdcRecord> records = JSON.parseArray(message, CdcRecord.class);
+        List<CdcRecord> records = parseMessage(message, "insert", "update", "delete");
         if (CollUtil.isEmpty(records)) {
             return;
         }
@@ -134,7 +120,7 @@ public class CdcMetricsConsumer {
     }
 
     private ConvTask updateConvTask(CdcRecord first, ConvTunnel tunnel) {
-        Long fedTaskId = first.taskId;
+        Long fedTaskId = first.getTaskId();
         Long taskId = first.getTaskId();
         Long tunnelId = first.getTunnelId();
 
@@ -168,21 +154,6 @@ public class CdcMetricsConsumer {
             sum += Optional.ofNullable(i).orElse(0);
         }
         return sum;
-    }
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class CdcRecord {
-        private String database;
-        private String schema;
-        private String table;
-        private String operation;
-        private HashMap<String, Object> value;
-        private String jid;
-        private Long tunnelId;
-        private Long taskId;
     }
 
 }
