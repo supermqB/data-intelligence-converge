@@ -58,6 +58,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             tunnelList.forEach(tunnel -> {
                 TunnelMessageDTO tunnelMessageDTO = new TunnelMessageDTO();
                 tunnelMessageDTO.setId(tunnel.getId());
+                tunnelMessageDTO.setSysCode(tunnel.getSysCode());
                 tunnelMessageDTO.setName(tunnel.getName());
                 tunnelMessageDTO.setConvergeMethod(tunnel.getConvergeMethod());
                 tunnelMessageDTO.setCronStr(tunnel.getCronStr());

@@ -17,13 +17,15 @@ public class ResultViewInfoDto {
 
     private String tableName;
 
-    private Integer startIndex;
+    private String startIndex;
 
-    private Integer endIndex;
+    private String endIndex;
 
     private Integer recordCount;
 
     private Integer status;
 
     private Long fileSize;
+
+    private String storedTime;
 }

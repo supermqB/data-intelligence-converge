@@ -25,6 +25,8 @@ public class TunnelMessageDTO {
      */
     private String name;
 
+    private String sysCode;
+
     /**
      * 动作:add/update/delete
      */

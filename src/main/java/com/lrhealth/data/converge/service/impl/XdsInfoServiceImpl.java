@@ -1,19 +1,26 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.net.NetUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.*;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
+import com.lrhealth.data.converge.dao.entity.System;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.SystemService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.FlinkTaskDto;
 import com.lrhealth.data.converge.model.TaskDto;
+import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
+import com.lrhealth.data.converge.service.DbSqlService;
+import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.OdsModelService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import org.springframework.stereotype.Service;
@@ -24,6 +31,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 
 import static cn.hutool.core.text.CharSequenceUtil.*;
 
@@ -39,9 +47,14 @@ import static cn.hutool.core.text.CharSequenceUtil.*;
 public class XdsInfoServiceImpl implements XdsInfoService {
     @Resource
     private XdsService xdsService;
-
     @Resource
     private OdsModelService dataTypeService;
+    @Resource
+    private SystemService systemService;
+    @Resource
+    private DbSqlService dbSqlService;
+    @Resource
+    private KafkaService kafkaService;
 
 
     @Override
@@ -160,6 +173,52 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .build();
         xdsService.save(xds);
         return xdsService.getById(xds.getId());
+    }
+
+    @Override
+    public void fepCreateXds(DbXdsMessageDto dbXdsMessageDto) {
+        String dataType = dataTypeService.getTableDataType(dbXdsMessageDto.getOdsModelName(), dbXdsMessageDto.getSysCode());
+        if (CharSequenceUtil.isBlank(dataType)) {
+            dataType = CollectDataTypeEnum.BUSINESS.getCode();
+        }
+        List<System> systemList = systemService.list(new LambdaQueryWrapper<System>().eq(System::getSystemCode, dbXdsMessageDto.getSysCode())
+                .eq(System::getDelFlag, 0));
+        if (CollUtil.isEmpty(systemList)){
+            return;
+        }
+        Xds xds = Xds.builder()
+                .id(dbXdsMessageDto.getId())
+                .orgCode(systemList.get(0).getSourceCode())
+                .sysCode(dbXdsMessageDto.getSysCode())
+                .convergeMethod(dbXdsMessageDto.getConvergeMethod())
+                .dataType(dataType)
+                .dataConvergeStartTime(LocalDateTime.now())
+                .dataConvergeStatus(XdsStatusEnum.INIT.getCode())
+                .odsModelName(dbXdsMessageDto.getOdsModelName())
+                .odsTableName(dbXdsMessageDto.getOdsTableName())
+                .createTime(LocalDateTime.now())
+                .build();
+        xdsService.save(xds);
+    }
+
+    @Override
+    public void fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
+        String avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName());
+        // 文件中的数据写入后消耗的数据库容量
+        long dataSize = dbXdsMessageDto.getDataCount() * Long.parseLong(avgRowLength);
+
+        Xds updateXds = Xds.builder()
+                .id(dbXdsMessageDto.getId())
+                .dataConvergeEndTime(LocalDateTime.now())
+                .dataConvergeStatus(XdsStatusEnum.COMPLETED.getCode())
+                .dataCount(dbXdsMessageDto.getDataCount())
+                .dataSize(dataSize)
+                .updateTime(LocalDateTime.now())
+                .build();
+        xdsService.updateById(updateXds);
+
+        // 发送kafka
+        kafkaService.xdsSendKafka(updateXds);
     }
 
     /**

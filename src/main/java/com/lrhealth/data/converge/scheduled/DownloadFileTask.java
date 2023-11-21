@@ -14,7 +14,6 @@ import com.lrhealth.data.converge.scheduled.thread.AsyncManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -51,7 +50,7 @@ public class DownloadFileTask {
     public static final ConcurrentLinkedDeque<FileTask> taskDeque = new ConcurrentLinkedDeque<>();
 
 
-   @Scheduled(cron = "${lrhealth.converge.scheduledCron}")
+//   @Scheduled(cron = "${lrhealth.converge.scheduledCron}")
     public void refreshFENodesStatus() {
         //循环前置机
         log.info("定时更新前置机任务状态！" + LocalDateTime.now());

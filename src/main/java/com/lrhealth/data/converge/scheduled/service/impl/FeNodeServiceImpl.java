@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.scheduled.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.http.HttpRequest;
@@ -191,6 +192,9 @@ public class FeNodeServiceImpl implements FeNodeService {
                     + File.separator + resultViewInfoDto.getFileName().replace(".","_") + File.separator;
             convTaskResultView.setStoredPath(destPath + resultViewInfoDto.getFileName());
             convTaskResultView.setFeStoredFilename(resultViewInfoDto.getFileName());
+        }
+        if (CharSequenceUtil.isNotBlank(resultViewInfoDto.getStoredTime())){
+            convTaskResultView.setStoredTime(LocalDateTime.parse(resultViewInfoDto.getStoredTime()));
         }
         convTaskResultView.setDataSize(resultViewInfoDto.getFileSize());
         convTaskResultView.setDelFlag(0);

@@ -1,9 +1,11 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.common.result.ResultBase;
+import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
 import com.lrhealth.data.converge.scheduled.model.dto.ActiveFepUploadDto;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
+import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,8 @@ public class FepController {
 
     @Resource
     private FeTunnelConfigService feTunnelConfigService;
+    @Resource
+    private XdsInfoService xdsInfoService;
 
     @GetMapping("/config")
     public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
@@ -42,6 +46,28 @@ public class FepController {
             return ResultBase.success();
         }catch (Exception e){
             log.error(ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/xds/create")
+    public ResultBase<Void> createDbXds(@RequestBody DbXdsMessageDto dbXdsMessageDto){
+        try {
+            xdsInfoService.fepCreateXds(dbXdsMessageDto);
+            return ResultBase.success();
+        }catch (Exception e){
+            log.error("db-db xds create error, {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/xds/update")
+    public ResultBase<Void> updateDbXds(@RequestBody DbXdsMessageDto dbXdsMessageDto){
+        try {
+            xdsInfoService.fepUpdateXds(dbXdsMessageDto);
+            return ResultBase.success();
+        }catch (Exception e){
+            log.error("db-db xds create error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());
         }
     }
