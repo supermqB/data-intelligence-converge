@@ -42,11 +42,11 @@ public class ConvTaskResultViewServiceImpl extends ServiceImpl<DiConvTaskResultV
                 .build();
         if (!"null".equals(startIndex) && null != startIndex){
             log.info("(startIndex) create startIndex: {}", startIndex);
-            resultView.setStartIndex(Integer.valueOf(startIndex));
+            resultView.setStartIndex(startIndex);
         }
         if (!"null".equals(startIndex) && null != startIndex){
             log.info("(endIndex) create endIndex: {}", endIndex);
-            resultView.setEndIndex(Integer.valueOf(endIndex));
+            resultView.setEndIndex(endIndex);
         }
         this.save(resultView);
         return resultView;

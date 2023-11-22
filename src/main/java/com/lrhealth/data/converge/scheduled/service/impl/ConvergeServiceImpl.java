@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.scheduled.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.scheduled.config.ConvergeConfig;
 import com.lrhealth.data.converge.scheduled.dao.entity.*;
@@ -103,10 +102,10 @@ public class ConvergeServiceImpl implements ConvergeService {
             for (TaskStatusDto taskStatusDto : taskStatusList) {
                 //更新 task
                 ConvTask convTask = feNodeService.saveOrUpdateTask(taskStatusDto,tunnel);
-                if (CharSequenceUtil.equals(convTask.getConvergeMethod(), "1") && convTask.getStatus() > 3) {
-//                    log.info("当前任务已完成，无需更新！" + convTask);
-                    continue;
-                }
+//                if (CharSequenceUtil.equals(convTask.getConvergeMethod(), "1") && convTask.getStatus() > 3) {
+////                    log.info("当前任务已完成，无需更新！" + convTask);
+//                    continue;
+//                }
 
                 List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
                 for (TaskLogDto taskLog : taskLogs) {

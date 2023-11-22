@@ -53,12 +53,12 @@ public class ConvTaskResultView implements Serializable {
     /**
      * 开始索引
      */
-    private Integer startIndex;
+    private String startIndex;
 
     /**
      * 结束索引
      */
-    private Integer endIndex;
+    private String endIndex;
 
     /**
      * 入库时间
