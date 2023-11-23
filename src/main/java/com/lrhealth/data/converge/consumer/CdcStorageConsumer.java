@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
+import com.lrhealth.data.common.exception.CommonException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -47,7 +48,7 @@ public class CdcStorageConsumer extends CdcCon {
     }
 
     @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = GROUP_ID, containerFactory = "kafkaListenerContainerFactory")
-    private void consumer(String message) throws SQLException {
+    private void consumer(String message) throws Exception {
         List<CdcRecord> records = parseMessage(message, "insert", "update");
 
         if (CollUtil.isEmpty(records)) {
@@ -64,7 +65,7 @@ public class CdcStorageConsumer extends CdcCon {
     }
 
     // Generate and execute the BATCH INSERT statement
-    private void generateBatchInsertStatement(Map<String, List<CdcRecord>> map) throws SQLException {
+    private void generateBatchInsertStatement(Map<String, List<CdcRecord>> map) throws Exception {
         if (CollUtil.isEmpty(map)) {
             return;
         }
@@ -75,8 +76,9 @@ public class CdcStorageConsumer extends CdcCon {
                 continue;
             }
             if (!doesTableExist(tableName, records.get(0).getSchema())) {
-                log.error("Table [{}] does not exist.", tableName);
-                continue;
+                String msg = String.format("Table [%s] does not exist.", tableName);
+                log.error(msg);
+                throw new CommonException(msg);
             }
             List<TreeMap<String, Object>> dataList = records.stream().map(CdcRecord::getValue).collect(Collectors.toList());
 
