@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import com.lrhealth.data.common.exception.CommonException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "cdc.storage", havingValue = "true")
 public class CdcStorageConsumer extends CdcCon {
 
     public static final Pattern EXCEPTION_BATCH_UPDATE_DATA_TOO_LONG_FOR_COL = Pattern.compile("(?<=Data too long for column ').+(?=' at row)");

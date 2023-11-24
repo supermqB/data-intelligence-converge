@@ -8,6 +8,7 @@ import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultCdc;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author yuanbaiyu
@@ -23,6 +25,7 @@ import java.util.Optional;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "cdc.metrics", havingValue = "true")
 public class CdcMetricsConsumer extends CdcCon {
 
     private static final String GROUP_ID = "metrics";
@@ -30,6 +33,7 @@ public class CdcMetricsConsumer extends CdcCon {
     @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = GROUP_ID, containerFactory = "kafkaListenerContainerFactory")
     public void consumer(String message) {
         List<CdcRecord> records = parseMessage(message, "insert", "update", "delete");
+        records = records.stream().filter(v -> StrUtil.isNotBlank(v.getJid()) && StrUtil.isNotBlank(v.getTable())).collect(Collectors.toList());
         if (CollUtil.isEmpty(records)) {
             return;
         }
