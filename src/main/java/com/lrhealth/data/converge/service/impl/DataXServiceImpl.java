@@ -8,7 +8,10 @@ import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
 import com.lrhealth.data.converge.model.FileExecInfoDTO;
 import com.lrhealth.data.converge.model.TaskDto;
-import com.lrhealth.data.converge.service.*;
+import com.lrhealth.data.converge.service.DataXService;
+import com.lrhealth.data.converge.service.FileService;
+import com.lrhealth.data.converge.service.ShellService;
+import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -25,25 +28,11 @@ import java.util.concurrent.ConcurrentMap;
 public class DataXServiceImpl implements DataXService {
     private static ConcurrentMap<Long, FileExecInfoDTO> dataXConfigMap = new ConcurrentHashMap<>();
     @Resource
-    ConvConfigService configService;
-    @Resource
     XdsInfoService xdsInfoService;
     @Resource
     FileService fileService;
     @Resource
     ShellService shellService;
-    @Override
-    public FileExecInfoDTO createTask(TaskDto taskDto) {
-        // dataX所需要的配置
-        FileExecInfoDTO base = configService.getConfig(taskDto.getProjectId(), null, taskDto.getTaskModel());
-        Xds xds = xdsInfoService.createXdsInfo(taskDto, base);
-        base.setXdsId(xds.getId());
-        base.setOdsModelName(xds.getOdsModelName());
-        if (!dataXConfigMap.containsKey(xds.getId())){
-            dataXConfigMap.put(xds.getId(), base);
-        }
-        return base;
-    }
 
     @Override
     public Xds updateTask(TaskDto taskDto) {
@@ -62,18 +51,4 @@ public class DataXServiceImpl implements DataXService {
         }
         return xds;
     }
-
-
-    @Override
-    public void execDataX(String json, String jsonSavePath) {
-        String[] jsonList = json.split("\\s+");
-        for (String execJson : jsonList){
-            try {
-                shellService.dataXExec(execJson, jsonSavePath);
-            }catch (Exception e){
-                log.error("dataX execute error, table:{}", execJson);
-            }
-        }
-    }
-
 }

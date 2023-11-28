@@ -9,15 +9,10 @@ import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.file.FileToJsonUtil;
 import com.lrhealth.data.converge.common.util.file.ProcessedFile;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
-import com.lrhealth.data.converge.dao.entity.ConvergeConfig;
-import com.lrhealth.data.converge.dao.entity.ProjectConvergeRelation;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.dao.service.ConvergeConfigService;
-import com.lrhealth.data.converge.dao.service.FrontendService;
 import com.lrhealth.data.converge.model.ConvFileInfoDto;
 import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
 import com.lrhealth.data.converge.service.FileService;
-import com.lrhealth.data.converge.service.ProjectConvergeService;
 import com.lrhealth.data.converge.service.ShellService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -52,12 +47,6 @@ import static cn.hutool.core.text.StrPool.*;
 public class FileServiceImpl implements FileService {
     @Resource
     private BeeBaseRepository beeBaseRepository;
-    @Resource
-    private ProjectConvergeService projectConvergeService;
-    @Resource
-    private ConvergeConfigService configService;
-    @Resource
-    private FrontendService frontendService;
     @Resource
     private ShellService shellService;
     @Resource
@@ -112,20 +101,6 @@ public class FileServiceImpl implements FileService {
                 .storedFileName(storedFileName).storedFileType(fileConfig.getOriFileType())
                 .storedFilePath(fileConfig.getStoredFilePath()).build();
     }
-
-
-    /**
-     * 获取配置信息
-     *
-     * @param projId 项目ID
-     * @return 配置信息
-     */
-    private String getConfig(String projId) {
-        ProjectConvergeRelation relation = projectConvergeService.getByProjId(projId);
-        ConvergeConfig convergeConfig =  configService.getById(relation.getConvergeId());
-        return frontendService.getByFrontendCode(convergeConfig.getFrontendCode()).getFilePath();
-    }
-
 
     private Integer fileParseAndSave(Xds xds) {
         checkParam(xds);
