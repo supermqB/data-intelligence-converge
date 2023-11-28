@@ -1,6 +1,5 @@
 package com.lrhealth.data.converge.consumer;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultCdcService;
@@ -19,9 +18,12 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import static cn.hutool.core.text.CharSequenceUtil.containsAnyIgnoreCase;
+import static cn.hutool.core.text.CharSequenceUtil.isBlank;
+
 /**
- * @Author yuanbaiyu
- * @Date 2023/11/15 16:23
+ * @author yuanbaiyu
+ * @since 2023/11/15 16:23
  */
 @Slf4j
 public class CdcCon {
@@ -36,14 +38,14 @@ public class CdcCon {
     @NotNull
     protected static List<CdcRecord> parseMessage(String message, String... operations) {
         List<CdcRecord> records = new ArrayList<>();
-        if (StrUtil.isBlank(message)) {
+        if (isBlank(message)) {
             return records;
         }
         if (JSONUtil.isTypeJSONArray(message)) {
             // @formatter:off
             records = JSON.parseArray(message, CdcRecord.class)
                 .stream()
-                .filter(v -> StrUtil.containsAnyIgnoreCase(v.getOperation(), operations))
+                .filter(v -> containsAnyIgnoreCase(v.getOperation(), operations))
                 .collect(Collectors.toList());
             // @formatter:on
         } else if (JSONUtil.isTypeJSON(message)) {

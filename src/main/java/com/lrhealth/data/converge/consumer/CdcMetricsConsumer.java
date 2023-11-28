@@ -12,12 +12,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static cn.hutool.core.text.CharSequenceUtil.concat;
 
 /**
  * @author yuanbaiyu
@@ -38,10 +36,10 @@ public class CdcMetricsConsumer extends CdcCon {
             return;
         }
         Map<String, List<CdcRecord>> map = new HashMap<>();
-        for (CdcRecord record : records) {
-            String key = StrUtil.concat(true, record.getTable(), record.getJid());
+        for (CdcRecord cdcRecord : records) {
+            String key = concat(true, cdcRecord.getTable(), cdcRecord.getJid());
             List<CdcRecord> list = map.getOrDefault(key, Lists.newArrayList());
-            list.add(record);
+            list.add(cdcRecord);
             map.put(key, list);
         }
 
@@ -54,10 +52,9 @@ public class CdcMetricsConsumer extends CdcCon {
                 continue;
             }
             ConvTask task = updateConvTask(first, tunnel);
-            if (task == null) {
-                continue;
+            if (task != null) {
+                flushConvCdcRecord(task, first, records);
             }
-            flushConvCdcRecord(task, first, records);
         }
     }
 
@@ -87,8 +84,8 @@ public class CdcMetricsConsumer extends CdcCon {
             origin = cdcList.get(0);
         }
 
-        for (CdcRecord record : records) {
-            switch (record.getOperation()) {
+        for (CdcRecord cdcRecord : records) {
+            switch (cdcRecord.getOperation()) {
                 case "insert":
                     cdc.setAddCount(add(cdc.getAddCount(), 1));
                     break;

@@ -8,9 +8,9 @@ import java.util.Optional;
 /**
  * status enum
  *
- * @author ds
+ * @author lr
  */
-public enum DsStatus {
+public enum ResStatus {
     /**
      * 状态码
      */
@@ -24,7 +24,7 @@ public enum DsStatus {
     private final String enMsg;
     private final String zhMsg;
 
-    DsStatus(int code, String enMsg, String zhMsg) {
+    ResStatus(int code, String enMsg, String zhMsg) {
         this.code = code;
         this.enMsg = enMsg;
         this.zhMsg = zhMsg;
@@ -45,8 +45,8 @@ public enum DsStatus {
     /**
      * Retrieve Status enum entity by status code.
      */
-    public static Optional<DsStatus> findStatusBy(int code) {
-        for (DsStatus status : DsStatus.values()) {
+    public static Optional<ResStatus> findStatusBy(int code) {
+        for (ResStatus status : ResStatus.values()) {
             if (code == status.getCode()) {
                 return Optional.of(status);
             }

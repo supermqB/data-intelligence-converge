@@ -3,7 +3,6 @@ package com.lrhealth.data.converge.consumer;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
 import com.lrhealth.data.common.exception.CommonException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
@@ -14,22 +13,18 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import java.sql.BatchUpdateException;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.sql.*;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static cn.hutool.core.text.CharSequenceUtil.*;
+
 /**
- * @Author yuanbaiyu
- * @Date 2023/11/15 16:20
+ * CDC存储消费者
+ *
+ * @author yuanbaiyu
+ * @since 2023/11/15 16:20
  */
 @Slf4j
 @Component
@@ -38,8 +33,8 @@ public class CdcStorageConsumer extends CdcCon {
 
     public static final Pattern EXCEPTION_BATCH_UPDATE_DATA_TOO_LONG_FOR_COL = Pattern.compile("(?<=Data too long for column ').+(?=' at row)");
     private static final String GROUP_ID = "storage";
-    private static final String alter_table_column = "ALTER TABLE %s MODIFY %s VARCHAR2(%s);";
-    private static Connection connection;
+    private static final String ALTER_TABLE_COLUMN = "ALTER TABLE %s MODIFY %s VARCHAR2(%s);";
+    private Connection connection;
 
     @Resource(name = "odsDataSource")
     private DataSource odsDataSource;
@@ -57,10 +52,10 @@ public class CdcStorageConsumer extends CdcCon {
             return;
         }
         Map<String, List<CdcRecord>> map = new HashMap<>();
-        for (CdcRecord record : records) {
-            String key = record.getTable();
+        for (CdcRecord cdcRecord : records) {
+            String key = cdcRecord.getTable();
             List<CdcRecord> list = map.getOrDefault(key, Lists.newArrayList());
-            list.add(record);
+            list.add(cdcRecord);
             map.put(key, list);
         }
         generateBatchInsertStatement(map);
@@ -74,7 +69,7 @@ public class CdcStorageConsumer extends CdcCon {
         for (Map.Entry<String, List<CdcRecord>> entry : map.entrySet()) {
             String tableName = entry.getKey();
             List<CdcRecord> records = entry.getValue();
-            if (StrUtil.isBlank(tableName) || CollUtil.isEmpty(records)) {
+            if (isBlank(tableName) || CollUtil.isEmpty(records)) {
                 continue;
             }
             if (!doesTableExist(tableName, records.get(0).getSchema())) {
@@ -169,15 +164,15 @@ public class CdcStorageConsumer extends CdcCon {
 
         // java.sql.BatchUpdateException:Data truncation:(conn=98699)Data too long for column
         String column = ReUtil.getGroup0(EXCEPTION_BATCH_UPDATE_DATA_TOO_LONG_FOR_COL, msg);
-        if (StrUtil.isNotBlank(column)) {
+        if (isNotBlank(column)) {
             Integer len = fieldLenMap.getOrDefault(column, 255 * 2);
-            String alterTableFieldLengthSql = String.format(alter_table_column, tableName, column, len);
+            String alterTableFieldLengthSql = String.format(ALTER_TABLE_COLUMN, tableName, column, len);
             connection.createStatement().execute(alterTableFieldLengthSql);
         }
     }
 
     private int extendFieldLength(Object value, int len) {
-        int i = StrUtil.length(String.valueOf(value));
+        int i = length(String.valueOf(value));
         return i > len ? findClosestPowerOfTwo(i) : len;
     }
 
@@ -187,7 +182,7 @@ public class CdcStorageConsumer extends CdcCon {
         }
         int powerOfTwo = 1;
         while (powerOfTwo < number) {
-            powerOfTwo <<= 1; // Equivalent to powerOfTwo *= 2;
+            powerOfTwo <<= 1;
         }
         return powerOfTwo;
     }
