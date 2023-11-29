@@ -25,5 +25,6 @@ hs_err_pid*
 /target
 /*.iml
 /logs
+/.vscode
 /.idea
 .git
