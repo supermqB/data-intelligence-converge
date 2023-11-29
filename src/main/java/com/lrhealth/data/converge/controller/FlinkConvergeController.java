@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.converge.common.util.ResResult;
-import com.lrhealth.data.converge.model.dto.ConvData;
+import com.lrhealth.data.converge.model.dto.CdcRecord;
 import com.lrhealth.data.converge.product.CdcConvDataProduct;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +20,7 @@ import java.util.List;
  * @since 2023/11/28 21:37
  */
 @RestController
-@RequestMapping("cdc")
+@RequestMapping("/cdc")
 public class FlinkConvergeController {
     @Resource
     private CdcConvDataProduct cdcConvDataProduct;
@@ -30,9 +30,9 @@ public class FlinkConvergeController {
      *
      * @return 当前时间
      */
-    @PostMapping(value = "/conv")
-    public ResResult<Void> monitor(@RequestBody List<ConvData> convDataList) {
-        cdcConvDataProduct.send(convDataList);
+    @PostMapping("/conv")
+    public ResResult<Void> monitor(@RequestBody List<CdcRecord> cdcRecordList) {
+        cdcConvDataProduct.send(cdcRecordList);
         return ResResult.success();
     }
 }

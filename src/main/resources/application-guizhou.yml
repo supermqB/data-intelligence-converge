@@ -75,7 +75,7 @@ spring:
   kafka:
     bootstrap-servers: 172.30.121.24:9092
     topic:
-      metrics: cdc-data
+      cdc: cdc-data
       xds: gove-xds-${spring.profiles.active}
     producer:
       retries: 3

@@ -5,17 +5,14 @@ import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultCdcService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import com.lrhealth.data.converge.model.dto.CdcRecord;
+
 import java.util.List;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static cn.hutool.core.text.CharSequenceUtil.containsAnyIgnoreCase;
@@ -52,21 +49,6 @@ public class CdcCon {
             records.add(JSON.parseObject(message, CdcRecord.class));
         }
         return records;
-    }
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class CdcRecord {
-        private String database;
-        private String schema;
-        private String table;
-        private String operation;
-        private TreeMap<String, Object> value;
-        private String jid;
-        private Long tunnelId;
-        private Long taskId;
     }
 
 }

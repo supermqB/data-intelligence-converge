@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.ReUtil;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.model.dto.CdcRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -44,7 +45,7 @@ public class CdcStorageConsumer extends CdcCon {
         connection = odsDataSource.getConnection();
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = GROUP_ID, containerFactory = "kafkaListenerContainerFactory")
+    @KafkaListener(topics = "${spring.kafka.topic.cdc}", groupId = GROUP_ID, containerFactory = "kafkaListenerContainerFactory")
     private void consumer(String message) throws Exception {
         List<CdcRecord> records = parseMessage(message, "insert", "update");
 

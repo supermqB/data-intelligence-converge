@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.consumer;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.model.dto.CdcRecord;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultCdc;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
@@ -28,7 +29,7 @@ public class CdcMetricsConsumer extends CdcCon {
 
     private static final String GROUP_ID = "metrics";
 
-    @KafkaListener(topics = "${spring.kafka.topic.metrics}", groupId = GROUP_ID, containerFactory = "kafkaListenerContainerFactory")
+    @KafkaListener(topics = "${spring.kafka.topic.cdc}", groupId = GROUP_ID, containerFactory = "kafkaListenerContainerFactory")
     public void consumer(String message) {
         List<CdcRecord> records = parseMessage(message, "insert", "update", "delete");
         records = records.stream().filter(v -> StrUtil.isNotBlank(v.getJid()) && StrUtil.isNotBlank(v.getTable())).collect(Collectors.toList());

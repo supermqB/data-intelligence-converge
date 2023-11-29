@@ -1,7 +1,8 @@
 package com.lrhealth.data.converge.model.dto;
 
-import com.alibaba.fastjson.JSONObject;
 import lombok.Data;
+
+import java.util.TreeMap;
 
 /**
  * <p>
@@ -12,7 +13,7 @@ import lombok.Data;
  * @since 2023/11/28 18:07
  */
 @Data
-public class ConvData {
+public class CdcRecord {
     /**
      * 系统编码
      */
@@ -34,8 +35,10 @@ public class ConvData {
      * 操作:update,insert
      */
     private String operation;
-    /**
-     * 数据
-     */
-    private JSONObject value;
+
+    private TreeMap<String, Object> value;
+
+    private String jid;
+    private Long tunnelId;
+    private Long taskId;
 }
