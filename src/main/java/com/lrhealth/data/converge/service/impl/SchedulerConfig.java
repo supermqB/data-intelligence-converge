@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.util.DateUtil;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
@@ -59,8 +60,11 @@ public class SchedulerConfig implements SchedulingConfigurer {
         List<ConvTunnel> tunnels = frontendTunnelService.list(wrapper);
         //循环添加任务
         tunnels.forEach(t->{
-            TriggerTask triggerTask = createTriggerTask(t);
-            list.add(triggerTask);
+            if (CharSequenceUtil.isNotBlank(t.getCronStr())){
+                TriggerTask triggerTask = createTriggerTask(t);
+                list.add(triggerTask);
+            }
+
         });
         //将任务列表注册到定时器
         scheduledTaskRegistrar.setTriggerTasksList(list);
