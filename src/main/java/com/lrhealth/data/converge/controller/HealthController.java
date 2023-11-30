@@ -2,9 +2,12 @@ package com.lrhealth.data.converge.controller;
 
 import cn.hutool.core.date.DateUtil;
 import com.lrhealth.data.converge.common.util.ResResult;
+import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.model.dto.MonitorMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
 
 /**
  * 健康检查
@@ -15,6 +18,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController()
 @RequestMapping("/health")
 public class HealthController {
+    @Resource
+    private ConvMonitorService convMonitorService;
+
     private static final String OK = "ok";
 
     /**
@@ -48,6 +54,7 @@ public class HealthController {
      */
     @PostMapping(value = "/monitor")
     public ResResult<Void> monitor(@RequestBody MonitorMsg monitorMsg) {
+        convMonitorService.handleMonitorMsg(monitorMsg);
         return ResResult.success();
     }
 
