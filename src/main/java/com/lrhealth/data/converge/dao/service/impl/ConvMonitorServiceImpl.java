@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.dao.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
 import com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
@@ -31,12 +30,12 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         if (Objects.isNull(monitorMsg)) {
             return;
         }
-        List<ConvFeNode> feNodeList = diConvFeNodeMapper.selectList(new QueryWrapper<ConvFeNode>()
-                .eq("ip", monitorMsg.getSourceIp())
-                .eq("port", Integer.parseInt(monitorMsg.getSourcePort())));
+        List<ConvFeNode> feNodeList = diConvFeNodeMapper.selectList(new LambdaQueryWrapper<ConvFeNode>()
+                .eq(ConvFeNode::getIp, monitorMsg.getSourceIp())
+                .eq(ConvFeNode::getPort, Integer.parseInt(monitorMsg.getSourcePort())));
         if (CollectionUtils.isNotEmpty(feNodeList)) {
             for (ConvFeNode convFeNode : feNodeList) {
-                ConvMonitor convMonitor = convMonitorMapper.selectOne(new QueryWrapper<ConvMonitor>().eq("conv_fe_node_id", convFeNode.getId()));
+                ConvMonitor convMonitor = convMonitorMapper.selectOne(new LambdaQueryWrapper<ConvMonitor>().eq(ConvMonitor::getConvFeNodeId, convFeNode.getId()));
                 ConvMonitor buildConvMonitor = buildConvMonitor(convMonitor, monitorMsg, convFeNode);
                 if (convMonitor == null) {
                     convMonitorMapper.insert(buildConvMonitor);
@@ -57,15 +56,18 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      * @return 监测信息
      */
     private ConvMonitor buildConvMonitor(ConvMonitor convMonitor, MonitorMsg message, ConvFeNode convFeNode) {
-        ConvMonitor monitor;
+        ConvMonitor monitor = new ConvMonitor();
         if (convMonitor == null) {
-            monitor = new ConvMonitor();
             monitor.setConvFeNodeId(convFeNode.getId());
             monitor.setSysCode(convFeNode.getSysCode());
             monitor.setOrgCode(convFeNode.getOrgCode());
         } else {
-            monitor = BeanUtil.copyProperties(convMonitor, ConvMonitor.class);
+            monitor.setId(convMonitor.getId());
+            monitor.setConvFeNodeId(convMonitor.getConvFeNodeId());
+            monitor.setSysCode(convMonitor.getSysCode());
+            monitor.setOrgCode(convMonitor.getOrgCode());
         }
+        monitor.setMonitorType(message.getMsgType());
         monitor.setExceptionDes(message.getMsg());
         monitor.setExceptionTime(message.getSendTime());
         monitor.setState(convFeNode.getState());

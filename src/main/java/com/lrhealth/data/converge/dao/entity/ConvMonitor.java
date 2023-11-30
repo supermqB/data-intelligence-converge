@@ -7,9 +7,7 @@ package com.lrhealth.data.converge.dao.entity;
  * @since 2023-11-30
  */
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.util.Date;
@@ -23,24 +21,13 @@ public class ConvMonitor {
     @TableId(type = IdType.AUTO)
     private Long id;
     /**
-     * 名称
-     */
-    private String name;
-    /**
-     * 机构名称
-     */
-    private String institutionName;
-    /**
-     * 系统名称
-     */
-    private String systemName;
-    /**
      * 上下线状态， 0-离线，1-在线
      */
     private Integer state;
     /**
      * 异常描述
      */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String exceptionDes;
     /**
      * 异常发生时间
