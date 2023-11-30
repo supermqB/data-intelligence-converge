@@ -31,6 +31,7 @@ public class ConvTunnel implements Serializable {
 
 
     /**
+     * 库表采集-库到文件
      * 0-不压缩，1-压缩
      */
     private String zipFlag;
@@ -91,27 +92,27 @@ public class ConvTunnel implements Serializable {
     private Long id;
 
     /**
-     * 数据库类型
+     * 读库的的数据库类型
      */
     private String dbType;
 
     /**
-     * jdbc链接地址
+     * 读库的jdbc链接地址
      */
     private String jdbcUrl;
 
     /**
-     * 用户名
+     * 读库的用户名
      */
     private String dbUserName;
 
     /**
-     * 密码
+     * 读库的密码
      */
     private String dbPasswd;
 
     /**
-     * 采集范围
+     * 采集范围（读库的表名称）
      */
     private String collectRange;
 
@@ -121,12 +122,14 @@ public class ConvTunnel implements Serializable {
     private String cronStr;
 
     /**
+     * 库表采集-库到文件
      * 数据分片大小
      */
     private Long dataShardSize;
 
     /**
-     * 是否加密：0-不加密，1-加密
+     * 库表采集-库到文件
+     * 文件是否加密：0-不加密，1-加密
      */
     private String encryptionFlag;
 
@@ -135,10 +138,64 @@ public class ConvTunnel implements Serializable {
      */
     private Integer status;
 
+    /**
+     * 文件模式
+     * 扫描目录
+     */
     private String fileModeCollectDir;
 
+    /**
+     * 队列模式
+     * 消息主题
+     */
     private String mqModeTopicName;
 
+    /**
+     * 结构化数据标识
+     * 1-结构化数据，2-非结构化数据
+     */
     private Integer structuredDataFlag;
 
+    /**
+     * 库表采集模式
+     * 0-库到文件 1-库到库
+     */
+    private Integer collectModel;
+
+    /**
+     * 采集类型
+     * 1-全量采集 2-增量采集
+     */
+    private Integer colType;
+
+    /**
+     * 库表采集-全量采集
+     * 全量采集开始时间
+     */
+    private LocalDateTime fullColStartTime;
+
+    /**
+     * 库表采集-全量采集
+     * 全量采集结束时间
+     */
+    private LocalDateTime fullColEndTime;
+
+
+    /**
+     * 库表采集-库到库
+     * 写库的jdbc链接地址
+     */
+    private String jdbcUrlForIn;
+
+    /**
+     * 库表采集-库到库
+     * 写库的用户名
+     */
+    private String dbUserNameForIn;
+
+    /**
+     * 库表采集-库到库
+     * 写库的密码
+     */
+    private String dbPasswdForIn;
 }

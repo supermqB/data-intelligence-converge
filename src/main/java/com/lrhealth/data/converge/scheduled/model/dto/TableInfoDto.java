@@ -17,9 +17,18 @@ import java.util.List;
 @AllArgsConstructor
 public class TableInfoDto {
 
+    /**
+     * 表名称
+     */
     private String tableName;
 
+    /**
+     * sql语句
+     */
     private String sqlQuery;
 
+    /**
+     * 增量字段
+     */
     private List<String> seqFields;
 }

@@ -25,10 +25,15 @@ public class TunnelMessageDTO {
      */
     private String name;
 
+    /**
+     * 系统编码
+     */
     private String sysCode;
 
     /**
+     * 管道动作
      * 动作:add/update/delete
+     * 目前在汇聚主动调用前置机时使用
      */
     private String action;
 
@@ -43,7 +48,7 @@ public class TunnelMessageDTO {
     private String cronStr;
 
     /**
-     * 库表信息
+     * 库表模式-库表信息
      */
     private JdbcInfoDto jdbcInfoDto;
 
@@ -73,7 +78,5 @@ public class TunnelMessageDTO {
      * 文件采集范围
      */
     private String collectRange;
-
-    private String mqModeTopicName;
 
 }

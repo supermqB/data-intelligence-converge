@@ -72,11 +72,16 @@ public class DbSqlServiceImpl implements DbSqlService {
         // 刷新配置,只需要执行一次
         // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
         // 刷新tables表的数据
-        String refreshSql = "ANALYZE TABLE " + odsTableName + " COMPUTE STATISTICS FOR ALL COLUMNS SIZE AUTO;";
-        jdbcRepository.execSql(refreshSql);
+//        String refreshSql = "ANALYZE TABLE " + odsTableName + " COMPUTE STATISTICS FOR ALL COLUMNS SIZE AUTO;";
+//        jdbcRepository.execSql(refreshSql);
         // 获取每行的平均大小
         String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
-        return jdbcRepository.execSql(selectSql);
+        String result = jdbcRepository.execSql(selectSql);
+        // todo: 暂时给一个默认值
+        if (CharSequenceUtil.isBlank(result)){
+            result = "80000";
+        }
+        return result;
     }
 
 

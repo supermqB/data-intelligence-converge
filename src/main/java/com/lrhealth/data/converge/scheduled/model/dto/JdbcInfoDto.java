@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -18,22 +19,66 @@ import java.util.List;
 public class JdbcInfoDto {
 
     /**
-     * jdbc链接地址
+     * 读库的jdbc链接地址
      */
     private String jdbcUrl;
 
     /**
-     * 数据库用户名
+     * 读库的用户名
      */
     private String dbUserName;
 
     /**
-     * 数据库密码
+     * 读库的密码
      */
     private String dbPasswd;
+
+    /**
+     * 采集模式
+     * 0-库到文件 1-库到库
+     */
+    private Integer collectModel;
+
+    /**
+     * 采集类型
+     * 1-全量采集 2-增量采集
+     */
+    private Integer colType;
+
+    /**
+     * 库表采集-全量采集
+     * 全量采集开始时间
+     */
+    private LocalDateTime fullColStartTime;
+
+    /**
+     * 库表采集-全量采集
+     * 全量采集结束时间
+     */
+    private LocalDateTime fullColEndTime;
+
+
+    /**
+     * 库表采集-库到库
+     * 写库的jdbc链接地址
+     */
+    private String jdbcUrlForIn;
+
+    /**
+     * 库表采集-库到库
+     * 写库的用户名
+     */
+    private String dbUserNameForIn;
+
+    /**
+     * 库表采集-库到库
+     * 写库的密码
+     */
+    private String dbPasswdForIn;
 
     /**
      * 库表采集范围和sql查询语句
      */
     private List<TableInfoDto> tableInfoDtoList;
+
 }
