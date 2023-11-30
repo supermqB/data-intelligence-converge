@@ -8,25 +8,22 @@ import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.scheduled.DownloadFileTask;
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvCollectField;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.scheduled.dao.service.ConvCollectFieldService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvFeNodeService;
 import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.dto.*;
 import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
 import com.lrhealth.data.model.original.model.OriginalModel;
-import com.lrhealth.data.model.original.model.OriginalModelColumn;
-import com.lrhealth.data.model.original.service.OriginalModelColumnService;
 import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -42,11 +39,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     @Resource
     private ConvFeNodeService feNodeService;
     @Resource
-    private OriginalModelService originalModelService;
-    @Resource
-    private OriginalModelColumnService originalModelColumnService;
+    private ConvCollectFieldService collectFieldService;
     @Resource
     private ConvergeService convergeService;
+    @Resource
+    private OriginalModelService originalModelService;
 
 
     @Override
@@ -117,7 +114,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                         jdbcInfoDto.setDbPasswdForIn(tunnel.getDbPasswdForIn());
                     }
                     // 表以及对应的sql信息
-                    assembleTableInfoMessage(tunnel.getCollectRange(), jdbcInfoDto);
+                    assembleTableInfoMessage(tunnel, jdbcInfoDto);
                 }
                 tunnelMessageDTO.setJdbcInfoDto(jdbcInfoDto);
             }
@@ -126,18 +123,27 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
 
-    private void assembleTableInfoMessage(String collectRange, JdbcInfoDto jdbcInfoDto){
+    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto){
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
-        List<String> tableList = Arrays.asList(collectRange.split(","));
+        List<String> tableList = Arrays.asList(tunnel.getCollectRange().split(","));
+        // sql语句
         List<OriginalModel> modelList = originalModelService.list(new LambdaQueryWrapper<OriginalModel>()
-                .in(OriginalModel::getNameEn, tableList).eq(OriginalModel::getDelFlag, 0));
+                        .in(OriginalModel::getNameEn, tableList)
+                        .eq(OriginalModel::getSysCode, tunnel.getSysCode())
+                        .eq(OriginalModel::getDelFlag, 0));
+        // 增量字段
+        List<ConvCollectField> seqFieldList = collectFieldService.list(new LambdaQueryWrapper<ConvCollectField>()
+                        .in(ConvCollectField::getTableName, tableList)
+                        .eq(ConvCollectField::getTunnelId, tunnel.getId())
+                        .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
+        Map<String, String> seqFieldMap = seqFieldList.stream().collect(Collectors.toMap(ConvCollectField::getTableName, ConvCollectField::getConditionField));
+
         modelList.forEach(model -> {
             TableInfoDto tableInfoDto = new TableInfoDto();
             tableInfoDto.setTableName(model.getNameEn());
             tableInfoDto.setSqlQuery(model.getModelQuerySql());
-            List<OriginalModelColumn> seqColumns = originalModelColumnService.list(new LambdaQueryWrapper<OriginalModelColumn>().eq(OriginalModelColumn::getModelId, model.getId()).eq(OriginalModelColumn::getSeqFlag, "1").eq(OriginalModelColumn::getDelFlag, 0));
-            tableInfoDto.setSeqFields(seqColumns.stream().map(OriginalModelColumn::getNameEn).collect(Collectors.toList()));
+            tableInfoDto.setSeqFields(Collections.singletonList(seqFieldMap.get(model.getNameEn())));
             tableInfoDtoList.add(tableInfoDto);
         });
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
