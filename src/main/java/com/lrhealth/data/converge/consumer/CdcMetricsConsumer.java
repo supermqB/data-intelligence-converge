@@ -53,9 +53,7 @@ public class CdcMetricsConsumer extends CdcCon {
                 continue;
             }
             ConvTask task = updateConvTask(first, tunnel);
-            if (task != null) {
-                flushConvCdcRecord(task, first, records);
-            }
+            flushConvCdcRecord(task, first, records);
         }
     }
 
@@ -128,11 +126,14 @@ public class CdcMetricsConsumer extends CdcCon {
 
         // @formatter:off
         ConvTask task = convTaskService.getOne(new LambdaQueryWrapper<ConvTask>()
-            .eq(ConvTask::getFedTaskId, fedTaskId)
+            .eq(ConvTask::getFedTaskId, fedTaskId.intValue())
             .eq(ConvTask::getTunnelId, tunnelId), false);
         if (task == null) {
-            log.error("Task does not exist. tunnelId:[{}], fedTaskId:[{}]", tunnelId, fedTaskId);
-            return null;
+            log.info("Task does not exist. tunnelId:[{}], fedTaskId:[{}]", tunnelId, fedTaskId);
+            task = ConvTask.builder()
+                .fedTaskId(fedTaskId.intValue())
+                .tunnelId(tunnelId)
+                .build();
         }
 
         task.setStatus(7);

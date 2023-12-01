@@ -12,5 +12,6 @@ spring:
     active: local
 
 cdc:
-  metrics: false
+  metrics: true
   storage: true
+
