@@ -14,7 +14,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 @Data
-@TableName("conv_monitor_bak")
+@TableName("conv_monitor")
 public class ConvMonitor  implements Serializable {
     /**
      * 主键id
