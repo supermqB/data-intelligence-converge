@@ -10,11 +10,12 @@ package com.lrhealth.data.converge.dao.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Data
-@TableName("conv_monitor")
-public class ConvMonitor {
+@TableName("conv_monitor_bak")
+public class ConvMonitor  implements Serializable {
     /**
      * 主键id
      */
