@@ -36,7 +36,7 @@ public class ConvMonitorTask {
     private static final String FE_NODE_PREFIX = "fe_node:";
 
     /**
-     * 前置机监测信息同步定时任务
+     * 前置机异常状态监测定时任务
      */
     @Scheduled(cron = "0 */5 * * * ?")
     public void monitorConvTask() {
@@ -44,30 +44,27 @@ public class ConvMonitorTask {
         if (CollectionUtils.isEmpty(allFeByPrefix)) {
             return;
         }
-        //获取当前离线机器信息
-        List<ConvFeNode> offLineFeNodes = new ArrayList<>();
+        //获取缓存中所有前置机当前信息
+        List<ConvFeNode> allFeNodes = new ArrayList<>();
         for (String feByPrefix : allFeByPrefix) {
             Object cacheValue = convCache.getObject(feByPrefix);
             if (cacheValue == null) {
                 continue;
             }
             List<ConvFeNode> feNodeList = JSON.parseArray(JSON.toJSONString(cacheValue), ConvFeNode.class);
-            List<ConvFeNode> nodes = feNodeList.stream().filter(ele -> ele.getState() == 0).collect(Collectors.toList());
-            if (CollectionUtils.isNotEmpty(nodes)){
-                offLineFeNodes.addAll(nodes);
+            if (CollectionUtils.isNotEmpty(feNodeList)){
+                allFeNodes.addAll(feNodeList);
             }
         }
-        if (CollectionUtils.isEmpty(offLineFeNodes)) {
-            return;
-        }
-        for (ConvFeNode offLineFeNode : offLineFeNodes) {
-            long between = DateUtil.between(offLineFeNode.getUpdateTime(), new Date(), DateUnit.MINUTE);
-            if (between > 1) {
-                MonitorMsg monitorMsg = new MonitorMsg();
-                monitorMsg.setMsg(offLineFeNode.getName() + "已离线" + between + "分钟");
-                convMonitorService.processConvMonitor(offLineFeNode, monitorMsg);
+        if (CollectionUtils.isNotEmpty(allFeNodes)) {
+            for (ConvFeNode feNode : allFeNodes) {
+                long between = DateUtil.between(feNode.getUpdateTime(), new Date(), DateUnit.MINUTE);
+                if (between > 10) {
+                    MonitorMsg monitorMsg = new MonitorMsg();
+                    monitorMsg.setMsg(feNode.getName() + "已离线" + between + "分钟");
+                    convMonitorService.processConvMonitor(feNode, monitorMsg);
+                }
             }
         }
-
     }
 }

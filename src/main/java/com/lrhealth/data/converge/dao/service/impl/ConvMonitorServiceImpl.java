@@ -54,8 +54,8 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         List<ConvFeNode> nodeList = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(feNodeList)) {
             for (ConvFeNode convFeNode : feNodeList) {
-                setConvFeNodeProperties(convFeNode,message);
                 processConvMonitor(convFeNode, message);
+                setConvFeNodeProperties(convFeNode,message);
                 nodeList.add(convFeNode);
             }
             //更新缓存中前置机信息
@@ -90,8 +90,9 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
             convMonitor = JSON.parseObject(JSON.toJSONString(monitorCache), ConvMonitor.class);
         }
         monitor = buildConvMonitor(convMonitor, message, convFeNode);
-        //异常消息 有异常时会更新库和缓存 无异常只更新缓存
-        if (StringUtils.isNotEmpty(message.getMsg())) {
+        int currentState = StringUtils.isEmpty(message.getMsg()) ? 0 : 1;
+        //有异常 或 状态变更时 会更新库和缓存
+        if (StringUtils.isNotEmpty(message.getMsg()) ||  currentState != convFeNode.getState()) {
             if (convMonitor == null) {
                 convMonitorMapper.insert(monitor);
             } else {
