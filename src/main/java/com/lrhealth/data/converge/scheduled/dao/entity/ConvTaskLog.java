@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@TableName("di_conv_task_log")
+@TableName("conv_task_log")
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor

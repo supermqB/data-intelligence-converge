@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-@TableName("di_conv_task_result_cdc")
+@TableName("conv_task_result_cdc")
 public class ConvTaskResultCdc implements Serializable {
 
     private static final long serialVersionUID = 1L;

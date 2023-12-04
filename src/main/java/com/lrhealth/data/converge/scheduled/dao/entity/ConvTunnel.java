@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@TableName("di_conv_tunnel")
+@TableName("conv_tunnel")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

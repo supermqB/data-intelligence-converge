@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("di_conv_datax_config")
+@TableName("conv_datax_config")
 public class ConvDataXJob implements Serializable {
 
     private static final long serialVersionUID = 1L;

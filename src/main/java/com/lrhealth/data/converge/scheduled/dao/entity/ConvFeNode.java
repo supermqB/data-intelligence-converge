@@ -17,7 +17,7 @@ import java.util.Date;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@TableName("di_conv_fe_node")
+@TableName("conv_fe_node")
 public class ConvFeNode implements Serializable {
 
     private static final long serialVersionUID = 1L;

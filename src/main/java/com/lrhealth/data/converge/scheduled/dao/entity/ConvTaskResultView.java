@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-@TableName("di_conv_task_result_view")
+@TableName("conv_task_result_view")
 public class ConvTaskResultView implements Serializable {
 
     private static final long serialVersionUID = 1L;
