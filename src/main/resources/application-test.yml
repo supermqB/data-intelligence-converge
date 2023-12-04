@@ -27,7 +27,7 @@ spring:
   datasource:
     ods:
       type: com.zaxxer.hikari.HikariDataSource
-      jdbcUrl: jdbc:oceanbase://172.16.29.14:2883/ods_test?rewriteBatchedStatements=TRUE
+      jdbcUrl: jdbc:oceanbase://172.16.29.14:2883/ods_test_gz?rewriteBatchedStatements=TRUE
       driver-class-name: com.oceanbase.jdbc.Driver
       username: ENC(dzlQtlalf2wmim1mILlZAbaIrOABKer8)
       password: ENC(poiqgUqqGcqKD2zPoyBXC7xSR6E1XbyK)
@@ -49,7 +49,7 @@ spring:
     rdcp-ext:
       type: com.zaxxer.hikari.HikariDataSource
       driver-class-name: org.postgresql.Driver
-      jdbcUrl: jdbc:postgresql://172.16.29.33:5432/rdcp_ext?currentSchema=test&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&allowMultiQueries=true
+      jdbcUrl: jdbc:postgresql://172.16.29.33:5432/rdcp_ext_gz?currentSchema=test&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&allowMultiQueries=true
       username: ENC(ow4uAAjEcKiszfWdUDJ8O4r/tKpx0pL+)
       password: ENC(mv+m1KiMKN9uw8WNWKNrL62RnsC0Ow43)
       pool-name: HikariCP-rdcp-ext
