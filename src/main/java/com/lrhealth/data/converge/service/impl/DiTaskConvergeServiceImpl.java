@@ -266,7 +266,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         synchronized (this) {
             if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName())) {
                 // 创建表
-                List<ColumnDbBo> collect = originalModelColumns.stream().map(columnInfo -> ColumnDbBo.builder().columnName(columnInfo.getNameEn()).build()).collect(Collectors.toList());
+                List<ColumnDbBo> collect = originalModelColumns.stream().map(columnInfo -> ColumnDbBo.builder().columnName(columnInfo.getNameEn()).fieldType(columnInfo.getFieldType()).fieldLength(columnInfo.getFieldTypeLength()).build()).collect(Collectors.toList());
                 dbSqlService.createTable(collect, xds.getOdsTableName());
                 AsyncFactory.convTaskLog(taskId, "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
             }
