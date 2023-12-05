@@ -52,7 +52,8 @@ public class MonitorMsg {
         BATCH_TASK("2", "批量采集任务执行"),
         CDC_STA("3", "CDC程序状态监测"),
         CDC_TASK("4", "前置机程序状态监测"),
-
+        READER_DB_CHECK("5", "目标数据库连接检查"),
+        WRITER_DB_CHECK("6", "中心数据库连接检查")
         ;
         private final String msgTypeCode;
         private final String msgTypeDesc;
