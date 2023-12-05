@@ -69,7 +69,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         Xds xds = getXdsInfoById(taskDto.getXdsId());
         xds.setDataConvergeEndTime(taskDto.getEndTime());
         xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName(), xds.getSysCode()));
-        if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())){
+        if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())) {
             xds.setDataCount(Integer.valueOf(taskDto.getCountNumber()));
         }
         return updateXdsStatus(xds, XdsStatusEnum.COMPLETED.getCode(), EMPTY);
@@ -183,7 +183,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         }
         List<System> systemList = systemService.list(new LambdaQueryWrapper<System>().eq(System::getSystemCode, dbXdsMessageDto.getSysCode())
                 .eq(System::getDelFlag, 0));
-        if (CollUtil.isEmpty(systemList)){
+        if (CollUtil.isEmpty(systemList)) {
             return;
         }
         Xds xds = Xds.builder()
@@ -203,15 +203,15 @@ public class XdsInfoServiceImpl implements XdsInfoService {
 
     @Override
     public void fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
+        int dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
         String avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName());
         // 文件中的数据写入后消耗的数据库容量
-        long dataSize = dbXdsMessageDto.getDataCount() * Long.parseLong(avgRowLength);
-
+        long dataSize = dataCount * Long.parseLong(avgRowLength);
         Xds updateXds = Xds.builder()
                 .id(dbXdsMessageDto.getId())
                 .dataConvergeEndTime(LocalDateTime.now())
                 .dataConvergeStatus(XdsStatusEnum.COMPLETED.getCode())
-                .dataCount(dbXdsMessageDto.getDataCount())
+                .dataCount(dataCount)
                 .dataSize(dataSize)
                 .updateTime(LocalDateTime.now())
                 .build();
@@ -229,7 +229,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
      * @return XDS信息
      */
     private Xds build(TaskDto taskDto, FileExecInfoDTO config) {
-        Xds xds =  Xds.builder()
+        Xds xds = Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .convergeMethod(config.getConvergeMethod())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
@@ -244,7 +244,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .createBy(CommonConstant.DEFAULT_USER)
                 .build();
         // 整合文件不知道表名的情况
-        if (isNotBlank(taskDto.getOdsTableName())){
+        if (isNotBlank(taskDto.getOdsTableName())) {
             xds.setOdsTableName(taskDto.getOdsTableName());
             xds.setOdsModelName(OdsModelUtil.getModelName(config.getSysCode(), taskDto.getOdsTableName()));
         }
