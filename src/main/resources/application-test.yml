@@ -1,4 +1,3 @@
-# 172.16.29.73
 
 spring:
   #数据冶理&标准使用的redis配置
@@ -150,9 +149,9 @@ lrhealth:
     dataSaveCron: 0/20 * * * * *
 
 datax:
-  softpath: /opt/datax/
+  softpath: /opt/soft/datax/
   exec: bin/datax.py
-  home: /opt/datax
+  home: /opt/soft/datax
   json-path: /tmp/fep/job
   execute-number-limit: 0
   collect-multith: 0
