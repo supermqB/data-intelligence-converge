@@ -143,4 +143,14 @@ public class QueryParserUtil {
         }
         return db;
     }
+
+    public static String getDbSchema(String url) {
+        Pattern p = Pattern.compile("jdbc:(?<db>\\w+):.*((//)|@)(?<host>.+):(?<port>\\d+)(/|(;databaseName=)|:)(?<dbName>\\w+)\\??.*");
+        Matcher m = p.matcher(url);
+        String dbName = null;
+        if(m.find()) {
+            dbName = m.group("dbName");
+        }
+        return dbName;
+    }
 }

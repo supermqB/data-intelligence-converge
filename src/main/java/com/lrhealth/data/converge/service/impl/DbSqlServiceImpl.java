@@ -3,8 +3,10 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
+import com.lrhealth.data.converge.scheduled.utils.QueryParserUtil;
 import com.lrhealth.data.converge.service.DbSqlService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -17,6 +19,9 @@ import java.util.List;
 @Slf4j
 @Service
 public class DbSqlServiceImpl implements DbSqlService {
+
+    @Value("${spring.datasource.ods.jdbcUrl}")
+    private String jdbcUrl;
 
     @Resource
     private JDBCRepository jdbcRepository;
@@ -62,7 +67,13 @@ public class DbSqlServiceImpl implements DbSqlService {
 
     @Override
     public boolean checkOdsTableExist(String odsTableName) {
-        String checkSql = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '" + odsTableName + "';";
+        String dbSchema = QueryParserUtil.getDbSchema(jdbcUrl);
+        String checkSql;
+        if (CharSequenceUtil.isNotBlank(dbSchema)){
+            checkSql = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '" + odsTableName + "' and TABLE_SCHEMA = '" + dbSchema + "';";
+        }else {
+            checkSql = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '" + odsTableName + "';";
+        }
         String result = jdbcRepository.execSql(checkSql);
         return (result != null);
     }
