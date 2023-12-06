@@ -41,6 +41,21 @@ public class MonitorMsg {
     private Date sendTime;
 
     /**
+     * 状态
+     */
+    private boolean status;
+
+    /**
+     * 管道ID
+     */
+    private Long tunnelId;
+
+    /**
+     * 机构编码
+     */
+    private String orgCode;
+
+    /**
      * 消息类型
      */
     @Getter
