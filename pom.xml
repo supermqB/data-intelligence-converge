@@ -12,6 +12,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>lr-rd-rdcp-data-converge</artifactId>
     <packaging>jar</packaging>
+    <version>0.0.1-SNAPSHOT</version>
 
     <properties>
         <deploy.mode>local</deploy.mode>
