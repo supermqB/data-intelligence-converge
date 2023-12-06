@@ -142,8 +142,6 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         List<ConvFeNode> feNodeList = diConvFeNodeMapper.selectList(queryWrapper);
         if (CollectionUtils.isNotEmpty(feNodeList)) {
             convCache.putObject(feNodeCacheKey, JSON.toJSONString(feNodeList.get(0)));
-            ConvFeNode convFeNode = feNodeList.get(0);
-            //convFeNode.set
             return feNodeList.get(0);
         }
         return null;
