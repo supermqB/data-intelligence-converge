@@ -50,10 +50,8 @@ public class ConvMonitorTask {
             if (cacheValue == null) {
                 continue;
             }
-            List<ConvFeNode> feNodeList = JSON.parseArray(JSON.toJSONString(cacheValue), ConvFeNode.class);
-            if (CollectionUtils.isNotEmpty(feNodeList)){
-                allFeNodes.addAll(feNodeList);
-            }
+            ConvFeNode convFeNode = JSON.parseObject(JSON.toJSONString(cacheValue), ConvFeNode.class);
+            allFeNodes.add(convFeNode);
         }
         if (CollectionUtils.isNotEmpty(allFeNodes)) {
             for (ConvFeNode feNode : allFeNodes) {

@@ -1,9 +1,9 @@
 package com.lrhealth.data.converge.model.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.Getter;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -15,7 +15,20 @@ import java.util.Date;
  * @since 2023/11/28 15:56
  */
 @Data
-public class MonitorMsg {
+public class MonitorMsg implements Serializable {
+    /**
+     * 状态
+     */
+    private Boolean status;
+
+    /**
+     * 管道ID
+     */
+    private Long tunnelId;
+    /**
+     * 机构编码
+     */
+    private String orgCode;
     /**
      * 来源应用IP
      */
@@ -37,39 +50,19 @@ public class MonitorMsg {
     /**
      * 发送时间
      */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date sendTime;
-
-    /**
-     * 状态
-     */
-    private boolean status;
-
-    /**
-     * 管道ID
-     */
-    private Long tunnelId;
-
-    /**
-     * 机构编码
-     */
-    private String orgCode;
 
     /**
      * 消息类型
      */
     @Getter
     public enum MsgTypeEnum {
-        /**
-         * 消息类型
-         */
         FEP_STA("1", "前置机程序状态监测"),
         BATCH_TASK("2", "批量采集任务执行"),
         CDC_STA("3", "CDC程序状态监测"),
-        CDC_TASK("4", "前置机程序状态监测"),
+        CDC_TASK("4", "CDC采集任务执行"),
         READER_DB_CHECK("5", "目标数据库连接检查"),
-        WRITER_DB_CHECK("6", "中心数据库连接检查")
-        ;
+        WRITER_DB_CHECK("6", "中心数据库连接检查");
         private final String msgTypeCode;
         private final String msgTypeDesc;
 
