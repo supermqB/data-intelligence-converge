@@ -3,7 +3,7 @@ package com.lrhealth.data.converge.consumer;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.ReUtil;
-import com.lrhealth.data.common.exception.CommonException;
+import cn.hutool.core.util.StrUtil;
 import com.lrhealth.data.converge.model.dto.CdcRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
@@ -14,12 +14,18 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import java.sql.*;
-import java.util.*;
+import java.sql.BatchUpdateException;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import static cn.hutool.core.text.CharSequenceUtil.*;
 
 /**
  * CDC存储消费者
@@ -32,9 +38,9 @@ import static cn.hutool.core.text.CharSequenceUtil.*;
 @ConditionalOnProperty(name = "cdc.storage", havingValue = "true")
 public class CdcStorageConsumer extends CdcCon {
 
-    public static final Pattern EXCEPTION_BATCH_UPDATE_DATA_TOO_LONG_FOR_COL = Pattern.compile("(?<=Data too long for column ').+(?=' at row)");
-    private static final String GROUP_ID = "storage";
-    private static final String ALTER_TABLE_COLUMN = "ALTER TABLE %s MODIFY %s VARCHAR2(%s);";
+    public final Pattern EXCEPTION_BATCH_UPDATE_DATA_TOO_LONG_FOR_COL = Pattern.compile("(?<=Data too long for column ').+(?=' at row)");
+    private final String GROUP_ID = "storage";
+    private final String ALTER_TABLE_COLUMN = "ALTER TABLE %s MODIFY %s VARCHAR2(%s);";
     private Connection connection;
 
     @Resource(name = "odsDataSource")
@@ -59,25 +65,27 @@ public class CdcStorageConsumer extends CdcCon {
             list.add(cdcRecord);
             map.put(key, list);
         }
-        generateBatchInsertStatement(map);
+        generateBatchUpsertStatement(map);
     }
 
     // Generate and execute the BATCH INSERT statement
-    private void generateBatchInsertStatement(Map<String, List<CdcRecord>> map) throws Exception {
+    private void generateBatchUpsertStatement(Map<String, List<CdcRecord>> map) throws Exception {
         if (CollUtil.isEmpty(map)) {
             return;
         }
+
         for (Map.Entry<String, List<CdcRecord>> entry : map.entrySet()) {
             String tableName = entry.getKey();
             List<CdcRecord> records = entry.getValue();
-            if (isBlank(tableName) || CollUtil.isEmpty(records)) {
+            if (StrUtil.isBlank(tableName) || CollUtil.isEmpty(records)) {
                 continue;
             }
+
             if (!doesTableExist(tableName, records.get(0).getSchema())) {
-                String msg = String.format("Table [%s] does not exist.", tableName);
-                log.error(msg);
-                throw new CommonException(msg);
+                log.error("Table [{}] does not exist.", tableName);
+                continue;
             }
+
             List<TreeMap<String, Object>> dataList = records.stream().map(CdcRecord::getValue).collect(Collectors.toList());
 
             Map<String, Integer> fieldLenMap = new HashMap<>();
@@ -89,14 +97,46 @@ public class CdcStorageConsumer extends CdcCon {
                 });
             }
 
-            // Prepare the batch INSERT statement using PreparedStatement
-            PreparedStatement preparedStatement = generatePreparedStatement(connection, dataList.get(0), tableName);
-            // Execute the batch INSERT statement
+            StringBuilder updateClause = new StringBuilder();
+            List<String> columnNames = new ArrayList<>(dataList.get(0).keySet());
+
+            for (int i = 0; i < columnNames.size(); i++) {
+                if (i > 0) {
+                    updateClause.append(", ");
+                }
+                updateClause.append(columnNames.get(i)).append(" = VALUES(").append(columnNames.get(i)).append(")");
+            }
+
+            StringBuilder upsertQuery = new StringBuilder();
+            upsertQuery.append("INSERT INTO ").append(tableName).append(" (");
+
+            List<String> columns = new ArrayList<>(dataList.get(0).keySet());
+            upsertQuery.append(StrUtil.join(", ", columns));
+
+            upsertQuery.append(") VALUES (");
+            String placeholders = columns.stream().map(column -> "?").collect(Collectors.joining(", "));
+            upsertQuery.append(placeholders).append(")");
+            upsertQuery.append(" ON DUPLICATE KEY UPDATE ");
+
+            columns.forEach(column -> updateClause.append(", ").append(column).append(" = VALUES(").append(column).append(")"));
+
+            upsertQuery.append(updateClause);
+
+            PreparedStatement preparedStatement = null;
+            try {
+                preparedStatement = connection.prepareStatement(upsertQuery.toString());
+            } catch (SQLException e) {
+                log.error("An exception occurred during prepare-statement. upsertQuery: {}", upsertQuery);
+            }
             try {
                 executePreparedStatement(preparedStatement, dataList);
             } catch (BatchUpdateException e) {
                 exceptionHanding(e, fieldLenMap, tableName);
                 executePreparedStatement(preparedStatement, dataList);
+            } finally {
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                }
             }
         }
     }
@@ -104,36 +144,6 @@ public class CdcStorageConsumer extends CdcCon {
     private boolean doesTableExist(String tableName, String schema) throws SQLException {
         DatabaseMetaData metadata = connection.getMetaData();
         return metadata.getTables(null, schema, tableName, null).next();
-    }
-
-    private PreparedStatement generatePreparedStatement(Connection connection, TreeMap<String, Object> data, String tableName) {
-        StringBuilder insertQuery = new StringBuilder();
-        StringBuilder valuesPlaceholder = new StringBuilder();
-
-        insertQuery.append("INSERT INTO ").append(tableName).append(" (");
-        valuesPlaceholder.append(") VALUES (");
-        int parameterIndex = 1;
-        for (Map.Entry<String, Object> columnEntry : data.entrySet()) {
-            String columnName = columnEntry.getKey();
-
-            if (parameterIndex > 1) {
-                insertQuery.append(", ");
-                valuesPlaceholder.append(", ");
-            }
-
-            insertQuery.append(columnName);
-            valuesPlaceholder.append("?");
-            parameterIndex++;
-        }
-        insertQuery.append(valuesPlaceholder).append(")");
-
-        PreparedStatement preparedStatement = null;
-        try {
-            preparedStatement = connection.prepareStatement(insertQuery.toString());
-        } catch (SQLException e) {
-            log.error("An exception occurred during prepare-statement. insertQuery: {}", insertQuery);
-        }
-        return preparedStatement;
     }
 
     private void executePreparedStatement(PreparedStatement preparedStatement, List<TreeMap<String, Object>> dataList) throws SQLException {
@@ -165,7 +175,7 @@ public class CdcStorageConsumer extends CdcCon {
 
         // java.sql.BatchUpdateException:Data truncation:(conn=98699)Data too long for column
         String column = ReUtil.getGroup0(EXCEPTION_BATCH_UPDATE_DATA_TOO_LONG_FOR_COL, msg);
-        if (isNotBlank(column)) {
+        if (StrUtil.isNotBlank(column)) {
             Integer len = fieldLenMap.getOrDefault(column, 255 * 2);
             String alterTableFieldLengthSql = String.format(ALTER_TABLE_COLUMN, tableName, column, len);
             connection.createStatement().execute(alterTableFieldLengthSql);
@@ -173,7 +183,7 @@ public class CdcStorageConsumer extends CdcCon {
     }
 
     private int extendFieldLength(Object value, int len) {
-        int i = length(String.valueOf(value));
+        int i = StrUtil.length(String.valueOf(value));
         return i > len ? findClosestPowerOfTwo(i) : len;
     }
 
