@@ -36,9 +36,8 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
     private DiConvTunnelMapper convTunnelMapper;
     @Resource
     private Cache convCache;
-
-    private static final String CONCAT_STR = "*";
-
+    private static final String TUNNEL_CONCAT = "|";
+    private static final String FE_CONCAT = "*";
     private static final String FE_NODE_PREFIX = "fe_node:";
 
     private static final String CONV_MONITOR = "conv_monitor:";
@@ -47,20 +46,21 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
     @Async
     @Override
     public void handleMonitorMsg(MonitorMsg message) {
+        log.info("-------- 监控消息日志 ------> {}",message);
         //查询缓存中前置机信息
         ConvFeNode feNode;
         String feNodeCacheKey;
         if (MonitorMsg.MsgTypeEnum.FEP_STA.getMsgTypeCode().equals(message.getMsgType())
                 || MonitorMsg.MsgTypeEnum.CDC_STA.getMsgTypeCode().equals(message.getMsgType())) {
             feNodeCacheKey = FE_NODE_PREFIX.concat(message.getSourceIp())
-                    .concat(CONCAT_STR).concat(message.getSourcePort())
-                    .concat(CONCAT_STR).concat(message.getOrgCode())
-                    .concat(CONCAT_STR).concat(message.getMsgType());
+                    .concat(FE_CONCAT).concat(message.getSourcePort())
+                    .concat(FE_CONCAT).concat(message.getOrgCode())
+                    .concat(FE_CONCAT).concat(message.getMsgType());
         } else {
             feNodeCacheKey = FE_NODE_PREFIX.concat(message.getSourceIp())
-                    .concat(CONCAT_STR).concat(message.getSourcePort())
-                    .concat(CONCAT_STR).concat(String.valueOf(message.getTunnelId()))
-                    .concat(CONCAT_STR).concat(message.getMsgType());
+                    .concat(TUNNEL_CONCAT).concat(message.getSourcePort())
+                    .concat(TUNNEL_CONCAT).concat(String.valueOf(message.getTunnelId()))
+                    .concat(TUNNEL_CONCAT).concat(message.getMsgType());
         }
         Object cacheValue = convCache.getObject(feNodeCacheKey);
         if (cacheValue == null) {
@@ -95,14 +95,17 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      * @param message    监测消息
      */
     @Override
-    public void processConvMonitor(ConvFeNode convFeNode, MonitorMsg message) {
+    public synchronized void processConvMonitor(ConvFeNode convFeNode, MonitorMsg message) {
         //查询缓存中监视器信息
         Object monitorCache = convCache.getObject(CONV_MONITOR + convFeNode.getId() + message.getMsgType());
         ConvMonitor monitor;
-        ConvMonitor convMonitor;
+        ConvMonitor convMonitor = null;
         if (monitorCache == null) {
-            convMonitor = convMonitorMapper.selectOne(new LambdaQueryWrapper<ConvMonitor>().eq(ConvMonitor::getConvFeNodeId, convFeNode.getId())
+            List<ConvMonitor> convMonitorList = convMonitorMapper.selectList(new LambdaQueryWrapper<ConvMonitor>().eq(ConvMonitor::getConvFeNodeId, convFeNode.getId())
                     .eq(ConvMonitor::getMonitorType, message.getMsgType()));
+            if (CollectionUtils.isNotEmpty(convMonitorList)){
+                convMonitor = convMonitorList.get(0);
+            }
         } else {
             convMonitor = JSON.parseObject(JSON.toJSONString(monitorCache), ConvMonitor.class);
         }
