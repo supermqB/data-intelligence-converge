@@ -50,7 +50,13 @@ public class ConvMonitorTask {
             if (cacheValue == null) {
                 continue;
             }
-            ConvFeNode convFeNode = JSON.parseObject(JSON.toJSONString(cacheValue), ConvFeNode.class);
+            ConvFeNode convFeNode = null;
+            try {
+                convFeNode = JSON.parseObject(JSON.toJSONString(cacheValue), ConvFeNode.class);
+            } catch (Exception e) {
+                log.info("定时任务异常信息处理: feByPre --> {}, cacheValue --> {},e = {}",feByPrefix,cacheValue,e.getMessage());
+                continue;
+            }
             allFeNodes.add(convFeNode);
         }
         if (CollectionUtils.isNotEmpty(allFeNodes)) {
