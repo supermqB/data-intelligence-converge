@@ -2,9 +2,11 @@ package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
+import com.lrhealth.data.converge.model.dto.FepScheduledDto;
 import com.lrhealth.data.converge.scheduled.model.dto.ActiveFepUploadDto;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
+import com.lrhealth.data.converge.service.ScheduleTaskService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -27,6 +29,8 @@ public class FepController {
     private FeTunnelConfigService feTunnelConfigService;
     @Resource
     private XdsInfoService xdsInfoService;
+    @Resource
+    private ScheduleTaskService scheduleTaskService;
 
     @GetMapping("/config")
     public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
@@ -34,7 +38,7 @@ public class FepController {
         try {
             return ResultBase.success(feTunnelConfigService.getFepTunnelConfig(ip, port));
         }catch (Exception e){
-            log.error(ExceptionUtils.getStackTrace(e));
+            log.error("fep get tunnel error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());
         }
     }
@@ -45,7 +49,7 @@ public class FepController {
             feTunnelConfigService.updateFepStatus(activeFepUploadDto);
             return ResultBase.success();
         }catch (Exception e){
-            log.error(ExceptionUtils.getStackTrace(e));
+            log.error("get fep status error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());
         }
     }
@@ -67,7 +71,19 @@ public class FepController {
             xdsInfoService.fepUpdateXds(dbXdsMessageDto);
             return ResultBase.success();
         }catch (Exception e){
-            log.error("db-db xds create error, {}", ExceptionUtils.getStackTrace(e));
+            log.error("db-db xds update error, {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail(e.getMessage());
+        }
+    }
+
+
+    @PostMapping("/task/schedule")
+    public ResultBase<List<FepScheduledDto>> getScheduleTask(@RequestParam("ip") String ip,
+                                                             @RequestParam("port") Integer port){
+        try {
+            return ResultBase.success(scheduleTaskService.getCacheTask(ip, port));
+        }catch (Exception e){
+            log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());
         }
     }

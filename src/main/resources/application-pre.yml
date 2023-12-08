@@ -78,6 +78,7 @@ spring:
     topic:
       cdc: cdc-data
       xds: gove-xds-${spring.profiles.active}
+      fep-task: frontend-reschedule-${spring.profiles.active}
     producer:
       retries: 3
       batch-size: 16384
@@ -135,11 +136,6 @@ jasypt:
 converge:
   filepath: /tmp/file/converge
   backup: /tmp/file/backup
-
-fep:
-  ip: 172.16.29.13
-  port: 18081
-  fileScan: /file/scan
 
 
 lrhealth:
