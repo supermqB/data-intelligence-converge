@@ -47,9 +47,11 @@ public class FepScheduleConsumer {
                 return;
             }
             ConvFeNode convFeNode = feNodeService.getOne(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getId, tunnel.getFrontendId()));
-            // 直接调度-管道id-任务id
-            String key = convFeNode.getIp() + "-" + convFeNode.getPort() + "-" + dto.getTunnelId() + "-" + dto.getTaskId();
-            convCache.putObject(key, dto);
+            // 暂时通过前置机网络情况进行添加任务
+            if (convFeNode.getNetwork() == 2){
+                String key = convFeNode.getIp() + "-" + convFeNode.getPort() + "-" + dto.getTunnelId() + "-" + dto.getTaskId();
+                convCache.putObject(key, dto);
+            }
         }catch (Exception e){
             log.error("task scheduled collect error, {}", ExceptionUtils.getStackTrace(e));
         }

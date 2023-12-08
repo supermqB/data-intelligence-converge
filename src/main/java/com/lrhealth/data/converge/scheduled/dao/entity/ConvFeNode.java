@@ -90,4 +90,9 @@ public class ConvFeNode implements Serializable {
      * aesKey
      */
     private String aesKey;
+
+    /**
+     * 网络情况:0-双向互通,1-单向访问前置机，2-单向访问中心端
+     */
+    private Integer network;
 }
