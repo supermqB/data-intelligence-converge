@@ -104,18 +104,19 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
     /**
      * 处理汇聚监视器信息
      *
-     * @param monitorCache 前置机
+     * @param monitorDTO 前置机
      * @param message      监测消息
      */
     @Override
-    public synchronized void processConvMonitor(MonitorDTO monitorCache, MonitorMsg message) {
+    public synchronized void processConvMonitor(MonitorDTO monitorDTO, MonitorMsg message) {
         Boolean currentStatus = message.getStatus();
-        Boolean cacheStatus = monitorCache.getStatus();
-        ConvMonitor monitor = buildConvMonitor(monitorCache, message);
+        Boolean cacheStatus = monitorDTO.getStatus();
+        ConvMonitor monitor = buildConvMonitor(monitorDTO, message);
         //首次插入 或 有异常 或 状态变更时 操作库
         if (monitor.getId() == null || !currentStatus || !currentStatus.equals(cacheStatus)) {
             if (monitor.getId() == null) {
                 convMonitorMapper.insert(monitor);
+                monitorDTO.setId(monitor.getId());
             } else {
                 convMonitorMapper.updateById(monitor);
             }
@@ -139,7 +140,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
                 .eq(ConvMonitor::getConvFeNodeId, convFeNode.getId())
                 .eq(ConvMonitor::getMonitorType, message.getMsgType())
                 .eq(ConvMonitor::getOrgCode, message.getOrgCode());
-        final List<ConvMonitor> convMonitorList = convMonitorMapper.selectList(queryWrapper);
+        List<ConvMonitor> convMonitorList = convMonitorMapper.selectList(queryWrapper);
         if (CollectionUtils.isNotEmpty(convMonitorList)) {
             monitor.setId(convMonitorList.get(0).getId());
         }
@@ -161,17 +162,16 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      */
     private ConvMonitor buildConvMonitor(MonitorDTO monitorDTO, MonitorMsg message) {
         ConvMonitor monitor = new ConvMonitor();
-        monitor.setState(monitorDTO.getStatus() ? 0 : 1);
         monitor.setUpdateTime(new Date());
         monitor.setId(monitorDTO.getId());
         monitor.setConvFeNodeId(monitorDTO.getConvFeNodeId());
         monitor.setSysCode(monitorDTO.getSysCode());
         monitor.setOrgCode(monitorDTO.getOrgCode());
         monitor.setMonitorType(monitorDTO.getMonitorType());
+        monitor.setState(message.getStatus() ? 0 : 1);
         monitor.setExceptionDes(message.getMsg());
         if (!message.getStatus()) {
-            Date exceptionTime = message.getSendTime() == null ? monitorDTO.getUpdateTime() : message.getSendTime();
-            monitor.setExceptionTime(exceptionTime);
+            monitor.setExceptionTime(Objects.isNull(message.getSendTime()) ? new Date() : message.getSendTime());
         }
         return monitor;
     }

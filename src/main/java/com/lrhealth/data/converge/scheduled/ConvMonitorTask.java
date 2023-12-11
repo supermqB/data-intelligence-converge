@@ -74,10 +74,10 @@ public class ConvMonitorTask {
         long between = DateUtil.between(monitor.getUpdateTime(), new Date(), DateUnit.MINUTE);
         if (between > TIME_OUT_THRESHOLD) {
             MonitorMsg monitorMsg = new MonitorMsg();
-            monitorMsg.setStatus(null);
             monitorMsg.setStatus(false);
-            MonitorMsg.MsgTypeEnum msgTypeEnum = MonitorMsg.MsgTypeEnum.valueOf(monitor.getMonitorType());
-            monitorMsg.setMsg(msgTypeEnum.getMsgTypeDesc() + "异常时间超过" + TIME_OUT_THRESHOLD + "分钟");
+            monitorMsg.setSendTime(monitor.getUpdateTime());
+            String desc = MonitorMsg.MsgTypeEnum.getDescByCode(monitor.getMonitorType());
+            monitorMsg.setMsg(desc + "异常时间超过" + TIME_OUT_THRESHOLD + "分钟");
             //写异常信息 删除缓存key 防止断连前置机信息一直存在缓存
             convMonitorService.processConvMonitor(monitor, monitorMsg);
             convCache.removeObject(cacheKey);

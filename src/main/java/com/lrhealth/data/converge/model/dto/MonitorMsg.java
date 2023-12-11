@@ -71,5 +71,14 @@ public class MonitorMsg implements Serializable {
             this.msgTypeDesc = msgTypeDesc;
         }
 
+        public static String getDescByCode(String code) {
+            for (MsgTypeEnum enumValue : MsgTypeEnum.values()) {
+                if (enumValue.getMsgTypeCode().equals(code)) {
+                    return enumValue.getMsgTypeDesc();
+                }
+            }
+            return null;
+        }
+
     }
 }
