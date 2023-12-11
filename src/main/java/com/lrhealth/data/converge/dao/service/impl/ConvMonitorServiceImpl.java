@@ -111,6 +111,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
     public synchronized void processConvMonitor(MonitorDTO monitorDTO, MonitorMsg message) {
         Boolean currentStatus = message.getStatus();
         Boolean cacheStatus = monitorDTO.getStatus();
+        monitorDTO.setStatus(message.getStatus());
         ConvMonitor monitor = buildConvMonitor(monitorDTO, message);
         //首次插入 或 有异常 或 状态变更时 操作库
         if (monitor.getId() == null || !currentStatus || !currentStatus.equals(cacheStatus)) {
