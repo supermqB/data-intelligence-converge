@@ -3,10 +3,10 @@ package com.lrhealth.data.converge.dao.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.cache.Cache;
-import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
 import com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
+import com.lrhealth.data.converge.model.dto.MonitorDTO;
 import com.lrhealth.data.converge.model.dto.MonitorMsg;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
@@ -40,15 +40,11 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
     private static final String FE_CONCAT = "*";
     private static final String FE_NODE_PREFIX = "fe_node:";
 
-    private static final String CONV_MONITOR = "conv_monitor:";
-
 
     @Async
     @Override
     public void handleMonitorMsg(MonitorMsg message) {
-        log.info("-------- 监控消息日志 ------> {}",message);
         //查询缓存中前置机信息
-        ConvFeNode feNode;
         String feNodeCacheKey;
         if (MonitorMsg.MsgTypeEnum.FEP_STA.getMsgTypeCode().equals(message.getMsgType())
                 || MonitorMsg.MsgTypeEnum.CDC_STA.getMsgTypeCode().equals(message.getMsgType())) {
@@ -63,70 +59,26 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
                     .concat(TUNNEL_CONCAT).concat(message.getMsgType());
         }
         Object cacheValue = convCache.getObject(feNodeCacheKey);
+        MonitorDTO monitor;
         if (cacheValue == null) {
-            feNode = queryFeNodeFromDatabase(message, feNodeCacheKey);
+            ConvFeNode convFeNode = queryFeNodeFromDatabase(message);
+            monitor = buildMonitorDTO(convFeNode, message);
         } else {
-            feNode = JSON.parseObject(JSON.toJSONString(cacheValue), ConvFeNode.class);
+            monitor = JSON.parseObject(JSON.toJSONString(cacheValue), MonitorDTO.class);
         }
         //消息处理
-        if (Objects.isNull(feNode)) {
+        if (Objects.isNull(monitor)) {
             log.info("未查询到前置机信息 message = {}", message);
             return;
         }
-        processConvMonitor(feNode, message);
-        setConvFeNodeProperties(feNode, message);
-        //更新缓存中前置机信息
-        convCache.putObject(feNodeCacheKey, feNode);
-    }
-
-    /**
-     * 根据监测修改缓存前置机状态
-     */
-    private void setConvFeNodeProperties(ConvFeNode convFeNode, MonitorMsg message) {
-        convFeNode.setUpdateTime(message.getSendTime());
-        convFeNode.setState(StringUtils.isNotEmpty(message.getMsg()) ? 0 : 1);
-    }
-
-
-    /**
-     * 处理汇聚监视器信息
-     *
-     * @param convFeNode 前置机
-     * @param message    监测消息
-     */
-    @Override
-    public synchronized void processConvMonitor(ConvFeNode convFeNode, MonitorMsg message) {
-        //查询缓存中监视器信息
-        Object monitorCache = convCache.getObject(CONV_MONITOR + convFeNode.getId() + message.getMsgType());
-        ConvMonitor monitor;
-        ConvMonitor convMonitor = null;
-        if (monitorCache == null) {
-            List<ConvMonitor> convMonitorList = convMonitorMapper.selectList(new LambdaQueryWrapper<ConvMonitor>().eq(ConvMonitor::getConvFeNodeId, convFeNode.getId())
-                    .eq(ConvMonitor::getMonitorType, message.getMsgType()));
-            if (CollectionUtils.isNotEmpty(convMonitorList)){
-                convMonitor = convMonitorList.get(0);
-            }
-        } else {
-            convMonitor = JSON.parseObject(JSON.toJSONString(monitorCache), ConvMonitor.class);
-        }
-        monitor = buildConvMonitor(convMonitor, message, convFeNode);
-        int currentState = message.getStatus() ? 0 : 1;
-        //有异常 或 状态变更时 会更新库和缓存
-        if (StringUtils.isNotEmpty(message.getMsg()) || currentState != convFeNode.getState()) {
-            if (convMonitor == null) {
-                convMonitorMapper.insert(monitor);
-            } else {
-                convMonitorMapper.updateById(monitor);
-            }
-        }
-        //更新monitor缓存
-        convCache.putObject(CONV_MONITOR + convFeNode.getId() + message.getMsgType(), monitor);
+        processConvMonitor(monitor, message);
+        convCache.putObject(feNodeCacheKey, monitor);
     }
 
     /**
      * 数据库查询前置机信息
      */
-    private ConvFeNode queryFeNodeFromDatabase(MonitorMsg message, String feNodeCacheKey) {
+    private ConvFeNode queryFeNodeFromDatabase(MonitorMsg message) {
         LambdaQueryWrapper<ConvFeNode> queryWrapper = new LambdaQueryWrapper<ConvFeNode>()
                 .eq(ConvFeNode::getIp, message.getSourceIp())
                 .eq(ConvFeNode::getPort, Integer.parseInt(message.getSourcePort()));
@@ -144,41 +96,83 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         }
         List<ConvFeNode> feNodeList = diConvFeNodeMapper.selectList(queryWrapper);
         if (CollectionUtils.isNotEmpty(feNodeList)) {
-            convCache.putObject(feNodeCacheKey, feNodeList.get(0));
             return feNodeList.get(0);
         }
         return null;
     }
 
     /**
+     * 处理汇聚监视器信息
+     *
+     * @param monitorCache 前置机
+     * @param message      监测消息
+     */
+    @Override
+    public synchronized void processConvMonitor(MonitorDTO monitorCache, MonitorMsg message) {
+        Boolean currentStatus = message.getStatus();
+        Boolean cacheStatus = monitorCache.getStatus();
+        //有异常 或 状态变更时 会更新库和缓存
+        if (!currentStatus || !currentStatus.equals(cacheStatus)) {
+            ConvMonitor monitor = buildConvMonitor(monitorCache, message);
+            if (monitor.getId() == null) {
+                convMonitorMapper.insert(monitor);
+            } else {
+                convMonitorMapper.updateById(monitor);
+            }
+        }
+    }
+
+
+    /**
+     * 构建缓存DTO
+     *
+     * @param convFeNode 前置机
+     * @param message    消息
+     * @return MonitorDTO
+     */
+    public MonitorDTO buildMonitorDTO(ConvFeNode convFeNode, MonitorMsg message) {
+        if (Objects.isNull(convFeNode)) {
+            return null;
+        }
+        MonitorDTO monitor = new MonitorDTO();
+        LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
+                .eq(ConvMonitor::getConvFeNodeId, convFeNode.getId())
+                .eq(ConvMonitor::getMonitorType, message.getMsgType())
+                .eq(ConvMonitor::getOrgCode, message.getOrgCode());
+        final List<ConvMonitor> convMonitorList = convMonitorMapper.selectList(queryWrapper);
+        if (CollectionUtils.isNotEmpty(convMonitorList)) {
+            monitor.setId(convMonitorList.get(0).getId());
+        }
+        monitor.setConvFeNodeId(convFeNode.getId());
+        monitor.setOrgCode(convFeNode.getOrgCode());
+        monitor.setSysCode(convFeNode.getSysCode());
+        monitor.setMonitorType(message.getMsgType());
+        monitor.setStatus(message.getStatus());
+        monitor.setUpdateTime(message.getSendTime());
+        return monitor;
+    }
+
+    /**
      * 构建汇聚前置机监测信息
      *
-     * @param convMonitor 监测信息
-     * @param message     监测消息
-     * @param convFeNode  前置机信息
+     * @param monitorDTO 监测信息
+     * @param message    监测消息
      * @return 监测信息
      */
-    private ConvMonitor buildConvMonitor(ConvMonitor convMonitor, MonitorMsg message, ConvFeNode convFeNode) {
+    private ConvMonitor buildConvMonitor(MonitorDTO monitorDTO, MonitorMsg message) {
         ConvMonitor monitor = new ConvMonitor();
-        if (convMonitor == null) {
-            monitor.setConvFeNodeId(convFeNode.getId());
-            monitor.setSysCode(convFeNode.getSysCode());
-            monitor.setOrgCode(convFeNode.getOrgCode());
-        } else {
-            monitor.setId(convMonitor.getId());
-            monitor.setConvFeNodeId(convMonitor.getConvFeNodeId());
-            monitor.setSysCode(convMonitor.getSysCode());
-            monitor.setOrgCode(convMonitor.getOrgCode());
-        }
-        if (message.getSendTime() != null) {
-            monitor.setExceptionTime(message.getSendTime());
-        }
-        if (message.getMsgType() != null) {
-            monitor.setMonitorType(message.getMsgType());
-        }
-        monitor.setExceptionDes(message.getMsg());
-        monitor.setState(convFeNode.getState());
+        monitor.setState(monitorDTO.getStatus() ? 0 : 1);
         monitor.setUpdateTime(new Date());
+        monitor.setId(monitorDTO.getId());
+        monitor.setConvFeNodeId(monitorDTO.getConvFeNodeId());
+        monitor.setSysCode(monitorDTO.getSysCode());
+        monitor.setOrgCode(monitorDTO.getOrgCode());
+        monitor.setMonitorType(monitorDTO.getMonitorType());
+        monitor.setExceptionDes(message.getMsg());
+        if (!message.getStatus()) {
+            Date exceptionTime = message.getSendTime() == null ? monitorDTO.getUpdateTime() : message.getSendTime();
+            monitor.setExceptionTime(exceptionTime);
+        }
         return monitor;
     }
 }

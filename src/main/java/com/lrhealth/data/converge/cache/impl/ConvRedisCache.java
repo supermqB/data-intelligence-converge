@@ -25,7 +25,7 @@ public class ConvRedisCache implements Cache {
     }
 
     @Override
-    public Object getObject(Object key) {
+    public Object getObject(String key) {
         return redisTemplate.opsForValue().get(key);
     }
 
@@ -39,8 +39,8 @@ public class ConvRedisCache implements Cache {
     }
 
     @Override
-    public Object removeObject(Object key) {
-        return redisTemplate.delete(String.valueOf(key));
+    public Object removeObject(String key) {
+        return redisTemplate.delete(key);
     }
 
     @Override

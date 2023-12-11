@@ -22,7 +22,7 @@ public class ConvMonitor  implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
     /**
-     * 上下线状态， 0-离线，1-在线
+     * 上下线状态， 0-正常，1-异常
      */
     private Integer state;
     /**
@@ -33,6 +33,7 @@ public class ConvMonitor  implements Serializable {
     /**
      * 异常发生时间
      */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date exceptionTime;
     /**
      * 前置机ID

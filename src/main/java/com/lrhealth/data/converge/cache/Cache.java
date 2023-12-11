@@ -20,7 +20,7 @@ public interface Cache {
      * @param key 缓存key
      * @return 缓存结果
      */
-    Object getObject(Object key);
+    Object getObject(String key);
 
 
     /**
@@ -35,7 +35,7 @@ public interface Cache {
      * @param key 缓存key
      * @return 删除结果
      */
-    Object removeObject(Object key);
+    Object removeObject(String key);
 
     /**
      * 清除缓存
