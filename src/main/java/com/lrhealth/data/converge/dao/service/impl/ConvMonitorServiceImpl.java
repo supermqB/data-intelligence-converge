@@ -109,19 +109,26 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      */
     @Override
     public synchronized void processConvMonitor(MonitorDTO monitorDTO, MonitorMsg message) {
-        Boolean currentStatus = message.getStatus();
-        Boolean cacheStatus = monitorDTO.getStatus();
         monitorDTO.setStatus(message.getStatus());
         ConvMonitor monitor = buildConvMonitor(monitorDTO, message);
-        //首次插入 或 有异常 或 状态变更时 操作库
-        if (monitor.getId() == null || !currentStatus || !currentStatus.equals(cacheStatus)) {
-            if (monitor.getId() == null) {
-                convMonitorMapper.insert(monitor);
-                monitorDTO.setId(monitor.getId());
-            } else {
-                convMonitorMapper.updateById(monitor);
-            }
+        if (monitor.getId() == null) {
+            convMonitorMapper.insert(monitor);
+            monitorDTO.setId(monitor.getId());
+        } else {
+            convMonitorMapper.updateById(monitor);
         }
+        //首次插入 或 有异常 或 状态变更时 操作库
+        /*
+        Boolean currentStatus = message.getStatus();
+        Boolean cacheStatus = monitorDTO.getStatus();
+        if (monitor.getId() == null || !currentStatus || !currentStatus.equals(cacheStatus)) {
+        if (monitor.getId() == null) {
+            convMonitorMapper.insert(monitor);
+            monitorDTO.setId(monitor.getId());
+        } else {
+            convMonitorMapper.updateById(monitor);
+        }
+        }*/
     }
 
 
