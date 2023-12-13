@@ -46,4 +46,8 @@ public class ConvCollectField {
     private String conditionField;
 
     private String tableName;
+
+    private String querySql;
+
+    private String storeTableName;
 }

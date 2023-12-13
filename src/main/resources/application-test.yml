@@ -26,7 +26,7 @@ spring:
   datasource:
     ods:
       type: com.zaxxer.hikari.HikariDataSource
-      jdbcUrl: jdbc:oceanbase://172.16.29.14:2883/ods_test_gz?rewriteBatchedStatements=TRUE
+      jdbcUrl: jdbc:oceanbase://172.16.29.68:2883/ods_test_gz?rewriteBatchedStatements=TRUE
       driver-class-name: com.oceanbase.jdbc.Driver
       username: ENC(dzlQtlalf2wmim1mILlZAbaIrOABKer8)
       password: ENC(poiqgUqqGcqKD2zPoyBXC7xSR6E1XbyK)
