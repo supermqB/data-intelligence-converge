@@ -293,7 +293,7 @@ public class ConvergeServiceImpl implements ConvergeService {
 
             //添加任务
             if (convTask.getStatus() == 3 && taskResultView.getStatus() == 1) {
-                if ("null".equals(taskResultView.getFeStoredFilename())){
+                if ("null".equals(taskResultView.getFeStoredFilename()) || taskResultView.getDataItemCount() == 0){
                     continue;
                 }
                 FileTask fileTask = new FileTask(convTask.getId(), taskResultView.getFeStoredFilename());
