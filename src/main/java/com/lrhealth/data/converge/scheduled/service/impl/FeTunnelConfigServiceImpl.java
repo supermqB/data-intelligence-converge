@@ -17,14 +17,15 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.dto.*;
 import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
-import com.lrhealth.data.model.original.model.OriginalModel;
 import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author jinmengyu
@@ -127,23 +128,18 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
         List<String> tableList = Arrays.asList(tunnel.getCollectRange().split(","));
-        // sql语句
-        List<OriginalModel> modelList = originalModelService.list(new LambdaQueryWrapper<OriginalModel>()
-                        .in(OriginalModel::getNameEn, tableList)
-                        .eq(OriginalModel::getSysCode, tunnel.getSysCode())
-                        .eq(OriginalModel::getDelFlag, 0));
+
         // 增量字段
         List<ConvCollectField> seqFieldList = collectFieldService.list(new LambdaQueryWrapper<ConvCollectField>()
                         .in(ConvCollectField::getTableName, tableList)
                         .eq(ConvCollectField::getTunnelId, tunnel.getId())
                         .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
-        Map<String, String> seqFieldMap = seqFieldList.stream().collect(Collectors.toMap(ConvCollectField::getTableName, ConvCollectField::getConditionField));
 
-        modelList.forEach(model -> {
+        seqFieldList.forEach(model -> {
             TableInfoDto tableInfoDto = new TableInfoDto();
-            tableInfoDto.setTableName(model.getNameEn());
-            tableInfoDto.setSqlQuery(model.getModelQuerySql());
-            tableInfoDto.setSeqFields(Collections.singletonList(seqFieldMap.get(model.getNameEn())));
+            tableInfoDto.setTableName(model.getTableName());
+            tableInfoDto.setSqlQuery(model.getQuerySql());
+            tableInfoDto.setSeqFields(Collections.singletonList(model.getConditionField()));
             tableInfoDtoList.add(tableInfoDto);
         });
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
