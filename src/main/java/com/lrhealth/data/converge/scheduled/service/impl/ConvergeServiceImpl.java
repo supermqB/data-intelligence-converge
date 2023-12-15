@@ -79,7 +79,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             return;
         }
 
-        updateFepStatus(frontendStatusDto, taskDeque);
+//        updateFepStatus(frontendStatusDto, taskDeque);
 
         log.info("前置机：" + node.getIp() + " 状态更新结束！");
     }

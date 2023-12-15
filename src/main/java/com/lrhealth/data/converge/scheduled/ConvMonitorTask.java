@@ -71,6 +71,9 @@ public class ConvMonitorTask {
         if (Objects.isNull(monitor)) {
             return;
         }
+        if (monitor.getUpdateTime() == null) {
+            return;
+        }
         long between = DateUtil.between(monitor.getUpdateTime(), new Date(), DateUnit.MINUTE);
         if (between > TIME_OUT_THRESHOLD) {
             MonitorMsg monitorMsg = new MonitorMsg();

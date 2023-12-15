@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
-import com.lrhealth.data.converge.scheduled.DownloadFileTask;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvCollectField;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
@@ -67,7 +66,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             log.error("fep status返回结果异常: " + frontendStatusDto);
             return;
         }
-        convergeService.updateFepStatus(frontendStatusDto, DownloadFileTask.taskDeque);
+//        convergeService.updateFepStatus(frontendStatusDto, DownloadFileTask.taskDeque);
     }
 
     private List<ConvFeNode> getFepListByIpAndPort(String ip, Integer port){
