@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson2.JSON;
 import com.lrhealth.data.converge.cache.Cache;
 import com.lrhealth.data.converge.model.dto.FepScheduledDto;
@@ -29,6 +30,9 @@ public class ScheduleTaskServiceImpl implements ScheduleTaskService {
 
         List<String> allTaskList = taskCache.getAllByPrefix(ip + "-" + port);
         List<FepScheduledDto> returnList = new ArrayList<>();
+        if (CollUtil.isEmpty(allTaskList)){
+            return new ArrayList<>();
+        }
         allTaskList.forEach(fepPreFix -> {
             try {
                 Object dto = taskCache.getObject(fepPreFix);
