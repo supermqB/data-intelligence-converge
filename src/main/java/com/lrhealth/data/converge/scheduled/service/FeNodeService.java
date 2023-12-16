@@ -5,6 +5,8 @@ import com.lrhealth.data.converge.scheduled.config.exception.PingException;
 import com.lrhealth.data.converge.scheduled.dao.entity.*;
 import com.lrhealth.data.converge.scheduled.model.dto.*;
 
+import java.util.List;
+
 public interface FeNodeService {
 
     public boolean ping(String ip, String port);
@@ -19,7 +21,7 @@ public interface FeNodeService {
 
     ConvTask saveOrUpdateTask(TaskStatusDto taskStatusDto, ConvTunnel tunnel);
 
-    void saveOrUpdateLog(TaskLogDto taskLog, ConvTask convTask);
+    void saveOrUpdateLog(List<TaskLogDto> taskLogs, ConvTask convTask);
 
     ConvTaskResultView saveOrUpdateFile(ResultViewInfoDto resultViewInfoDto, ConvTask convTask);
 

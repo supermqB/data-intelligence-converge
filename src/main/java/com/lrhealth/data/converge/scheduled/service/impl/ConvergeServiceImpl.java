@@ -79,13 +79,12 @@ public class ConvergeServiceImpl implements ConvergeService {
             return;
         }
 
-//        updateFepStatus(frontendStatusDto, taskDeque);
+        updateFepStatus(frontendStatusDto, taskDeque);
 
         log.info("前置机：" + node.getIp() + " 状态更新结束！");
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void updateFepStatus(FrontendStatusDto frontendStatusDto, ConcurrentLinkedDeque<FileTask> taskDeque){
 
         List<TunnelStatusDto> tunnelStatusDtoList = frontendStatusDto.getTunnelStatusDtoList();
@@ -94,7 +93,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             //更新 tunnel
             ConvTunnel tunnel = feNodeService.updateTunnel(tunnelStatusDto);
             if(tunnel == null){
-                log.warn("不存在的管道信息！" + tunnelStatusDto);
+                log.warn("不存在的管道信息！" + tunnelStatusDto.getTunnelId());
                 continue;
             }
 
@@ -108,10 +107,7 @@ public class ConvergeServiceImpl implements ConvergeService {
 //                }
 
                 List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
-                for (TaskLogDto taskLog : taskLogs) {
-                    //更新 log
-                    feNodeService.saveOrUpdateLog(taskLog, convTask);
-                }
+                feNodeService.saveOrUpdateLog(taskLogs, convTask);
                 updateTaskResultView(taskDeque, taskStatusDto, convTask);
                 updateTaskResultFile(taskDeque, taskStatusDto, convTask);
             }

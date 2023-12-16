@@ -1,6 +1,8 @@
 package com.lrhealth.data.converge.scheduled.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
@@ -28,7 +30,10 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author zhaohui
@@ -58,6 +63,8 @@ public class FeNodeServiceImpl implements FeNodeService {
 
     @Resource
     private ConvTaskResultFileService convTaskResultFileService;
+
+    private static ConcurrentHashSet<Integer> logIdSet = new ConcurrentHashSet<>();
 
     @Override
     @Retryable(value = {PingException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -122,8 +129,7 @@ public class FeNodeServiceImpl implements FeNodeService {
             log.info("不存在的tunnel: " + tunnelId);
             return null;
         }
-        tunnel.setStatus(tunnelStatusDto.getTunnelStatus());
-        convTunnelService.updateById(tunnel);
+        convTunnelService.updateById(ConvTunnel.builder().id(tunnelId).status(tunnelStatusDto.getTunnelStatus()).build());
         return tunnel;
     }
 
@@ -161,23 +167,34 @@ public class FeNodeServiceImpl implements FeNodeService {
 
     @Override
     @Transactional
-    public void saveOrUpdateLog(TaskLogDto taskLog, ConvTask convTask) {
-        ConvTaskLog convTaskLog = new ConvTaskLog();
-        convTaskLog.setTaskId(convTask.getId());
-        convTaskLog.setFedLogId(taskLog.getLogId());
-        convTaskLog.setLogDetail(taskLog.getLogDetail());
+    public void saveOrUpdateLog(List<TaskLogDto> taskLogs, ConvTask convTask) {
+        if (CollUtil.isEmpty(taskLogs)){
+            return;
+        }
         DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        convTaskLog.setTimestamp(LocalDateTime.parse(taskLog.getLogTime(), df));
-        convTaskLogService.saveOrUpdate(convTaskLog, new LambdaQueryWrapper<ConvTaskLog>()
-                .eq(ConvTaskLog::getFedLogId, taskLog.getLogId())
-                .eq(ConvTaskLog::getTaskId, convTask.getId()));
+        List<TaskLogDto> newLogList = taskLogs.stream().filter(taskLogDto -> !logIdSet.contains(taskLogDto.getLogId())).collect(Collectors.toList());
+        if (CollUtil.isEmpty(newLogList)){
+            return;
+        }
+        List<ConvTaskLog> convTaskLogList = new ArrayList<>();
+        newLogList.forEach(newLogDto -> {
+            ConvTaskLog convTaskLog = new ConvTaskLog();
+            convTaskLog.setTaskId(convTask.getId());
+            convTaskLog.setFedLogId(newLogDto.getLogId());
+            convTaskLog.setLogDetail(newLogDto.getLogDetail());
+            convTaskLog.setTimestamp(LocalDateTime.parse(newLogDto.getLogTime(), df));
+            convTaskLogList.add(convTaskLog);
+            logIdSet.add(newLogDto.getLogId());
+        });
+        convTaskLogService.saveOrUpdateBatch(convTaskLogList);
     }
 
     @Override
     @Transactional
     public ConvTaskResultView saveOrUpdateFile(ResultViewInfoDto resultViewInfoDto, ConvTask convTask) {
         ConvTaskResultView convTaskResultView = new ConvTaskResultView();
-        ConvTaskResultView taskResultView = convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
+        ConvTaskResultView taskResultView =
+                convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
                 .eq(ConvTaskResultView::getTaskId, convTask.getId())
                 .eq(ConvTaskResultView::getTableName,resultViewInfoDto.getTableName()), false);
         if (taskResultView != null  && taskResultView.getStatus() > 1){
