@@ -17,7 +17,6 @@ import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.scheduled.model.dto.*;
 import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
-import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -43,8 +42,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private ConvCollectFieldService collectFieldService;
     @Resource
     private ConvergeService convergeService;
-    @Resource
-    private OriginalModelService originalModelService;
 
 
     @Override
@@ -84,43 +81,49 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
 
-    private void feNodeTunnelConfig(List<TunnelMessageDTO> messageDTOList, ConvFeNode fep){
+    public void feNodeTunnelConfig(List<TunnelMessageDTO> messageDTOList, ConvFeNode fep){
         List<ConvTunnel> tunnelList = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>().eq(ConvTunnel::getFrontendId, fep.getId()));
         if (CollUtil.isEmpty(tunnelList)){
             return;
         }
         tunnelList.forEach(tunnel -> {
-            TunnelMessageDTO tunnelMessageDTO = new TunnelMessageDTO();
-            // 管道基本信息
-            BeanUtil.copyProperties(tunnel, tunnelMessageDTO);
-            if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())
-            || tunnel.getConvergeMethod().equals(TunnelCMEnum.CDC_LOG.getCode())){
-                // 库表/日志的读库信息
-                JdbcInfoDto jdbcInfoDto = new JdbcInfoDto();
-                jdbcInfoDto.setJdbcUrl(tunnel.getJdbcUrl());
-                jdbcInfoDto.setDbUserName(tunnel.getDbUserName());
-                jdbcInfoDto.setDbPasswd(tunnel.getDbPasswd());
-                // 库表采集
-                if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())){
-                    // 全量/增量采集
-                    jdbcInfoDto.setColType(tunnel.getColType());
-                    jdbcInfoDto.setFullColStartTime(tunnel.getFullColStartTime());
-                    jdbcInfoDto.setFullColEndTime(tunnel.getFullColEndTime());
-                    // 库到库/库到文件
-                    jdbcInfoDto.setCollectModel(tunnel.getCollectModel());
-                    // 库到库
-                    if(LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())){
-                        jdbcInfoDto.setJdbcUrlForIn(tunnel.getJdbcUrlForIn());
-                        jdbcInfoDto.setDbUserNameForIn(tunnel.getDbUserNameForIn());
-                        jdbcInfoDto.setDbPasswdForIn(tunnel.getDbPasswdForIn());
-                    }
-                    // 表以及对应的sql信息
-                    assembleTableInfoMessage(tunnel, jdbcInfoDto);
-                }
-                tunnelMessageDTO.setJdbcInfoDto(jdbcInfoDto);
-            }
+            TunnelMessageDTO tunnelMessageDTO = getTunnelMessage(tunnel);
             messageDTOList.add(tunnelMessageDTO);
         });
+    }
+
+    @Override
+    public TunnelMessageDTO getTunnelMessage(ConvTunnel tunnel){
+        TunnelMessageDTO tunnelMessageDTO = new TunnelMessageDTO();
+        // 管道基本信息
+        BeanUtil.copyProperties(tunnel, tunnelMessageDTO);
+        if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())
+                || tunnel.getConvergeMethod().equals(TunnelCMEnum.CDC_LOG.getCode())){
+            // 库表/日志的读库信息
+            JdbcInfoDto jdbcInfoDto = new JdbcInfoDto();
+            jdbcInfoDto.setJdbcUrl(tunnel.getJdbcUrl());
+            jdbcInfoDto.setDbUserName(tunnel.getDbUserName());
+            jdbcInfoDto.setDbPasswd(tunnel.getDbPasswd());
+            // 库表采集
+            if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())){
+                // 全量/增量采集
+                jdbcInfoDto.setColType(tunnel.getColType());
+                jdbcInfoDto.setFullColStartTime(String.valueOf(tunnel.getFullColStartTime()));
+                jdbcInfoDto.setFullColEndTime(String.valueOf(tunnel.getFullColEndTime()));
+                // 库到库/库到文件
+                jdbcInfoDto.setCollectModel(tunnel.getCollectModel());
+                // 库到库
+                if(LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())){
+                    jdbcInfoDto.setJdbcUrlForIn(tunnel.getJdbcUrlForIn());
+                    jdbcInfoDto.setDbUserNameForIn(tunnel.getDbUserNameForIn());
+                    jdbcInfoDto.setDbPasswdForIn(tunnel.getDbPasswdForIn());
+                }
+                // 表以及对应的sql信息
+                assembleTableInfoMessage(tunnel, jdbcInfoDto);
+            }
+            tunnelMessageDTO.setJdbcInfoDto(jdbcInfoDto);
+        }
+        return tunnelMessageDTO;
     }
 
 

@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -49,13 +48,13 @@ public class JdbcInfoDto {
      * 库表采集-全量采集
      * 全量采集开始时间
      */
-    private LocalDateTime fullColStartTime;
+    private String fullColStartTime;
 
     /**
      * 库表采集-全量采集
      * 全量采集结束时间
      */
-    private LocalDateTime fullColEndTime;
+    private String fullColEndTime;
 
 
     /**

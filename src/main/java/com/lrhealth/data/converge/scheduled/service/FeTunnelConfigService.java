@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.scheduled.service;
 
+import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.scheduled.model.dto.ActiveFepUploadDto;
 import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
 
@@ -14,4 +15,6 @@ public interface FeTunnelConfigService {
     List<TunnelMessageDTO> getFepTunnelConfig(String ip, Integer port);
 
     void updateFepStatus(ActiveFepUploadDto activeFepUploadDto);
+
+    TunnelMessageDTO getTunnelMessage(ConvTunnel tunnel);
 }
