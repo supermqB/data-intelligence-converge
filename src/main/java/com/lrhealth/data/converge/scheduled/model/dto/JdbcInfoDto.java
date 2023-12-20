@@ -80,4 +80,9 @@ public class JdbcInfoDto {
      */
     private List<TableInfoDto> tableInfoDtoList;
 
+    /**
+     * 1-单表采集 2-关联采集
+     */
+    private Integer colTableType;
+
 }

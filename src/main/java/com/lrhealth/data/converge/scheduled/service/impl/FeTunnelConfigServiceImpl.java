@@ -112,6 +112,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 jdbcInfoDto.setFullColEndTime(String.valueOf(tunnel.getFullColEndTime()));
                 // 库到库/库到文件
                 jdbcInfoDto.setCollectModel(tunnel.getCollectModel());
+                // 单表采集还是自定义sql
+                jdbcInfoDto.setColTableType(tunnel.getColTableType());
                 // 库到库
                 if(LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())){
                     jdbcInfoDto.setJdbcUrlForIn(tunnel.getJdbcUrlForIn());

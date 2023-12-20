@@ -198,4 +198,9 @@ public class ConvTunnel implements Serializable {
      * 写库的密码
      */
     private String dbPasswdForIn;
+
+    /**
+     * 1-单表采集 2-关联采集
+     */
+    private Integer colTableType;
 }
