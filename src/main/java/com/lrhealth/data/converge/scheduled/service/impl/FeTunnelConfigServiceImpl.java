@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,8 +47,12 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
 
 
     @Override
-    public List<TunnelMessageDTO> getFepTunnelConfig(String ip, Integer port) {
+    public List<TunnelMessageDTO> getFepTunnelConfig(String ip, Integer port) throws UnknownHostException {
         List<TunnelMessageDTO> messageDTOList = new ArrayList<>();
+        if (ip.equals(InetAddress.getLocalHost().getHostAddress())){
+            directTunnelConfig(messageDTOList);
+            return messageDTOList;
+        }
         // 查询到所有创建的前置机
         List<ConvFeNode> fepList = getFepListByIpAndPort(ip, port);
         if (CollUtil.isEmpty(fepList)) return CollUtil.newArrayList();
@@ -80,8 +86,22 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         return fepList;
     }
 
+    /**
+     * 直连管道配置
+     * @param messageDTOList
+     */
+    public void directTunnelConfig(List<TunnelMessageDTO> messageDTOList){
+        List<ConvTunnel> tunnelList = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>().eq(ConvTunnel::getFrontendId, -1));
+        if (CollUtil.isEmpty(tunnelList)){
+            return;
+        }
+        tunnelList.forEach(tunnel -> {
+            TunnelMessageDTO tunnelMessageDTO = getTunnelMessage(tunnel);
+            messageDTOList.add(tunnelMessageDTO);
+        });
+    }
 
-    public void feNodeTunnelConfig(List<TunnelMessageDTO> messageDTOList, ConvFeNode fep){
+    private void feNodeTunnelConfig(List<TunnelMessageDTO> messageDTOList, ConvFeNode fep){
         List<ConvTunnel> tunnelList = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>().eq(ConvTunnel::getFrontendId, fep.getId()));
         if (CollUtil.isEmpty(tunnelList)){
             return;
