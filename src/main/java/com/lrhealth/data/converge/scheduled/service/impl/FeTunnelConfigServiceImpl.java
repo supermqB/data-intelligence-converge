@@ -18,6 +18,7 @@ import com.lrhealth.data.converge.scheduled.model.dto.*;
 import com.lrhealth.data.converge.scheduled.service.ConvergeService;
 import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -62,12 +63,13 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
     @Override
+    @Async
     public void updateFepStatus(ActiveFepUploadDto activeFepUploadDto) {
         FrontendStatusDto frontendStatusDto = activeFepUploadDto.getFrontendStatusDto();
         List<ConvFeNode> fepList = getFepListByIpAndPort(activeFepUploadDto.getIp(), activeFepUploadDto.getPort());
         if (fepList.isEmpty()) return;
         if (frontendStatusDto == null || frontendStatusDto.getTunnelStatusDtoList() == null) {
-            log.error("fep status返回结果异常: " + frontendStatusDto);
+            log.error("fep status上报日志异常: " + frontendStatusDto);
             return;
         }
         convergeService.updateFepStatus(frontendStatusDto, DownloadFileTask.taskDeque);
