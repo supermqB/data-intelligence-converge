@@ -64,7 +64,7 @@ public class FeNodeServiceImpl implements FeNodeService {
     @Resource
     private ConvTaskResultFileService convTaskResultFileService;
 
-    private static ConcurrentHashSet<Integer> logIdSet = new ConcurrentHashSet<>();
+    private static ConcurrentHashSet<Long> logIdSet = new ConcurrentHashSet<>();
 
     @Override
     @Retryable(value = {PingException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -184,9 +184,11 @@ public class FeNodeServiceImpl implements FeNodeService {
             convTaskLog.setLogDetail(newLogDto.getLogDetail());
             convTaskLog.setTimestamp(LocalDateTime.parse(newLogDto.getLogTime(), df));
             convTaskLogList.add(convTaskLog);
-            logIdSet.add(newLogDto.getLogId());
         });
-        convTaskLogService.saveOrUpdateBatch(convTaskLogList);
+        boolean insert = convTaskLogService.saveOrUpdateBatch(convTaskLogList);
+        if (insert){
+            convTaskLogList.forEach(convTaskLog -> logIdSet.add(convTaskLog.getId()));
+        }
     }
 
     @Override
