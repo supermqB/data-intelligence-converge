@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
+
+import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
 
 /**
  * 库表采集-直连

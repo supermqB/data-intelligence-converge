@@ -3,15 +3,15 @@ package com.lrhealth.data.converge.dao.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.cache.Cache;
+import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper;
+import com.lrhealth.data.converge.dao.mapper.ConvFeNodeMapper;
+import com.lrhealth.data.converge.dao.mapper.ConvTunnelMapper;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.model.dto.MonitorDTO;
 import com.lrhealth.data.converge.model.dto.MonitorMsg;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvFeNode;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.dao.mapper.DiConvFeNodeMapper;
-import com.lrhealth.data.converge.scheduled.dao.mapper.DiConvTunnelMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.scheduling.annotation.Async;
@@ -29,11 +29,11 @@ import java.util.Objects;
 @Service
 public class ConvMonitorServiceImpl implements ConvMonitorService {
     @Resource
-    private DiConvFeNodeMapper diConvFeNodeMapper;
+    private ConvFeNodeMapper convFeNodeMapper;
     @Resource
     private ConvMonitorMapper convMonitorMapper;
     @Resource
-    private DiConvTunnelMapper convTunnelMapper;
+    private ConvTunnelMapper convTunnelMapper;
     @Resource
     private Cache convCache;
     private static final String TUNNEL_CONCAT = "|";
@@ -94,7 +94,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         } else {//服务状态监控
             queryWrapper.eq(ConvFeNode::getOrgCode, message.getOrgCode());
         }
-        List<ConvFeNode> feNodeList = diConvFeNodeMapper.selectList(queryWrapper);
+        List<ConvFeNode> feNodeList = convFeNodeMapper.selectList(queryWrapper);
         if (CollectionUtils.isNotEmpty(feNodeList)) {
             return feNodeList.get(0);
         }

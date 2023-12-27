@@ -1,6 +1,6 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.model.FileMessageDTO;
+import com.lrhealth.data.converge.model.dto.FileMessageDTO;
 
 import java.util.List;
 import java.util.Map;

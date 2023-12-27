@@ -2,13 +2,13 @@ package com.lrhealth.data.converge.common.util.file;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.lrhealth.data.common.exception.CommonException;
-import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
+import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
+import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.opencsv.CSVReader;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
-import org.teasoft.honey.osql.core.BeeFactory;
 
 import java.io.FileReader;
 import java.math.BigDecimal;
@@ -28,14 +28,17 @@ public class LargeFileUtil {
     private static final int BATCH_SIZE = 2000; // 每批数据的大小
 
 
-    public Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> fieldTypeMap, Integer taskId) {
+    public Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> fieldTypeMap, Integer taskId, DataSourceDto sourceDto) {
         int lineCnt = 0;
         PreparedStatement pst = null;
-        BeeFactory instance = BeeFactory.getInstance();
         Map<String, String> setErrorMap = new HashMap<>();
-
+        try {
+            Class.forName(sourceDto.getDriver());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         try (CSVReader reader = new CSVReader(new FileReader(filePath));
-             Connection connection = instance.getDataSource().getConnection()) {
+             Connection connection = DriverManager.getConnection(sourceDto.getJdbcUrl(), sourceDto.getUsername(), sourceDto.getPassword())) {
             // csv表头
             String[] headerList = reader.readNext();
             // 过滤出来的原始字段对应的csv表头索引

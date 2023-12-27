@@ -10,8 +10,8 @@ import com.lrhealth.data.converge.common.util.file.FileToJsonUtil;
 import com.lrhealth.data.converge.common.util.file.ProcessedFile;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.ConvFileInfoDto;
-import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
+import com.lrhealth.data.converge.model.dto.ConvFileInfoDto;
+import com.lrhealth.data.converge.model.dto.FileConvergeInfoDTO;
 import com.lrhealth.data.converge.service.FileService;
 import com.lrhealth.data.converge.service.ShellService;
 import com.lrhealth.data.converge.service.XdsInfoService;
@@ -200,7 +200,7 @@ public class FileServiceImpl implements FileService {
             try {
                 List<Map<String, Object>> odsDataList = (List<Map<String, Object>>) jsonObject.get(odsTableName);
                 odsDataList.forEach(map -> map.put("xds_id", xds.getId()));
-                beeBaseRepository.insertBatch(xds.getOdsTableName(), odsDataList);
+                beeBaseRepository.insertBatch(xds.getSysCode(), xds.getOdsTableName(), odsDataList);
                 countNumber += odsDataList.size();
             }catch (Exception e) {
                 log.error("file data to db sql exception,{}", ExceptionUtils.getStackTrace(e));

@@ -24,27 +24,6 @@ spring:
           dnsMonitoringInterval: 5000
 
   datasource:
-    ods:
-      type: com.zaxxer.hikari.HikariDataSource
-      jdbcUrl: jdbc:oceanbase://172.16.29.68:2883/ods_test_gz?rewriteBatchedStatements=TRUE
-      driver-class-name: com.oceanbase.jdbc.Driver
-      username: ENC(dzlQtlalf2wmim1mILlZAbaIrOABKer8)
-      password: ENC(poiqgUqqGcqKD2zPoyBXC7xSR6E1XbyK)
-      pool-name: HikariCP-ods
-      #最小空闲连接数
-      minimum-idle: 10
-      # 空闲连接存活最大时间，默认2分钟
-      idle-timeout: 120000
-      # 连接池最大连接数，默认是10
-      maximum-pool-size: 30
-      # 此属性控制从池返回的连接的默认自动提交行为,默认值：true
-      auto-commit: true
-      # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
-      max-lifetime: 1800000
-      # 数据库连接超时时间,默认30秒
-      connection-timeout: 60000
-      # 连接测试query
-      connection-test-query: SELECT 1
     rdcp-ext:
       type: com.zaxxer.hikari.HikariDataSource
       driver-class-name: org.postgresql.Driver
@@ -77,8 +56,7 @@ spring:
     topic:
       cdc: cdc-data
       xds: gove-xds-${spring.profiles.active}
-      fep-task: frontend-reschedule-${spring.profiles.active}
-    producer:
+cd    producer:
       retries: 3
       batch-size: 16384
       linger-ms: 5

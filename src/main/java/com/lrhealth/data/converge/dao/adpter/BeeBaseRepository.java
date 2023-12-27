@@ -1,11 +1,13 @@
 package com.lrhealth.data.converge.dao.adpter;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.constant.DbConstant;
+import com.lrhealth.data.common.enums.db.DataSourceEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
@@ -15,7 +17,6 @@ import org.teasoft.honey.osql.core.BeeFactory;
 import org.teasoft.honey.osql.core.BeeFactoryHelper;
 import org.teasoft.honey.osql.core.HoneyUtil;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,16 +29,17 @@ import java.util.Set;
 @Repository
 public class BeeBaseRepository {
 
-    public Map<String, Object> selectOne(String tableName, Map<String, Object> conditionMap) {
-        return selectOne(tableName, null, conditionMap);
+    public Map<String, Object> selectOne(String sysCode,String tableName, Map<String, Object> conditionMap) {
+        return selectOne(sysCode,tableName, null, conditionMap);
     }
 
-    public Map<String, Object> selectOne(String tableName, String selectColumns, Map<String, Object> conditionMap) {
+    public Map<String, Object> selectOne(String sysCode,String tableName, String selectColumns, Map<String, Object> conditionMap) {
         MapSuid mapSuid = BeeFactoryHelper.getMapSuid();
+        mapSuid.setDataSourceName(sysCode);
         MapSql mapSql = BeeFactoryHelper.getMapSql();
 
         mapSql.put(MapSqlKey.Table, tableName);
-        if (CharSequenceUtil.isEmpty(selectColumns) || CharSequenceUtil.equalsAnyIgnoreCase(selectColumns, "*")) {
+        if (StringUtils.isEmpty(selectColumns) || StrUtil.equalsAnyIgnoreCase(selectColumns, "*")) {
             mapSql.put(MapSqlKey.SelectColumns, "*");
         }
         mapSql.put(MapSqlSetting.IsNamingTransfer, true);
@@ -46,44 +48,46 @@ public class BeeBaseRepository {
         for (Map.Entry<String, Object> stringObjectEntry : conditionMap.entrySet()) {
             mapSql.put(((Map.Entry<?, ?>) stringObjectEntry).getKey().toString(), stringObjectEntry.getValue());
         }
-        return mapSuid.selectOne(mapSql);
+        Map<String, Object> selectOne = mapSuid.selectOne(mapSql);
+        return selectOne;
     }
 
-    public List<Map<String, Object>> selectList(String tableName, Map<String, Object> conditionMap) {
-        return selectList(tableName, null, conditionMap, null);
+    public List<Map<String, Object>> selectList(String sysCode,String tableName, Map<String, Object> conditionMap) {
+        return selectList(sysCode,tableName, null, conditionMap, null);
     }
 
-    public List<Map<String, Object>> selectList(String tableName, Map<String, Object> conditionMap, String orderBy) {
-        return selectList(tableName, null, conditionMap, orderBy);
+    public List<Map<String, Object>> selectList(String sysCode,String tableName, Map<String, Object> conditionMap, String orderBy) {
+        return selectList(sysCode,tableName, null, conditionMap, orderBy);
     }
 
-    public List<Map<String, Object>> selectList(String tableName, Map<String, Object> conditionMap, Integer start, Integer size) {
-        return selectList(tableName, null, conditionMap, start, size);
+    public List<Map<String, Object>> selectList(String sysCode,String tableName, Map<String, Object> conditionMap, Integer start, Integer size) {
+        return selectList(sysCode,tableName, null, conditionMap, start, size);
     }
 
-    public List<Map<String, Object>> selectList(String tableName, Map<String, Object> conditionMap, String orderBy, Integer start, Integer size) {
-        return selectList(tableName, null, conditionMap, orderBy, start, size);
+    public List<Map<String, Object>> selectList(String sysCode,String tableName, Map<String, Object> conditionMap, String orderBy, Integer start, Integer size) {
+        return selectList(sysCode,tableName, null, conditionMap, orderBy, start, size);
     }
 
-    public List<Map<String, Object>> selectList(String tableName, String selectColumns, Map<String, Object> conditionMap, String orderBy) {
-        return selectList(tableName, selectColumns, conditionMap, orderBy, null, null);
+    public List<Map<String, Object>> selectList(String sysCode,String tableName, String selectColumns, Map<String, Object> conditionMap, String orderBy) {
+        return selectList(sysCode,tableName, selectColumns, conditionMap, orderBy, null, null);
     }
 
-    public List<Map<String, Object>> selectList(String tableName, String selectColumns, Map<String, Object> conditionMap, Integer start, Integer size) {
-        return selectList(tableName, selectColumns, conditionMap, "", start, size);
+    public List<Map<String, Object>> selectList(String sysCode,String tableName, String selectColumns, Map<String, Object> conditionMap, Integer start, Integer size) {
+        return selectList(sysCode,tableName, selectColumns, conditionMap, "", start, size);
     }
 
-    public List<Map<String, Object>> selectList(String tableName, String selectColumns, Map<String, Object> conditionMap, String orderBy, Integer start, Integer size) {
+    public List<Map<String, Object>> selectList(String sysCode,String tableName, String selectColumns, Map<String, Object> conditionMap, String orderBy, Integer start, Integer size) {
         MapSuid mapSuid = BeeFactoryHelper.getMapSuid();
+        mapSuid.setDataSourceName(sysCode);
         MapSql mapSql = BeeFactoryHelper.getMapSql();
 
         mapSql.put(MapSqlKey.Table, tableName);
-        if (CharSequenceUtil.isEmpty(selectColumns) || CharSequenceUtil.equalsAnyIgnoreCase(selectColumns, "*")) {
+        if (StringUtils.isEmpty(selectColumns) || StrUtil.equalsAnyIgnoreCase(selectColumns, "*")) {
             mapSql.put(MapSqlKey.SelectColumns, "*");
         }else {
             mapSql.put(MapSqlKey.SelectColumns, selectColumns);
         }
-        if (CharSequenceUtil.isNotEmpty(orderBy)) {
+        if (StringUtils.isNotEmpty(orderBy)) {
             mapSql.put(MapSqlKey.OrderBy, orderBy);
         }
         mapSql.put(MapSqlSetting.IsNamingTransfer, true);
@@ -107,21 +111,24 @@ public class BeeBaseRepository {
         return mapList;
     }
 
-    public <T> List<T> selectList(T entity) {
+    public <T> List<T> selectList(String sysCode,T entity) {
         Suid suid = BeeFactoryHelper.getSuid();
+        suid.setDataSourceName(DataSourceEnum.ODS.getValue());
         return suid.select(entity);
     }
 
-    public List<Map<String, Object>> selectListBySql(String sql) {
-        if (CharSequenceUtil.isEmpty(sql)) {
-            return Collections.emptyList();
+    public List<Map<String, Object>> selectListBySql(String sysCode,String sql) {
+        if (StringUtils.isEmpty(sql)) {
+            return null;
         }
         PreparedSql preparedSql = BeeFactory.getHoneyFactory().getPreparedSql();
+        preparedSql.setDataSourceName(sysCode);
         return preparedSql.selectMapList(sql);
     }
 
-    public int selectCount(String tableName, Map<String, Object> conditionMap) {
+    public int selectCount(String sysCode,String tableName, Map<String, Object> conditionMap) {
         MapSuid mapSuid = BeeFactoryHelper.getMapSuid();
+        mapSuid.setDataSourceName(sysCode);
         MapSql mapSql = BeeFactoryHelper.getMapSql();
 
         mapSql.put(MapSqlKey.Table, tableName);
@@ -132,10 +139,10 @@ public class BeeBaseRepository {
         return mapSuid.count(mapSql);
     }
 
-    public long insert(String tableName, Map<String, Object> insertValueMap) {
+    public long insert(String sysCode,String tableName, Map<String, Object> insertValueMap) {
         MapSuid mapSuid = BeeFactoryHelper.getMapSuid();
+        mapSuid.setDataSourceName(sysCode);
         MapSql insertMapSql = BeeFactoryHelper.getMapSql();
-
         insertMapSql.put(MapSqlKey.Table, tableName);
         insertMapSql.put(MapSqlSetting.IsNamingTransfer, true);
         for (Map.Entry<String, Object> stringObjectEntry : insertValueMap.entrySet()) {
@@ -152,8 +159,9 @@ public class BeeBaseRepository {
         return id;
     }
 
-    public int update(String tableName, Map<String, Object> setValueMap, Map<String, Object> whereValueMap) {
+    public int update(String sysCode,String tableName, Map<String, Object> setValueMap, Map<String, Object> whereValueMap) {
         MapSuid mapSuid = BeeFactoryHelper.getMapSuid();
+        mapSuid.setDataSourceName(sysCode);
         MapSql updateMapSql = BeeFactoryHelper.getMapSql();
 
         updateMapSql.put(MapSqlKey.Table, tableName);
@@ -175,7 +183,7 @@ public class BeeBaseRepository {
      * @param tableName           数据库表
      * @param insertActionMapList 待插入的表数据
      */
-    public void insertBatch(String tableName, List<Map<String, Object>> insertActionMapList) {
+    public void insertBatch(String sysCode,String tableName, List<Map<String, Object>> insertActionMapList) {
         if (CollUtil.isEmpty(insertActionMapList)) {
             return;
         }
@@ -191,7 +199,7 @@ public class BeeBaseRepository {
                 " VALUES " + "(" +
                 valueSql.substring(0, valueSql.toString().length() - 1) + ")";
         PreparedSql preparedSql = BeeFactory.getHoneyFactory().getPreparedSql();
-
+        preparedSql.setDataSourceName(sysCode);
         try {
             preparedSql.insertBatch(sql, insertActionMapList);
         } catch (Exception e) {
@@ -205,11 +213,12 @@ public class BeeBaseRepository {
      * @param tableName           数据库表
      * @param upsertActionMapList 待插入\更新的表数据
      */
-    public void upsertBatch(String tableName, List<Map<String, Object>> upsertActionMapList) {
+    public void upsertBatch(String sysCode,String tableName, List<Map<String, Object>> upsertActionMapList) {
         if (CollUtil.isEmpty(upsertActionMapList)) {
             return;
         }
         PreparedSql preparedSql = BeeFactory.getHoneyFactory().getPreparedSql();
+        preparedSql.setDataSourceName(sysCode);
         String sql;
         Set<String> parameters = upsertActionMapList.get(0).keySet();
         if (HoneyUtil.isMysql()) {
@@ -284,11 +293,12 @@ public class BeeBaseRepository {
      * @param tableName           数据库表
      * @param upsertActionMapList 待插入\更新的表数据
      */
-    public void upsertBatchPgById(String tableName, List<Map<String, Object>> upsertActionMapList) {
+    public void upsertBatchPgById(String sysCode,String tableName, List<Map<String, Object>> upsertActionMapList) {
         if (CollUtil.isEmpty(upsertActionMapList)) {
             return;
         }
         PreparedSql preparedSql = BeeFactory.getHoneyFactory().getPreparedSql();
+        preparedSql.setDataSourceName(sysCode);
         Set<String> parameters = upsertActionMapList.get(0).keySet();
         StringBuilder fieldSql = new StringBuilder();
         StringBuilder valueSql = new StringBuilder();

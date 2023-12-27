@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.converge.common.util.ShellUtil;
-import com.lrhealth.data.converge.model.ShellCommandDto;
+import com.lrhealth.data.converge.model.dto.ShellCommandDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

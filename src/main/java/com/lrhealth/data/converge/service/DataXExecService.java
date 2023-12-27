@@ -1,7 +1,8 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.model.dto.TableInfoDto;
+
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.model.dto.TableInfoDto;
 
 import java.util.List;
 

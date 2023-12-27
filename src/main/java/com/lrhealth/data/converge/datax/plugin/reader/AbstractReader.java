@@ -2,10 +2,10 @@ package com.lrhealth.data.converge.datax.plugin.reader;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.common.util.QueryParserUtil;
+import com.lrhealth.data.converge.common.util.TemplateMakerUtil;
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.model.vo.JdbcUrlMatchVo;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.utils.QueryParserUtil;
-import com.lrhealth.data.converge.scheduled.utils.TemplateMakerUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 

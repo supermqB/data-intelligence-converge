@@ -1,11 +1,7 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.ConvFileInfoDto;
-import com.lrhealth.data.converge.model.FileExecInfoDTO;
-import com.lrhealth.data.converge.model.FlinkTaskDto;
-import com.lrhealth.data.converge.model.TaskDto;
-import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
+import com.lrhealth.data.converge.model.dto.*;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -94,11 +90,11 @@ public interface XdsInfoService {
      * 库到库的采集模式下，前置机主动生成xdsId,通知汇聚生成xds
      * @param dbXdsMessageDto
      */
-    void fepCreateXds(DbXdsMessageDto dbXdsMessageDto);
+    Boolean fepCreateXds(DbXdsMessageDto dbXdsMessageDto);
 
     /**
      * 库到库的采集模式下，前置机主动生成xdsId,通知汇聚生成xds
      * @param dbXdsMessageDto
      */
-    void fepUpdateXds(DbXdsMessageDto dbXdsMessageDto);
+    Boolean fepUpdateXds(DbXdsMessageDto dbXdsMessageDto);
 }

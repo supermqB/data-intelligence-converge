@@ -1,15 +1,11 @@
 package com.lrhealth.data.converge.dao.adpter;
 
+import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
-import org.teasoft.honey.osql.core.BeeFactory;
 import org.teasoft.honey.osql.core.ExceptionHelper;
-import org.teasoft.honey.osql.core.HoneyUtil;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 /**
  * @author jinmengyu
@@ -19,17 +15,18 @@ import java.sql.SQLException;
 @Repository
 public class JDBCRepository {
 
-    public String execSql(String sql){
-        Connection conn = null;
-        PreparedStatement pst = null;
+    public static String execSql(String sql, DataSourceDto dataSourceDto){
         ResultSet rs = null;
+        String execSql = deleteLastSemicolon(sql);
         try {
-            BeeFactory instance = BeeFactory.getInstance();
-            conn = instance.getDataSource().getConnection();
-            String execSql = HoneyUtil.deleteLastSemicolon(sql);
-            pst = conn.prepareStatement(execSql);
+            Class.forName(dataSourceDto.getDriver());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        try (Connection conn = DriverManager.getConnection(dataSourceDto.getJdbcUrl(), dataSourceDto.getUsername(), dataSourceDto.getPassword());
+             PreparedStatement pst = conn.prepareStatement(execSql)){
             rs = pst.executeQuery();
-            while (rs.next()) {
+            if (rs.next()) {
                 return rs.getString(1);
             }
         } catch (SQLException e) {
@@ -42,21 +39,13 @@ public class JDBCRepository {
                     e.printStackTrace();
                 }
             }
-            if(pst!=null) {
-                try {
-                    pst.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if(conn!=null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
         return null;
+    }
+
+    private static String deleteLastSemicolon(String sql) {
+        String new_sql = sql.trim();
+        if (new_sql.endsWith(";")) return new_sql.substring(0, new_sql.length() - 1); //fix oracle ORA-00911 bug.oracle用jdbc不能有分号
+        return sql;
     }
 }

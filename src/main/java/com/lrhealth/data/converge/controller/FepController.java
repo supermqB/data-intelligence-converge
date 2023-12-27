@@ -1,11 +1,11 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.common.result.ResultBase;
+import com.lrhealth.data.converge.model.dto.ActiveFepUploadDto;
 import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
 import com.lrhealth.data.converge.model.dto.FepScheduledDto;
-import com.lrhealth.data.converge.scheduled.model.dto.ActiveFepUploadDto;
-import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
-import com.lrhealth.data.converge.scheduled.service.FeTunnelConfigService;
+import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
+import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.ScheduleTaskService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +34,7 @@ public class FepController {
 
     @GetMapping("/config")
     public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
-                                                                @RequestParam("port") Integer port){
+                                                                 @RequestParam("port") Integer port){
         try {
             return ResultBase.success(feTunnelConfigService.getFepTunnelConfig(ip, port));
         }catch (Exception e){
@@ -55,10 +55,9 @@ public class FepController {
     }
 
     @PostMapping("/xds/create")
-    public ResultBase<Void> createDbXds(@RequestBody DbXdsMessageDto dbXdsMessageDto){
+    public ResultBase<Boolean> createDbXds(@RequestBody DbXdsMessageDto dbXdsMessageDto){
         try {
-            xdsInfoService.fepCreateXds(dbXdsMessageDto);
-            return ResultBase.success();
+            return ResultBase.success(xdsInfoService.fepCreateXds(dbXdsMessageDto));
         }catch (Exception e){
             log.error("db-db xds create error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());
@@ -66,10 +65,9 @@ public class FepController {
     }
 
     @PostMapping("/xds/update")
-    public ResultBase<Void> updateDbXds(@RequestBody DbXdsMessageDto dbXdsMessageDto){
+    public ResultBase<Boolean> updateDbXds(@RequestBody DbXdsMessageDto dbXdsMessageDto){
         try {
-            xdsInfoService.fepUpdateXds(dbXdsMessageDto);
-            return ResultBase.success();
+            return ResultBase.success(xdsInfoService.fepUpdateXds(dbXdsMessageDto));
         }catch (Exception e){
             log.error("db-db xds update error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());

@@ -21,5 +21,6 @@ public class DbXdsMessageDto {
 
     private Integer dataCount;
 
+    private Long tunnelId;
 
 }
