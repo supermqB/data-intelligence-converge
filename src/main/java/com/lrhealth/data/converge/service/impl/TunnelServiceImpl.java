@@ -29,7 +29,7 @@ public class TunnelServiceImpl implements TunnelService {
 
 
     @Override
-    public DataSourceDto getDataSourceByTunnel(Long tunnelId) {
+    public DataSourceDto getWriterDataSourceByTunnel(Long tunnelId) {
         if (tunnelId == null){
             throw new CommonException("tunnelId不能为空！");
         }
@@ -38,7 +38,7 @@ public class TunnelServiceImpl implements TunnelService {
             log.error("不存在的管道id:{}", tunnelId);
             return null;
         }
-        ConvOdsDatasourceConfig datasource = datasourceConfigService.getById(tunnel.getJdbcUrl());
+        ConvOdsDatasourceConfig datasource = datasourceConfigService.getById(tunnel.getWriterDatasourceId());
         if (ObjectUtil.isEmpty(datasource)){
             log.error("不存在的数据源配置id:{}", tunnelId);
             return null;

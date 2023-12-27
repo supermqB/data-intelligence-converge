@@ -8,7 +8,7 @@ import com.lrhealth.data.converge.model.dto.DataSourceDto;
  */
 public interface TunnelService {
 
-    DataSourceDto getDataSourceByTunnel(Long tunnelId);
+    DataSourceDto getWriterDataSourceByTunnel(Long tunnelId);
 
     DataSourceDto getDataSourceBySys(String sysCode);
 }

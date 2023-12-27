@@ -208,7 +208,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         // 创建xds
         Xds xds = createXds(fileMessageDTO, convTask);
 
-        DataSourceDto dataSourceDto = tunnelService.getDataSourceByTunnel(convTask.getTunnelId());
+        DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(convTask.getTunnelId());
         // 数据落库，获得数据条数
         Integer countNumber = fileDataHandle(xds, convTask.getId(), dataSourceDto);
 

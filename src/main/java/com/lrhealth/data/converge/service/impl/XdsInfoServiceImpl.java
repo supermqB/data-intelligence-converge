@@ -199,7 +199,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Override
     public Boolean fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
         int dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
-        DataSourceDto dataSourceDto = tunnelService.getDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
+        DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
         String avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto);
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = dataCount * Long.parseLong(avgRowLength);
