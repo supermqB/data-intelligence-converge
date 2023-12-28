@@ -1,12 +1,16 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.lrhealth.data.converge.common.enums.OdsDataSizeEnum;
+import com.lrhealth.data.converge.common.util.QueryParserUtil;
 import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
-import com.lrhealth.data.converge.scheduled.utils.QueryParserUtil;
+import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.service.DbSqlService;
+import com.lrhealth.data.converge.service.TunnelService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.relational.core.sql.In;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -77,7 +81,7 @@ public class DbSqlServiceImpl implements DbSqlService {
     }
 
     @Override
-    public String getAvgRowLength(String odsTableName, DataSourceDto dataSourceDto, String odsModelName){
+    public Integer getAvgRowLength(String odsTableName, DataSourceDto dataSourceDto, String odsModelName){
         // 刷新配置,只需要执行一次
         // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
         // 获取每行的平均大小

@@ -8,24 +8,24 @@ import com.lrhealth.data.common.enums.conv.CollectDataTypeEnum;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.util.file.LargeFileUtil;
+import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
+import com.lrhealth.data.converge.dao.entity.ConvTask;
+import com.lrhealth.data.converge.dao.entity.ConvTaskResultFile;
+import com.lrhealth.data.converge.dao.entity.ConvTaskResultView;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.ConvTaskResultFileService;
+import com.lrhealth.data.converge.dao.service.ConvTaskResultViewService;
+import com.lrhealth.data.converge.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.dao.service.XdsService;
-import com.lrhealth.data.converge.model.FileMessageDTO;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTask;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultFile;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskResultView;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultFileService;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskResultViewService;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTaskService;
-import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
-import com.lrhealth.data.converge.service.DbSqlService;
-import com.lrhealth.data.converge.service.DiTaskConvergeService;
-import com.lrhealth.data.converge.service.KafkaService;
-import com.lrhealth.data.converge.service.OdsModelService;
+
+import com.lrhealth.data.converge.model.dto.DataSourceDto;
+import com.lrhealth.data.converge.model.dto.FileMessageDTO;
+import com.lrhealth.data.converge.service.*;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.data.relational.core.sql.In;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -316,7 +316,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     }
 
     private void updateXds(Long xdsId, String odsTableName, Integer countNumber, DataSourceDto dataSourceDto, String odsModelName) {
-        String avgRowLength = dbSqlService.getAvgRowLength(odsTableName, dataSourceDto,odsModelName);
+        Integer avgRowLength = dbSqlService.getAvgRowLength(odsTableName, dataSourceDto,odsModelName);
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = countNumber * avgRowLength;
         Xds updateXds = Xds.builder().id(xdsId).dataSize(dataSize)
