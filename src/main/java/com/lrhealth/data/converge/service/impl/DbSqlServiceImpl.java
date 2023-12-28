@@ -1,12 +1,14 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.lrhealth.data.converge.common.enums.OdsDataSizeEnum;
 import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.scheduled.utils.QueryParserUtil;
 import com.lrhealth.data.converge.service.DbSqlService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.relational.core.sql.In;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -79,20 +81,17 @@ public class DbSqlServiceImpl implements DbSqlService {
     }
 
     @Override
-    public String getAvgRowLength(String odsTableName){
+    public Integer getAvgRowLength(String odsTableName, String odsModelName){
         // 刷新配置,只需要执行一次
         // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
-        // 刷新tables表的数据
-//        String refreshSql = "ANALYZE TABLE " + odsTableName + " COMPUTE STATISTICS FOR ALL COLUMNS SIZE AUTO;";
-//        jdbcRepository.execSql(refreshSql);
         // 获取每行的平均大小
         String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
         String result = jdbcRepository.execSql(selectSql);
         // todo: 暂时给一个默认值
         if (CharSequenceUtil.isBlank(result)){
-            result = "80000";
+            return OdsDataSizeEnum.getValue(odsModelName);
         }
-        return result;
+        return Integer.parseInt(result);
     }
 
 

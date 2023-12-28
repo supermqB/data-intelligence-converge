@@ -204,9 +204,9 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     @Override
     public void fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
         int dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
-        String avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName());
+        Integer avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dbXdsMessageDto.getOdsModelName());
         // 文件中的数据写入后消耗的数据库容量
-        long dataSize = dataCount * Long.parseLong(avgRowLength);
+        long dataSize = dataCount * avgRowLength;
         Xds updateXds = Xds.builder()
                 .id(dbXdsMessageDto.getId())
                 .dataConvergeEndTime(LocalDateTime.now())

@@ -25,5 +25,5 @@ public interface DbSqlService {
      */
     boolean checkOdsTableExist(String odsTableName);
 
-    String getAvgRowLength(String odsTableName);
+    Integer getAvgRowLength(String odsTableName, String odsModelName);
 }

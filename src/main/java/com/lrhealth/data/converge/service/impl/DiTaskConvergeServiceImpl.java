@@ -214,7 +214,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         updateTaskResult(fileMessageDTO.getTunnelCMEnum(), fileMessageDTO.getTaskResultId(), countNumber);
 
         // 更新xds
-        updateXds(xds.getId(), xds.getOdsTableName(), countNumber);
+        updateXds(xds.getId(), xds.getOdsTableName(), countNumber, xds.getOdsModelName());
         AsyncFactory.convTaskLog(convTask.getId(), "[" + fileMessageDTO.getTableName() + "]表入库成功！");
 
         // 发送kafka
@@ -311,10 +311,10 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         return xdsService.getById(xds.getId());
     }
 
-    private void updateXds(Long xdsId, String odsTableName, Integer countNumber) {
-        String avgRowLength = dbSqlService.getAvgRowLength(odsTableName);
+    private void updateXds(Long xdsId, String odsTableName, Integer countNumber, String odsModelName) {
+        Integer avgRowLength = dbSqlService.getAvgRowLength(odsTableName, odsModelName);
         // 文件中的数据写入后消耗的数据库容量
-        long dataSize = countNumber * Long.parseLong(avgRowLength);
+        long dataSize = countNumber * avgRowLength;
         Xds updateXds = Xds.builder().id(xdsId).dataSize(dataSize)
                 .dataConvergeEndTime(LocalDateTime.now())
                 .updateTime(LocalDateTime.now())
