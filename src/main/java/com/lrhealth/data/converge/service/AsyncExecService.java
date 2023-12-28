@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
+
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 
 /**
  * @author jinmengyu

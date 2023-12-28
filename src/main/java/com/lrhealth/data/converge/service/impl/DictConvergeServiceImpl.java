@@ -9,6 +9,7 @@ import com.lrhealth.data.converge.common.util.file.FileToJsonUtil;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
+import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,9 +38,13 @@ public class DictConvergeServiceImpl implements DictConvergeService {
     private FileService fileService;
     @Resource
     private XdsInfoService xdsInfoService;
+    @Resource
+    private TunnelService tunnelService;
 
     @Override
     public void dictConverge(MultipartFile file, String orgCode, String sysCode) {
+        // 查询写入数据源
+        DataSourceDto dataSourceDto = tunnelService.getDataSourceBySys(sysCode);
         // 创建字典xds
         Xds xds = xdsInfoService.createDictXds(orgCode, sysCode, file);
         // 查询是否建表
@@ -53,11 +58,11 @@ public class DictConvergeServiceImpl implements DictConvergeService {
                 JSONObject header = dataArray.getJSONObject(0);
 
                 // 表不存在？ 建表
-                if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName())){
+                if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName(), dataSourceDto)){
                     // 创建表
                     Map<String, String> headerMap = (Map<String, String>) dataList.get(0);
                     List<ColumnDbBo> collect = headerMap.values().stream().map(s -> ColumnDbBo.builder().columnName(s).build()).collect(Collectors.toList());
-                    dbSqlService.createTable(collect, xds.getOdsTableName());
+                    dbSqlService.createTable(collect, xds.getOdsTableName(), dataSourceDto);
                 }
 
                 FileToJsonUtil.putSheetData(jsonObject, dataArray, header, sheet.getSheetName());

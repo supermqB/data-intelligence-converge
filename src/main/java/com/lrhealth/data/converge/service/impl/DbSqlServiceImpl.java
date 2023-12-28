@@ -1,14 +1,12 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.lrhealth.data.converge.common.enums.OdsDataSizeEnum;
 import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.scheduled.utils.QueryParserUtil;
 import com.lrhealth.data.converge.service.DbSqlService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.relational.core.sql.In;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -21,15 +19,13 @@ import java.util.List;
 @Slf4j
 @Service
 public class DbSqlServiceImpl implements DbSqlService {
-
-    @Value("${spring.datasource.ods.jdbcUrl}")
-    private String jdbcUrl;
-
     @Resource
     private JDBCRepository jdbcRepository;
+    @Resource
+    private TunnelService tunnelService;
 
     @Override
-    public void createTable(List<ColumnDbBo> header, String odsTableName) {
+    public void createTable(List<ColumnDbBo> header, String odsTableName, DataSourceDto dataSourceDto) {
         StringBuilder createSql = new StringBuilder("CREATE TABLE " + odsTableName + " (\n");
         StringBuilder columnSql = new StringBuilder();
         for (ColumnDbBo modelColumn : header){
@@ -64,29 +60,29 @@ public class DbSqlServiceImpl implements DbSqlService {
 
 
         log.info("table [{}]  sql:[{}]", odsTableName, createSql);
-        jdbcRepository.execSql(String.valueOf(createSql));
+        jdbcRepository.execSql(String.valueOf(createSql), dataSourceDto);
     }
 
     @Override
-    public boolean checkOdsTableExist(String odsTableName) {
-        String dbSchema = QueryParserUtil.getDbSchema(jdbcUrl);
+    public boolean checkOdsTableExist(String odsTableName, DataSourceDto dataSourceDto) {
+        String dbSchema = QueryParserUtil.getDbSchema(dataSourceDto.getJdbcUrl());
         String checkSql;
         if (CharSequenceUtil.isNotBlank(dbSchema)){
             checkSql = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '" + odsTableName + "' and TABLE_SCHEMA = '" + dbSchema + "';";
         }else {
             checkSql = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '" + odsTableName + "';";
         }
-        String result = jdbcRepository.execSql(checkSql);
+        String result = jdbcRepository.execSql(checkSql, dataSourceDto);
         return (result != null);
     }
 
     @Override
-    public Integer getAvgRowLength(String odsTableName, String odsModelName){
+    public String getAvgRowLength(String odsTableName, DataSourceDto dataSourceDto, String odsModelName){
         // 刷新配置,只需要执行一次
         // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
         // 获取每行的平均大小
         String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
-        String result = jdbcRepository.execSql(selectSql);
+        String result = jdbcRepository.execSql(selectSql, dataSourceDto);
         // todo: 暂时给一个默认值
         if (CharSequenceUtil.isBlank(result)){
             return OdsDataSizeEnum.getValue(odsModelName);

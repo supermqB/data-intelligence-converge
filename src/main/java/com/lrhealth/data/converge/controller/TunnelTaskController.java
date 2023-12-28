@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.common.result.ResultBase;
-import com.lrhealth.data.converge.scheduled.model.dto.TunnelMessageDTO;
+import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.service.DirectConnectCollectService;
 import com.lrhealth.data.converge.service.TunnelExecService;
 import lombok.extern.slf4j.Slf4j;

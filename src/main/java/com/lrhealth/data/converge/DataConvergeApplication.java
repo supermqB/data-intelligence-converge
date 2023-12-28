@@ -9,6 +9,8 @@ import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import java.net.InetAddress;
+
 /**
  * 数据汇聚启动类
  *
@@ -26,6 +28,7 @@ public class DataConvergeApplication {
         try {
             //设置jasypt密码
             System.setProperty("jasypt.encryptor.password", "PEB123@321BEP");
+            System.setProperty("converge.ip", InetAddress.getLocalHost().getHostAddress());
             SpringApplication.run(DataConvergeApplication.class, args);
         } catch (Exception e) {
             log.error("********** DataConvergeApplication error:{}", ExceptionUtil.stacktraceToString(e));

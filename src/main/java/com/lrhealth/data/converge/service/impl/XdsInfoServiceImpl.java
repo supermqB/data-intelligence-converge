@@ -55,6 +55,8 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private DbSqlService dbSqlService;
     @Resource
     private KafkaService kafkaService;
+    @Resource
+    private TunnelService tunnelService;
 
 
     @Override
@@ -176,7 +178,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     }
 
     @Override
-    public void fepCreateXds(DbXdsMessageDto dbXdsMessageDto) {
+    public Boolean fepCreateXds(DbXdsMessageDto dbXdsMessageDto) {
         String dataType = dataTypeService.getTableDataType(dbXdsMessageDto.getOdsModelName(), dbXdsMessageDto.getSysCode());
         if (CharSequenceUtil.isBlank(dataType)) {
             dataType = CollectDataTypeEnum.BUSINESS.getCode();
@@ -184,7 +186,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         List<System> systemList = systemService.list(new LambdaQueryWrapper<System>().eq(System::getSystemCode, dbXdsMessageDto.getSysCode())
                 .eq(System::getDelFlag, 0));
         if (CollUtil.isEmpty(systemList)) {
-            return;
+            return false;
         }
         Xds xds = Xds.builder()
                 .id(dbXdsMessageDto.getId())
@@ -198,13 +200,14 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .odsTableName(dbXdsMessageDto.getOdsTableName())
                 .createTime(LocalDateTime.now())
                 .build();
-        xdsService.save(xds);
+        return xdsService.save(xds);
     }
 
     @Override
-    public void fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
+    public Boolean fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
         int dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
-        Integer avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dbXdsMessageDto.getOdsModelName());
+        DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
+        Integer avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = dataCount * avgRowLength;
         Xds updateXds = Xds.builder()
@@ -219,6 +222,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
 
         // 发送kafka
         kafkaService.xdsSendKafka(updateXds);
+        return true;
     }
 
     /**

@@ -1,16 +1,17 @@
 package com.lrhealth.data.converge.scheduled;
 
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTaskLog;
-import com.lrhealth.data.converge.scheduled.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.scheduled.dao.service.ConvTunnelService;
-import com.lrhealth.data.converge.scheduled.model.FileTask;
-import com.lrhealth.data.converge.scheduled.model.TaskFileConfig;
-import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
-import com.lrhealth.data.converge.scheduled.service.ConvergeService;
-import com.lrhealth.data.converge.scheduled.service.TaskFileService;
-import com.lrhealth.data.converge.scheduled.thread.AsyncFactory;
-import com.lrhealth.data.converge.scheduled.thread.AsyncManager;
+import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
+import com.lrhealth.data.converge.common.util.thread.AsyncManager;
+import com.lrhealth.data.converge.dao.entity.ConvTaskLog;
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.dao.service.ConvTunnelService;
+import com.lrhealth.data.converge.model.FileTask;
+import com.lrhealth.data.converge.model.TaskFileConfig;
+import com.lrhealth.data.converge.model.dto.PreFileStatusDto;
+import com.lrhealth.data.converge.service.ConvergeService;
+import com.lrhealth.data.converge.service.TaskFileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;

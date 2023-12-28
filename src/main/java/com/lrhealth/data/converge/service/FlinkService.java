@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.FileExecInfoDTO;
+import com.lrhealth.data.converge.model.dto.FileExecInfoDTO;
 
 /**
  * @author jinmengyu

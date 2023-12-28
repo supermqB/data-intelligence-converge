@@ -2,8 +2,8 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.net.NetUtil;
 import com.lrhealth.data.converge.common.util.ShellUtil;
-import com.lrhealth.data.converge.model.FepFileInfoVo;
-import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
+import com.lrhealth.data.converge.model.dto.FileConvergeInfoDTO;
+import com.lrhealth.data.converge.model.vo.FepFileInfoVo;
 import com.lrhealth.data.converge.service.ShellService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

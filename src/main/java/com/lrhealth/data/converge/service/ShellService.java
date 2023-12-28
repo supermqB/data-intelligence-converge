@@ -1,6 +1,6 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
+import com.lrhealth.data.converge.model.dto.FileConvergeInfoDTO;
 
 /**
  * @author jinmengyu

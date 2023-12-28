@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.TaskDto;
+import com.lrhealth.data.converge.model.dto.TaskDto;
 
 /**
  * dataX采集方式

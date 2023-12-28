@@ -1,9 +1,9 @@
 package com.lrhealth.data.converge.datax.plugin.reader.impl;
 
+import com.lrhealth.data.converge.common.util.JdbcUrlUtil;
 import com.lrhealth.data.converge.datax.constant.DataXConstant;
 import com.lrhealth.data.converge.datax.plugin.reader.AbstractReader;
 import com.lrhealth.data.converge.model.vo.JdbcUrlMatchVo;
-import com.lrhealth.data.converge.scheduled.utils.JdbcUrlUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;

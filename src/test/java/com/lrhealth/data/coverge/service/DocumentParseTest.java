@@ -1,11 +1,10 @@
 package com.lrhealth.data.coverge.service;
 
-import cn.hutool.core.codec.Base64Decoder;
 import com.lrhealth.data.converge.DataConvergeApplication;
 import com.lrhealth.data.converge.common.util.file.FileUtils;
-import com.lrhealth.data.converge.scheduled.model.FileTask;
-import com.lrhealth.data.converge.scheduled.model.dto.PreFileStatusDto;
-import com.lrhealth.data.converge.scheduled.service.ConvergeService;
+import com.lrhealth.data.converge.model.FileTask;
+import com.lrhealth.data.converge.model.dto.PreFileStatusDto;
+import com.lrhealth.data.converge.service.ConvergeService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;

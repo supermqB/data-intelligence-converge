@@ -71,6 +71,8 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     private KafkaService kafkaService;
     @Resource
     private DbSqlService dbSqlService;
+    @Resource
+    private TunnelService tunnelService;
 
     @Scheduled(cron = "${lrhealth.converge.dataSaveCron}")
     @Override
@@ -207,14 +209,16 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     private void xdsFileSave(FileMessageDTO fileMessageDTO, ConvTask convTask) {
         // 创建xds
         Xds xds = createXds(fileMessageDTO, convTask);
+
+        DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(convTask.getTunnelId());
         // 数据落库，获得数据条数
-        Integer countNumber = fileDataHandle(xds, convTask.getId());
+        Integer countNumber = fileDataHandle(xds, convTask.getId(), dataSourceDto);
 
         // 更新任务实例信息
         updateTaskResult(fileMessageDTO.getTunnelCMEnum(), fileMessageDTO.getTaskResultId(), countNumber);
 
         // 更新xds
-        updateXds(xds.getId(), xds.getOdsTableName(), countNumber, xds.getOdsModelName());
+        updateXds(xds.getId(), xds.getOdsTableName(), countNumber, dataSourceDto, xds.getOdsModelName());
         AsyncFactory.convTaskLog(convTask.getId(), "[" + fileMessageDTO.getTableName() + "]表入库成功！");
 
         // 发送kafka
@@ -243,10 +247,10 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
      * @param taskId
      * @return
      */
-    private Integer fileDataHandle(Xds xds, Integer taskId) {
+    private Integer fileDataHandle(Xds xds, Integer taskId, DataSourceDto dataSourceDto) {
         List<OriginalModelColumn> originalModelColumns = odsModelService.getcolumnList(xds.getOdsModelName(), xds.getSysCode());
         // 数据写入
-        Integer countNumber = dataTableSave(xds, taskId, originalModelColumns);
+        Integer countNumber = dataTableSave(xds, taskId, originalModelColumns, dataSourceDto);
 
         // todo: 配置化
         try {
@@ -260,14 +264,14 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     }
 
 
-    private Integer dataTableSave(Xds xds, Integer taskId, List<OriginalModelColumn> originalModelColumns) {
+    private Integer dataTableSave(Xds xds, Integer taskId, List<OriginalModelColumn> originalModelColumns, DataSourceDto dataSourceDto) {
         long startTime = System.currentTimeMillis();
         // 表是否存在的判断
         synchronized (this) {
-            if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName())) {
+            if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName(), dataSourceDto)) {
                 // 创建表
                 List<ColumnDbBo> collect = originalModelColumns.stream().map(columnInfo -> ColumnDbBo.builder().columnName(columnInfo.getNameEn()).fieldType(columnInfo.getFieldType()).fieldLength(columnInfo.getFieldTypeLength()).build()).collect(Collectors.toList());
-                dbSqlService.createTable(collect, xds.getOdsTableName());
+                dbSqlService.createTable(collect, xds.getOdsTableName(), dataSourceDto);
                 AsyncFactory.convTaskLog(taskId, "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
             }
         }
@@ -275,7 +279,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         List<OriginalModelColumn> filterModelColumns = new ArrayList<>(originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, column -> column, (column1, column2) -> column1))
                 .values());
         Map<String, String> fieldTypeMap = filterModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getFieldType));
-        Integer countNumber = largeFileUtil.fileParseAndSave(xds.getStoredFilePath(), xds.getId(), xds.getOdsTableName(), fieldTypeMap, taskId);
+        Integer countNumber = largeFileUtil.fileParseAndSave(xds.getStoredFilePath(), xds.getId(), xds.getOdsTableName(), fieldTypeMap, taskId, dataSourceDto);
         // 获得数据的大概存储大小
         AsyncFactory.convTaskLog(taskId, "数据入库完成，时间：[" + (System.currentTimeMillis() - startTime)
                 + "]， 条数：[" + countNumber + "]");
@@ -311,8 +315,8 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         return xdsService.getById(xds.getId());
     }
 
-    private void updateXds(Long xdsId, String odsTableName, Integer countNumber, String odsModelName) {
-        Integer avgRowLength = dbSqlService.getAvgRowLength(odsTableName, odsModelName);
+    private void updateXds(Long xdsId, String odsTableName, Integer countNumber, DataSourceDto dataSourceDto, String odsModelName) {
+        String avgRowLength = dbSqlService.getAvgRowLength(odsTableName, dataSourceDto,odsModelName);
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = countNumber * avgRowLength;
         Xds updateXds = Xds.builder().id(xdsId).dataSize(dataSize)

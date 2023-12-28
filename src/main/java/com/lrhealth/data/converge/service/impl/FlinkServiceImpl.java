@@ -3,10 +3,12 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.lrhealth.data.converge.dao.adpter.BeeBaseRepository;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.model.FileExecInfoDTO;
-import com.lrhealth.data.converge.model.FileConvergeInfoDTO;
-import com.lrhealth.data.converge.model.TaskDto;
-import com.lrhealth.data.converge.service.*;
+import com.lrhealth.data.converge.model.dto.FileConvergeInfoDTO;
+import com.lrhealth.data.converge.model.dto.FileExecInfoDTO;
+import com.lrhealth.data.converge.model.dto.TaskDto;
+import com.lrhealth.data.converge.service.FileService;
+import com.lrhealth.data.converge.service.FlinkService;
+import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +35,7 @@ public class FlinkServiceImpl implements FlinkService {
     public Xds database(Xds xds){
         Map<String, Object> conditionMap = new HashMap<>();
         conditionMap.put("xds_id", xds.getId());
-        int count = beeBaseRepository.selectCount(xds.getOdsTableName(), conditionMap);
+        int count = beeBaseRepository.selectCount(xds.getSysCode(), xds.getOdsTableName(), conditionMap);
         TaskDto taskDto = new TaskDto();
         taskDto.setXdsId(xds.getId());
         taskDto.setCountNumber(String.valueOf(count));
