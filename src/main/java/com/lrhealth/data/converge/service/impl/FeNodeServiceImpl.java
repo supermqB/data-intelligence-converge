@@ -2,11 +2,11 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.http.HttpRequest;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.config.ConvergeConfig;
@@ -34,6 +34,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 /**
@@ -65,7 +67,7 @@ public class FeNodeServiceImpl implements FeNodeService {
     @Resource
     private ConvTaskResultFileService convTaskResultFileService;
 
-    private static ConcurrentHashSet<Long> logIdSet = new ConcurrentHashSet<>();
+    private static ConcurrentMap<Integer, Boolean> logIdMap = new ConcurrentHashMap<>();
 
     @Override
     @Retryable(value = {PingException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -79,7 +81,7 @@ public class FeNodeServiceImpl implements FeNodeService {
                     .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                     .timeout(3000)
                     .execute().body();
-            JSONObject jsonObject = JSONObject.parseObject(body);
+            JSONObject jsonObject = JSON.parseObject(body);
             return "200".equals(jsonObject.get("code"));
         } catch (Exception e) {
             throw new PingException("ping 前置机异常！" + url + "\n" +e.getMessage() + "\n"
@@ -106,8 +108,8 @@ public class FeNodeServiceImpl implements FeNodeService {
                     .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                     .timeout(3000)
                     .execute().body();
-            Object value = JSONObject.parseObject(result).get("value");
-            return JSONObject.parseObject(JSONObject.toJSONString(value),
+            Object value = JSON.parseObject(result).get("value");
+            return JSON.parseObject(JSON.toJSONString(value),
                     FrontendStatusDto.class);
         } catch (Exception e) {
             throw new FeNodeStatusException("获取前置机：" + node.getIp() + "状态异常！\n" + e.getMessage()
@@ -173,7 +175,7 @@ public class FeNodeServiceImpl implements FeNodeService {
             return;
         }
         DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        List<TaskLogDto> newLogList = taskLogs.stream().filter(taskLogDto -> !logIdSet.contains(taskLogDto.getLogId())).collect(Collectors.toList());
+        List<TaskLogDto> newLogList = taskLogs.stream().filter(taskLogDto -> !logIdMap.containsKey(taskLogDto.getLogId())).collect(Collectors.toList());
         if (CollUtil.isEmpty(newLogList)){
             return;
         }
@@ -188,7 +190,7 @@ public class FeNodeServiceImpl implements FeNodeService {
         });
         boolean insert = convTaskLogService.saveOrUpdateBatch(convTaskLogList);
         if (insert){
-            convTaskLogList.forEach(convTaskLog -> logIdSet.add(convTaskLog.getId()));
+            convTaskLogList.forEach(convTaskLog -> logIdMap.put(convTaskLog.getFedLogId(), true));
         }
     }
 
