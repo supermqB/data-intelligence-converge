@@ -9,8 +9,6 @@ import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.service.DbSqlService;
 import com.lrhealth.data.converge.service.TunnelService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.relational.core.sql.In;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -88,7 +86,7 @@ public class DbSqlServiceImpl implements DbSqlService {
         String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
         String result = jdbcRepository.execSql(selectSql, dataSourceDto);
         // todo: 暂时给一个默认值
-        if (CharSequenceUtil.isBlank(result)){
+        if (CharSequenceUtil.isBlank(result) || result.equals("0")){
             return OdsDataSizeEnum.getValue(odsModelName);
         }
         return Integer.parseInt(result);

@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.model.dto.ActiveFepUploadDto;
 import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
@@ -57,6 +58,7 @@ public class FepController {
     @PostMapping("/xds/create")
     public ResultBase<Boolean> createDbXds(@RequestBody DbXdsMessageDto dbXdsMessageDto){
         try {
+            log.info("收到前置机xds创建请求：{}", JSON.toJSONString(dbXdsMessageDto));
             return ResultBase.success(xdsInfoService.fepCreateXds(dbXdsMessageDto));
         }catch (Exception e){
             log.error("db-db xds create error, {}", ExceptionUtils.getStackTrace(e));
@@ -67,6 +69,7 @@ public class FepController {
     @PostMapping("/xds/update")
     public ResultBase<Boolean> updateDbXds(@RequestBody DbXdsMessageDto dbXdsMessageDto){
         try {
+            log.info("收到前置机xds更新请求：{}", JSON.toJSONString(dbXdsMessageDto));
             return ResultBase.success(xdsInfoService.fepUpdateXds(dbXdsMessageDto));
         }catch (Exception e){
             log.error("db-db xds update error, {}", ExceptionUtils.getStackTrace(e));
