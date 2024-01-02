@@ -80,7 +80,7 @@ public class ConvMonitorTask {
             monitorMsg.setStatus(false);
             monitorMsg.setSendTime(monitor.getUpdateTime());
             String desc = MonitorMsg.MsgTypeEnum.getDescByCode(monitor.getMonitorType());
-            monitorMsg.setMsg(desc + "异常时间超过" + TIME_OUT_THRESHOLD + "分钟");
+            monitorMsg.setMsg(desc + "异常");
             //写异常信息 删除缓存key 防止断连前置机信息一直存在缓存
             convMonitorService.processConvMonitor(monitor, monitorMsg);
             convCache.removeObject(cacheKey);
