@@ -207,7 +207,11 @@ public class FeNodeServiceImpl implements FeNodeService {
         }
         BeanUtils.copyProperties(resultViewInfoDto, convTaskResultView);
         convTaskResultView.setTaskId(convTask.getId());
-        convTaskResultView.setDataItemCount(resultViewInfoDto.getRecordCount());
+        // 过滤条数
+        if (resultViewInfoDto.getRecordCount() != 0){
+            convTaskResultView.setDataItemCount(resultViewInfoDto.getRecordCount());
+        }
+
         convTaskResultView.setFeStoredPath(resultViewInfoDto.getFilePath());
         if(!StringUtils.isEmpty(resultViewInfoDto.getFileName())){
             String destPath = convergeConfig.getOutputPath() + File.separator + convTask.getId()

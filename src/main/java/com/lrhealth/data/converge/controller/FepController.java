@@ -2,12 +2,10 @@ package com.lrhealth.data.converge.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.result.ResultBase;
-import com.lrhealth.data.converge.model.dto.ActiveFepUploadDto;
-import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
-import com.lrhealth.data.converge.model.dto.FepScheduledDto;
-import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
+import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.ScheduleTaskService;
+import com.lrhealth.data.converge.service.TaskResultViewService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -32,6 +30,8 @@ public class FepController {
     private XdsInfoService xdsInfoService;
     @Resource
     private ScheduleTaskService scheduleTaskService;
+    @Resource
+    private TaskResultViewService taskResultViewService;
 
     @GetMapping("/config")
     public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
@@ -83,6 +83,17 @@ public class FepController {
                                                              @RequestParam("port") Integer port){
         try {
             return ResultBase.success(scheduleTaskService.getCacheTask(ip, port));
+        }catch (Exception e){
+            log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/upload/count")
+    public ResultBase<Void> getScheduleTask(@RequestBody ResultRecordDto recordDto){
+        try {
+            taskResultViewService.updateTaskResultViewCount(recordDto);
+            return ResultBase.success();
         }catch (Exception e){
             log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());
