@@ -67,7 +67,7 @@ public class FeNodeServiceImpl implements FeNodeService {
     @Resource
     private ConvTaskResultFileService convTaskResultFileService;
 
-    private static ConcurrentMap<Integer, Boolean> logIdMap = new ConcurrentHashMap<>();
+    private static ConcurrentMap<String, Boolean> logIdMap = new ConcurrentHashMap<>();
 
     @Override
     @Retryable(value = {PingException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -175,7 +175,7 @@ public class FeNodeServiceImpl implements FeNodeService {
             return;
         }
         DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        List<TaskLogDto> newLogList = taskLogs.stream().filter(taskLogDto -> !logIdMap.containsKey(taskLogDto.getLogId())).collect(Collectors.toList());
+        List<TaskLogDto> newLogList = taskLogs.stream().filter(taskLogDto -> !logIdMap.containsKey(convTask.getId() + "-" + taskLogDto.getLogId())).collect(Collectors.toList());
         if (CollUtil.isEmpty(newLogList)){
             return;
         }
@@ -190,7 +190,7 @@ public class FeNodeServiceImpl implements FeNodeService {
         });
         boolean insert = convTaskLogService.saveOrUpdateBatch(convTaskLogList);
         if (insert){
-            convTaskLogList.forEach(convTaskLog -> logIdMap.put(convTaskLog.getFedLogId(), true));
+            convTaskLogList.forEach(convTaskLog -> logIdMap.put(convTask.getId() + "-" + convTaskLog.getFedLogId(), true));
         }
     }
 
