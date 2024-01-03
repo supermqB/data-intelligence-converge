@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.result.ResultBase;
+import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.ScheduleTaskService;
@@ -32,6 +33,8 @@ public class FepController {
     private ScheduleTaskService scheduleTaskService;
     @Resource
     private TaskResultViewService taskResultViewService;
+    @Resource
+    private ConvOdsDatasourceConfigService odsDatasourceConfigService;
 
     @GetMapping("/config")
     public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
@@ -93,6 +96,36 @@ public class FepController {
     public ResultBase<Void> getScheduleTask(@RequestBody ResultRecordDto recordDto){
         try {
             taskResultViewService.updateTaskResultViewCount(recordDto);
+            return ResultBase.success();
+        }catch (Exception e){
+            log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/datasource/list")
+    public ResultBase<List<DataSourceInfoDto>> getDataSource(@RequestParam("orgCode") String orgCode){
+        try {
+            return ResultBase.success(odsDatasourceConfigService.getOrgReaderSource(orgCode));
+        }catch (Exception e){
+            log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/upload/structure")
+    public ResultBase<Void> uploadStructure(@RequestBody OriginalStructureDto structureDto){
+        try {
+            return ResultBase.success();
+        }catch (Exception e){
+            log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/upload/tableCount")
+    public ResultBase<Void> uploadTableCount(@RequestBody OriginalTableCountDto tableCountDto){
+        try {
             return ResultBase.success();
         }catch (Exception e){
             log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));

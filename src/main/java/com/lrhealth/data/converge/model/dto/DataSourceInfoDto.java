@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DataSourceInfoDto {
 
+    private Integer dsConfId;
+
     private String orgCode;
 
     private String sysCode;

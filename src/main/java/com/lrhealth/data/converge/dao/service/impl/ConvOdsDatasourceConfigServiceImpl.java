@@ -30,6 +30,7 @@ public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatas
         List<DataSourceInfoDto> dataSourceDtoList = new ArrayList<>();
         datasourceConfigs.forEach(datasourceConfig -> {
             DataSourceInfoDto sourceInfoDto = DataSourceInfoDto.builder()
+                    .dsConfId(datasourceConfig.getId())
                     .orgCode(datasourceConfig.getOrgCode())
                     .sysCode(datasourceConfig.getSysCode())
                     .jdbcUrl(datasourceConfig.getDsUrl())
