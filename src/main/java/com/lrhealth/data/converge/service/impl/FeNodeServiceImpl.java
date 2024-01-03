@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
 import java.lang.System;
@@ -68,6 +69,13 @@ public class FeNodeServiceImpl implements FeNodeService {
     private ConvTaskResultFileService convTaskResultFileService;
 
     private static ConcurrentMap<String, Boolean> logIdMap = new ConcurrentHashMap<>();
+
+    @PostConstruct
+    private void logInit(){
+        List<ConvTaskLog> convTaskLogs = convTaskLogService.list();
+        convTaskLogs.forEach(convTaskLog -> logIdMap.put(convTaskLog.getTaskId() + "-" + convTaskLog.getFedLogId(), true));
+        log.info("taskLog加载完成");
+    }
 
     @Override
     @Retryable(value = {PingException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))

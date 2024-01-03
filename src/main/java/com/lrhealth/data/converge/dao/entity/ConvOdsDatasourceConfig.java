@@ -14,7 +14,7 @@ import java.io.Serializable;
  * @author zhouyun
  * @since 2023-12-22
  */
-@TableName("conv_ods_datasource_config")
+@TableName("conv_ds_config")
 public class ConvOdsDatasourceConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
