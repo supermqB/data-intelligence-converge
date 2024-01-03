@@ -216,7 +216,7 @@ public class FeNodeServiceImpl implements FeNodeService {
         BeanUtils.copyProperties(resultViewInfoDto, convTaskResultView);
         convTaskResultView.setTaskId(convTask.getId());
         // 过滤条数
-        if (resultViewInfoDto.getRecordCount() != 0){
+        if (null != resultViewInfoDto.getRecordCount() && resultViewInfoDto.getRecordCount() != 0){
             convTaskResultView.setDataItemCount(resultViewInfoDto.getRecordCount());
         }
 
