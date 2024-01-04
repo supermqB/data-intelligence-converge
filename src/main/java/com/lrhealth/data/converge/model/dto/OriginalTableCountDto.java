@@ -17,6 +17,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class OriginalTableCountDto {
 
+    private Integer dsConfId;
+
     private String sysCode;
 
     private Map<String, Long> tableCountMap;

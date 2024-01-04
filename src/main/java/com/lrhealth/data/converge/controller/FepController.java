@@ -4,10 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.model.dto.*;
-import com.lrhealth.data.converge.service.FeTunnelConfigService;
-import com.lrhealth.data.converge.service.ScheduleTaskService;
-import com.lrhealth.data.converge.service.TaskResultViewService;
-import com.lrhealth.data.converge.service.XdsInfoService;
+import com.lrhealth.data.converge.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +32,8 @@ public class FepController {
     private TaskResultViewService taskResultViewService;
     @Resource
     private ConvOdsDatasourceConfigService odsDatasourceConfigService;
+    @Resource
+    private ImportOriginalService importOriginalService;
 
     @GetMapping("/config")
     public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
@@ -116,6 +115,7 @@ public class FepController {
     @PostMapping("/upload/structure")
     public ResultBase<Void> uploadStructure(@RequestBody OriginalStructureDto structureDto){
         try {
+            importOriginalService.importConvOriginal(structureDto);
             return ResultBase.success();
         }catch (Exception e){
             log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
@@ -126,6 +126,7 @@ public class FepController {
     @PostMapping("/upload/tableCount")
     public ResultBase<Void> uploadTableCount(@RequestBody OriginalTableCountDto tableCountDto){
         try {
+            importOriginalService.updateOriginalTableCount(tableCountDto);
             return ResultBase.success();
         }catch (Exception e){
             log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));

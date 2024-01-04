@@ -17,6 +17,8 @@ import java.util.List;
 @NoArgsConstructor
 public class OriginalStructureDto {
 
+    private Integer dsConfId;
+
     private String orgCode;
 
     private String sysCode;

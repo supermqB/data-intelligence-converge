@@ -3,7 +3,6 @@ package com.lrhealth.data.converge.dao.adpter;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
-import com.lrhealth.data.common.constant.DbConstant;
 import com.lrhealth.data.common.enums.db.DataSourceEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
@@ -15,7 +14,6 @@ import org.teasoft.bee.osql.*;
 import org.teasoft.honey.distribution.GenIdFactory;
 import org.teasoft.honey.osql.core.BeeFactory;
 import org.teasoft.honey.osql.core.BeeFactoryHelper;
-import org.teasoft.honey.osql.core.HoneyUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -213,25 +211,25 @@ public class BeeBaseRepository {
      * @param tableName           数据库表
      * @param upsertActionMapList 待插入\更新的表数据
      */
-    public void upsertBatch(String sysCode,String tableName, List<Map<String, Object>> upsertActionMapList) {
-        if (CollUtil.isEmpty(upsertActionMapList)) {
-            return;
-        }
-        PreparedSql preparedSql = BeeFactory.getHoneyFactory().getPreparedSql();
-        preparedSql.setDataSourceName(sysCode);
-        String sql;
-        Set<String> parameters = upsertActionMapList.get(0).keySet();
-        if (HoneyUtil.isMysql()) {
-            sql = buildSql4UpsertBatch2Mysql(tableName, parameters);
-        } else {
-            sql = buildSql4UpsertBatch2Pg(tableName, parameters);
-        }
-        try {
-            preparedSql.insertBatch(sql, upsertActionMapList);
-        } catch (Exception e) {
-            log.error("preparedSql upsertBatch error. table:{}, exception: {}", tableName, ExceptionUtils.getStackTrace(e));
-        }
-    }
+//    public void upsertBatch(String sysCode,String tableName, List<Map<String, Object>> upsertActionMapList) {
+//        if (CollUtil.isEmpty(upsertActionMapList)) {
+//            return;
+//        }
+//        PreparedSql preparedSql = BeeFactory.getHoneyFactory().getPreparedSql();
+//        preparedSql.setDataSourceName(sysCode);
+//        String sql;
+//        Set<String> parameters = upsertActionMapList.get(0).keySet();
+//        if (HoneyUtil.isMysql()) {
+//            sql = buildSql4UpsertBatch2Mysql(tableName, parameters);
+//        } else {
+//            sql = buildSql4UpsertBatch2Pg(tableName, parameters);
+//        }
+//        try {
+//            preparedSql.insertBatch(sql, upsertActionMapList);
+//        } catch (Exception e) {
+//            log.error("preparedSql upsertBatch error. table:{}, exception: {}", tableName, ExceptionUtils.getStackTrace(e));
+//        }
+//    }
 
     /**
      * 构造批量插入MySQL数据库的 upsert-sql
@@ -241,24 +239,24 @@ public class BeeBaseRepository {
      *
      * @return upsert-sql
      */
-    private String buildSql4UpsertBatch2Mysql(String tableName, Set<String> parameters) {
-        StringBuilder fieldSql = new StringBuilder();
-        StringBuilder valueSql = new StringBuilder();
-        StringBuilder setSql = new StringBuilder();
-        for (String str : parameters) {
-            fieldSql.append(str).append(",");
-            valueSql.append("#{").append(str).append("},");
-            if (!DbConstant.TECH_FIELD_EVENT_ID.equals(str) && !"id".equals(str)) {
-                setSql.append(str).append("=").append("VALUES(").append(str).append("),");
-            }
-        }
-        return "INSERT INTO " + tableName + "(" +
-                fieldSql.substring(0, fieldSql.toString().length() - 1) + ")" +
-                " VALUES " + "(" +
-                valueSql.substring(0, valueSql.toString().length() - 1) +
-                ") ON DUPLICATE KEY UPDATE " +
-                setSql.substring(0, setSql.toString().length() - 1);
-    }
+//    private String buildSql4UpsertBatch2Mysql(String tableName, Set<String> parameters) {
+//        StringBuilder fieldSql = new StringBuilder();
+//        StringBuilder valueSql = new StringBuilder();
+//        StringBuilder setSql = new StringBuilder();
+//        for (String str : parameters) {
+//            fieldSql.append(str).append(",");
+//            valueSql.append("#{").append(str).append("},");
+//            if (!CommonConstant.TECH_FIELD_EVENT_ID.equals(str) && !"id".equals(str)) {
+//                setSql.append(str).append("=").append("VALUES(").append(str).append("),");
+//            }
+//        }
+//        return "INSERT INTO " + tableName + "(" +
+//                fieldSql.substring(0, fieldSql.toString().length() - 1) + ")" +
+//                " VALUES " + "(" +
+//                valueSql.substring(0, valueSql.toString().length() - 1) +
+//                ") ON DUPLICATE KEY UPDATE " +
+//                setSql.substring(0, setSql.toString().length() - 1);
+//    }
 
     /**
      * 构造批量插入pg数据库的 upsert-sql
@@ -268,24 +266,24 @@ public class BeeBaseRepository {
      *
      * @return upsert-sql
      */
-    private String buildSql4UpsertBatch2Pg(String tableName, Set<String> parameters) {
-        StringBuilder fieldSql = new StringBuilder();
-        StringBuilder valueSql = new StringBuilder();
-        StringBuilder setSql = new StringBuilder();
-        for (String str : parameters) {
-            fieldSql.append(str).append(",");
-            valueSql.append("#{").append(str).append("},");
-            if (!DbConstant.TECH_FIELD_EVENT_ID.equals(str)) {
-                setSql.append(str).append("=").append("excluded.").append(str).append(",");
-            }
-        }
-        return "INSERT INTO " + tableName + "(" +
-                fieldSql.substring(0, fieldSql.toString().length() - 1) + ")" +
-                " VALUES " + "(" +
-                valueSql.substring(0, valueSql.toString().length() - 1) +
-                ")  ON CONFLICT (" + DbConstant.TECH_FIELD_EVENT_ID + ") DO UPDATE SET " +
-                setSql.substring(0, setSql.toString().length() - 1);
-    }
+//    private String buildSql4UpsertBatch2Pg(String tableName, Set<String> parameters) {
+//        StringBuilder fieldSql = new StringBuilder();
+//        StringBuilder valueSql = new StringBuilder();
+//        StringBuilder setSql = new StringBuilder();
+//        for (String str : parameters) {
+//            fieldSql.append(str).append(",");
+//            valueSql.append("#{").append(str).append("},");
+//            if (!CommonConstant.TECH_FIELD_EVENT_ID.equals(str)) {
+//                setSql.append(str).append("=").append("excluded.").append(str).append(",");
+//            }
+//        }
+//        return "INSERT INTO " + tableName + "(" +
+//                fieldSql.substring(0, fieldSql.toString().length() - 1) + ")" +
+//                " VALUES " + "(" +
+//                valueSql.substring(0, valueSql.toString().length() - 1) +
+//                ")  ON CONFLICT (" + CommonConstant.TECH_FIELD_EVENT_ID + ") DO UPDATE SET " +
+//                setSql.substring(0, setSql.toString().length() - 1);
+//    }
 
     /**
      * 批量插入\更新，使用 INSERT INTO ... VALUES ... ON CONFLICT (id) DO UPDATE SET ...
