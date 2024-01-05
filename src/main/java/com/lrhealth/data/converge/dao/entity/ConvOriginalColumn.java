@@ -119,4 +119,9 @@ public class ConvOriginalColumn implements Serializable {
      */
     private String incrFlag;
 
+    /**
+     * 是否业务时间(0-否 1-是)
+     */
+    private String businessTimeFlag;
+
 }
