@@ -207,4 +207,15 @@ public class ConvTunnel implements Serializable {
     private Integer readerDatasourceId;
 
     private Integer writerDatasourceId;
+
+    /**
+     * 时间差
+     * 增量采集cron范围的提前时间
+     */
+    private Integer timeDif;
+
+    /**
+     * 时间差单位
+     */
+    private String timeUnit;
 }

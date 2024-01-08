@@ -121,6 +121,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         TunnelMessageDTO tunnelMessageDTO = new TunnelMessageDTO();
         // 管道基本信息
         BeanUtil.copyProperties(tunnel, tunnelMessageDTO);
+        tunnelMessageDTO.setTimeDif(getCronTimeUnit(tunnel.getTimeDif(), tunnel.getTimeUnit()));
         if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())
                 || tunnel.getConvergeMethod().equals(TunnelCMEnum.CDC_LOG.getCode())){
             // 库表/日志的读库信息
@@ -174,5 +175,23 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             tableInfoDtoList.add(tableInfoDto);
         });
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
+    }
+
+    private Integer getCronTimeUnit(Integer timeDif, String timeUnit){
+        int seconds = 0;
+        // 转换时间为毫秒
+        if (CharSequenceUtil.isBlank(timeUnit)){
+            return seconds;
+        }
+        //小时
+        if (timeUnit.equals("h")){
+            seconds = timeDif * 3600;
+        }
+        //分钟
+        if (timeUnit.equals("m")){
+            seconds = timeDif * 60;
+        }
+        return seconds * 1000;
+
     }
 }

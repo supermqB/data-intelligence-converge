@@ -48,6 +48,12 @@ public class TunnelMessageDTO {
     private String cronStr;
 
     /**
+     * cron采集时间范围提前的时间差
+     * 单位：毫秒
+     */
+    private Integer timeDif;
+
+    /**
      * 库表模式-库表信息
      */
     private JdbcInfoDto jdbcInfoDto;
