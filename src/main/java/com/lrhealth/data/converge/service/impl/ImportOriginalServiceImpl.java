@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
@@ -59,7 +58,10 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             if (!tableCountMap.containsKey(originalTable.getNameEn())){
                 continue;
             }
-            ConvOriginalTable table = ConvOriginalTable.builder().id(originalTable.getId()).dataCount(tableCountMap.get(originalTable.getNameEn())).build();
+            ConvOriginalTable table = ConvOriginalTable.builder()
+                    .id(originalTable.getId())
+                    .dataCount(tableCountMap.get(originalTable.getNameEn()))
+                    .updateTime(LocalDateTime.now()).build();
             tableList.add(table);
         }
         originalTableService.updateBatchById(tableList);
@@ -99,7 +101,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             for (ColumnInfoDTO columnInfoDTO : columnInfoDTOS){
                 ConvOriginalColumn convOriginalColumn = ConvOriginalColumn.builder()
                         .tableId(tableId)
-                        .nameCn(CharSequenceUtil.isNotBlank(columnInfoDTO.getRemark()) ? columnInfoDTO.getRemark() : "无中文注释")
+                        .nameCn(columnInfoDTO.getRemark())
                         .nameEn(columnInfoDTO.getColumnName())
                         .seqNo(i)
                         .primaryKeyFlag(String.valueOf(columnInfoDTO.getPrimaryKeyFlag()))
