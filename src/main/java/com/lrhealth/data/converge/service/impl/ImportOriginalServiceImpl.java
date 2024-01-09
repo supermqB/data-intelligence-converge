@@ -41,9 +41,9 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             return;
         }
         Integer dsConfigId = structureDto.getDsConfId();
-
-        processOriginalTable(originalTableDtoList, orgCode, sysCode, dsConfigId);
-        processOriginalColumn(originalTableDtoList, orgCode, sysCode, dsConfigId);
+        LocalDateTime dateTime = LocalDateTime.now();
+        processOriginalTable(originalTableDtoList, orgCode, sysCode, dsConfigId, dateTime);
+        processOriginalColumn(originalTableDtoList, orgCode, sysCode, dsConfigId, dateTime);
 
     }
 
@@ -67,27 +67,29 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         originalTableService.updateBatchById(tableList);
     }
 
-    private void processOriginalTable(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId){
-        originalTableService.remove(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
-                .eq(ConvOriginalTable::getSysCode, sysCode)
-                .eq(ConvOriginalTable::getConvDsConfId, dsConfigId));
+    private void processOriginalTable(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime){
+//        originalTableService.remove(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
+//                .eq(ConvOriginalTable::getSysCode, sysCode)
+//                .eq(ConvOriginalTable::getConvDsConfId, dsConfigId));
         List<ConvOriginalTable> convOriginalTableList = CollUtil.newArrayList();
         tableList.forEach(tableDto -> {
             ConvOriginalTable originalTable = ConvOriginalTable.builder().nameEn(tableDto.getTableName()).nameCn(tableDto.getTableRemarks())
                     .convDsConfId(dsConfigId).orgCode(orgCode).sysCode(sysCode)
-                    .createTime(LocalDateTime.now()).build();
+                    .createTime(saveTime).build();
             convOriginalTableList.add(originalTable);
         });
         originalTableService.saveBatch(convOriginalTableList);
     }
 
-    private void processOriginalColumn(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId){
+    private void processOriginalColumn(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime){
         List<ConvOriginalTable> originalTableList = originalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
-                .eq(ConvOriginalTable::getSysCode, sysCode).eq(ConvOriginalTable::getConvDsConfId, dsConfigId));
+                .eq(ConvOriginalTable::getSysCode, sysCode)
+                .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
+                .eq(ConvOriginalTable::getCreateTime, saveTime));
         Map<String, Long> tableNameIdMapping = originalTableList.stream().collect(Collectors.toMap(ConvOriginalTable::getNameEn, ConvOriginalTable::getId));
-        originalColumnService.remove(new LambdaQueryWrapper<ConvOriginalColumn>()
-                .eq(ConvOriginalColumn::getOrgCode, orgCode).eq(ConvOriginalColumn::getSysCode, sysCode)
-                .in(ConvOriginalColumn::getTableId, tableNameIdMapping.values()));
+//        originalColumnService.remove(new LambdaQueryWrapper<ConvOriginalColumn>()
+//                .eq(ConvOriginalColumn::getOrgCode, orgCode).eq(ConvOriginalColumn::getSysCode, sysCode)
+//                .in(ConvOriginalColumn::getTableId, tableNameIdMapping.values()));
 
         List<ConvOriginalColumn> originalColumnList = CollUtil.newArrayList();
         for (OriginalTableDto tableDto : tableList){
@@ -109,7 +111,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                         .orgCode(orgCode).sysCode(sysCode)
                         .fieldType(columnInfoDTO.getColumnTypeName())
                         .fieldTypeLength(columnInfoDTO.getColumnLength())
-                        .createTime(LocalDateTime.now())
+                        .createTime(saveTime)
                         .build();
                 i++;
                 originalColumnList.add(convOriginalColumn);

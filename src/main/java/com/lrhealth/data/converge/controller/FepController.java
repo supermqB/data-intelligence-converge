@@ -103,9 +103,9 @@ public class FepController {
     }
 
     @PostMapping("/datasource/list")
-    public ResultBase<List<DataSourceInfoDto>> getDataSource(@RequestParam("orgCode") String orgCode){
+    public ResultBase<List<DataSourceInfoDto>> getDataSource(@RequestBody DataSourceParamDto dto){
         try {
-            return ResultBase.success(odsDatasourceConfigService.getOrgReaderSource(orgCode));
+            return ResultBase.success(odsDatasourceConfigService.getOrgReaderSource(dto));
         }catch (Exception e){
             log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());
