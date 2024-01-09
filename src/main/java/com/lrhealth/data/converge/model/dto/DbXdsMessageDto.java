@@ -23,4 +23,6 @@ public class DbXdsMessageDto {
 
     private Long tunnelId;
 
+    private Integer dsConfigId;
+
 }

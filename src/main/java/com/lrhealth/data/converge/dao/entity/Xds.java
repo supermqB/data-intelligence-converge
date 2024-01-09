@@ -157,4 +157,8 @@ public class Xds implements Serializable {
 
     private Long dataSize;
 
+    /**
+     * 平台数据源id
+     */
+    private Integer dsConfigId;
 }

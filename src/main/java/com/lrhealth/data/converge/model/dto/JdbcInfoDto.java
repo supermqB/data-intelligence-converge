@@ -85,4 +85,6 @@ public class JdbcInfoDto {
      */
     private Integer colTableType;
 
+    private Integer dsConfigId;
+
 }
