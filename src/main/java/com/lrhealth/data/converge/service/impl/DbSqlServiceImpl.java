@@ -9,6 +9,7 @@ import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.service.DbSqlService;
 import com.lrhealth.data.converge.service.TunnelService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -82,9 +83,15 @@ public class DbSqlServiceImpl implements DbSqlService {
     public Integer getAvgRowLength(String odsTableName, DataSourceDto dataSourceDto, String odsModelName){
         // 刷新配置,只需要执行一次
         // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
+        String result = null;
         // 获取每行的平均大小
         String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
-        String result = jdbcRepository.execSql(selectSql, dataSourceDto);
+        try {
+            result = JDBCRepository.execSql(selectSql, dataSourceDto);
+        }catch (Exception e){
+            log.error("获取数据库表[{}]容量失败：{}", odsModelName, ExceptionUtils.getStackTrace(e));
+        }
+
         // todo: 暂时给一个默认值
         if (CharSequenceUtil.isBlank(result) || result.equals("0")){
             return OdsDataSizeEnum.getValue(odsModelName);
