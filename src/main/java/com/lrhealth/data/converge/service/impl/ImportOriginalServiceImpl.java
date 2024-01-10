@@ -68,9 +68,6 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     }
 
     private void processOriginalTable(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime){
-//        originalTableService.remove(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
-//                .eq(ConvOriginalTable::getSysCode, sysCode)
-//                .eq(ConvOriginalTable::getConvDsConfId, dsConfigId));
         List<ConvOriginalTable> convOriginalTableList = CollUtil.newArrayList();
         tableList.forEach(tableDto -> {
             ConvOriginalTable originalTable = ConvOriginalTable.builder().nameEn(tableDto.getTableName()).nameCn(tableDto.getTableRemarks())
@@ -87,9 +84,6 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
                 .eq(ConvOriginalTable::getCreateTime, saveTime));
         Map<String, Long> tableNameIdMapping = originalTableList.stream().collect(Collectors.toMap(ConvOriginalTable::getNameEn, ConvOriginalTable::getId));
-//        originalColumnService.remove(new LambdaQueryWrapper<ConvOriginalColumn>()
-//                .eq(ConvOriginalColumn::getOrgCode, orgCode).eq(ConvOriginalColumn::getSysCode, sysCode)
-//                .in(ConvOriginalColumn::getTableId, tableNameIdMapping.values()));
 
         List<ConvOriginalColumn> originalColumnList = CollUtil.newArrayList();
         for (OriginalTableDto tableDto : tableList){
