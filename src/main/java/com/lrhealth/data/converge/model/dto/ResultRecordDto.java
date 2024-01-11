@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResultRecordDto {
 
+    private Long tunnelId;
+
     private Integer taskId;
 
     private String tableName;
