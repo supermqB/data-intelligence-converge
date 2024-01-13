@@ -27,4 +27,6 @@ public class DataSourceInfoDto {
 
     private String password;
 
+    private String schema;
+
 }

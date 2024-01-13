@@ -40,6 +40,7 @@ public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatas
                     .jdbcUrl(datasourceConfig.getDsUrl())
                     .username(datasourceConfig.getDsUsername())
                     .password(datasourceConfig.getDsPwd())
+                    .schema(datasourceConfig.getSchema())
                     .build();
             dataSourceDtoList.add(sourceInfoDto);
         });
