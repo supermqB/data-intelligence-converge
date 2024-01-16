@@ -161,4 +161,9 @@ public class Xds implements Serializable {
      * 平台数据源id
      */
     private Integer dsConfigId;
+
+    /**
+     * 汇聚任务id
+     */
+    private Integer convTaskId;
 }

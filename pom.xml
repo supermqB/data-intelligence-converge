@@ -146,6 +146,14 @@
         </dependency>
         <!-- 数据库驱动 -->
 
+        <!-- argoDB驱动 -->
+        <dependency>
+            <groupId>com.argo</groupId>
+            <artifactId>inceptor-driver</artifactId>
+            <version>8.31.2</version>
+        </dependency>
+        <!-- argoDB驱动 -->
+
         <!-- ORM:MyBatis-plus组件 -->
         <dependency>
             <groupId>com.baomidou</groupId>
