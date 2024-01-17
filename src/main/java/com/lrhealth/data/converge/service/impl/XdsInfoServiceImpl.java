@@ -54,7 +54,8 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private TunnelService tunnelService;
     @Resource
     private ConvTaskService taskService;
-
+    @Resource
+    private IncrTimeService incrTimeService;
 
     @Override
     public Xds createXdsInfo(TaskDto taskDto, FileExecInfoDTO config) {
@@ -185,12 +186,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         if (CollUtil.isEmpty(systemList)) {
             return false;
         }
-        List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>().eq(ConvTask::getTunnelId, dbXdsMessageDto.getTunnelId())
-                .eq(ConvTask::getFedTaskId, dbXdsMessageDto.getConvTaskId())
-                .orderByDesc(ConvTask::getCreateTime));
-        if (CollUtil.isEmpty(convTasks)){
-            return false;
-        }
         Xds xds = Xds.builder()
                 .id(dbXdsMessageDto.getId())
                 .orgCode(systemList.get(0).getSourceCode())
@@ -203,7 +198,6 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .odsTableName(dbXdsMessageDto.getOdsTableName())
                 .createTime(LocalDateTime.now())
                 .dsConfigId(dbXdsMessageDto.getDsConfigId())
-                .convTaskId(convTasks.get(0).getId())
                 .build();
         return xdsService.save(xds);
     }
@@ -215,6 +209,12 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         Integer avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = dataCount * avgRowLength;
+        List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>().eq(ConvTask::getTunnelId, dbXdsMessageDto.getTunnelId())
+                .eq(ConvTask::getFedTaskId, dbXdsMessageDto.getConvTaskId())
+                .orderByDesc(ConvTask::getCreateTime));
+        if (CollUtil.isEmpty(convTasks)){
+            return false;
+        }
         Xds updateXds = Xds.builder()
                 .id(dbXdsMessageDto.getId())
                 .dataConvergeEndTime(LocalDateTime.now())
@@ -222,11 +222,14 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .dataCount(dataCount)
                 .dataSize(dataSize)
                 .updateTime(LocalDateTime.now())
+                .convTaskId(convTasks.get(0).getId())
                 .build();
         xdsService.updateById(updateXds);
 
         // 发送kafka
         kafkaService.xdsSendKafka(updateXds);
+
+        incrTimeService.updateTableLatestTime(dbXdsMessageDto.getId());
         return true;
     }
 

@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
@@ -183,7 +184,9 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
                 .eq(ConvCollectIncrTime::getIncrField, column)
                 .eq(ConvCollectIncrTime::getTableName, tableName));
-        fieldMap.put(column, collectIncrTime.getLatestTime());
+        if (ObjectUtil.isNotNull(collectIncrTime)) {
+            fieldMap.put(column, collectIncrTime.getLatestTime());
+        }
     }
 
     private Integer getCronTimeUnit(Integer timeDif, String timeUnit){
