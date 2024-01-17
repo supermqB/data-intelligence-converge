@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -20,6 +21,7 @@ import java.net.InetAddress;
 @EnableTransactionManagement(proxyTargetClass = true)
 @EnableAsync
 @EnableRetry
+@EnableFeignClients
 public class DataConvergeApplication {
     private static final Logger log = LoggerFactory.getLogger(DataConvergeApplication.class);
 

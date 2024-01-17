@@ -11,3 +11,9 @@ spring:
     # 环境配置
     active: local
 
+## ds配置
+ds:
+  host: http://172.16.29.60:12345/dolphinscheduler/
+  token: 467313b9cefe7c21d9f5fe9eb1520dd5
+  switch: true
+

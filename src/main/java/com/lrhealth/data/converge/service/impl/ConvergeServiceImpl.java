@@ -1,19 +1,27 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.config.ConvergeConfig;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
+import com.lrhealth.data.converge.ds.dao.entity.ConvDolpscheRel;
+import com.lrhealth.data.converge.ds.dao.service.IConvDolpscheRelService;
+import com.lrhealth.data.converge.ds.dto.DsResult;
+import com.lrhealth.data.converge.ds.feign.DsFeignClient;
 import com.lrhealth.data.converge.model.FileTask;
 import com.lrhealth.data.converge.model.TaskFileConfig;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.ConvergeService;
 import com.lrhealth.data.converge.service.FeNodeService;
+import com.lrhealth.data.model.datasource.model.entity.Institution;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.io.File;
@@ -48,6 +56,15 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     @Resource
     private ConvergeConfig convergeConfig;
+
+    @Resource
+    private DsFeignClient dsFeignClient;
+
+    @Resource
+    private IConvDolpscheRelService iConvDolpscheRelService;
+
+    @Value("${ds.switch}")
+    private boolean dsSwitch;
 
     @Override
     public void updateDownLoadFileTask(ConcurrentLinkedDeque<FileTask> taskDeque) {
@@ -86,35 +103,62 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     @Override
     public void updateFepStatus(FrontendStatusDto frontendStatusDto, ConcurrentLinkedDeque<FileTask> taskDeque){
-
         List<TunnelStatusDto> tunnelStatusDtoList = frontendStatusDto.getTunnelStatusDtoList();
         for (TunnelStatusDto tunnelStatusDto : tunnelStatusDtoList) {
-
             //更新 tunnel
             ConvTunnel tunnel = feNodeService.updateTunnel(tunnelStatusDto);
             if(tunnel == null){
                 log.warn("不存在的管道信息！" + tunnelStatusDto.getTunnelId());
                 continue;
             }
-
             List<TaskStatusDto> taskStatusList = tunnelStatusDto.getTaskStatusList();
             for (TaskStatusDto taskStatusDto : taskStatusList) {
                 //更新 task
                 ConvTask convTask = feNodeService.saveOrUpdateTask(taskStatusDto,tunnel);
-//                if (CharSequenceUtil.equals(convTask.getConvergeMethod(), "1") && convTask.getStatus() > 3) {
-////                    log.info("当前任务已完成，无需更新！" + convTask);
-//                    continue;
-//                }
-
                 List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
                 feNodeService.saveOrUpdateLog(taskLogs, convTask);
                 updateTaskResultView(taskDeque, taskStatusDto, convTask);
                 updateTaskResultFile(taskDeque, taskStatusDto, convTask);
+                // 启动ds工作流
+                startDsFlow(tunnel.getOrgCode(),tunnel.getId());
             }
         }
     }
 
 
+    /**
+     * 启动ds工作流
+     * @param orgCode
+     * @param tunnelId
+     */
+    private void startDsFlow(String orgCode,long tunnelId){
+        if(!dsSwitch){
+            return;
+        }
+        LambdaQueryWrapper<ConvTask> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.ne(ConvTask::getStatus,5).eq(ConvTask::getOrgCode, orgCode).
+                eq(ConvTask::getDelFlag,0).eq(ConvTask::getConvergeMethod,"1");
+        List<ConvTask> list = convTaskService.list(queryWrapper);
+        if(!CollectionUtils.isEmpty(list)){
+            log.info("startDsFlow，【】管道还有任务未执行完，不触发【】机构对应的ds工作流启动========",tunnelId,orgCode);
+            return;
+        }
+
+        LambdaQueryWrapper<ConvDolpscheRel> relWrapper = new LambdaQueryWrapper<>();
+        relWrapper.eq(ConvDolpscheRel::getConvOrgCode,orgCode).eq(ConvDolpscheRel::getDelFlag,1);
+        List<ConvDolpscheRel> convDolpscheRelList = iConvDolpscheRelService.list(relWrapper);
+        if(CollectionUtils.isEmpty(convDolpscheRelList)){
+           log.error("startDsFlow error,汇聚和ds关系表无记录，请检查！");
+           return;
+        }
+        DsResult dsResult = dsFeignClient.startFlow(Long.valueOf(convDolpscheRelList.get(0).getDsProjectCode()).longValue(),
+                Long.valueOf(convDolpscheRelList.get(0).getDsFlowCode()).longValue());
+        if(dsResult.isSuccess()){
+            log.info("startDsFlow，ds工作流启动成功========");
+        }else {
+            log.error("startDsFlow，ds工作流启动失败，dsResult={}", JSON.toJSONString(dsResult));
+        }
+    }
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateFileStatus(TaskFileConfig taskFileConfig, long costTime) {

@@ -23,6 +23,16 @@
         <easyexcel.version>3.0.1</easyexcel.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-httpclient</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
         <!-- 内部项目包依赖：通用处理包 -->
         <dependency>
             <groupId>com.lrhealth</groupId>
