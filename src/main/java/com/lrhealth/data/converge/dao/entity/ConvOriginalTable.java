@@ -98,4 +98,19 @@ public class ConvOriginalTable implements Serializable {
      * 数据源ID,关联conv_ds_config表ID
      */
     private Integer convDsConfId;
+
+    /**
+     * 原始模型名称
+     */
+    private String modelName;
+
+    /**
+     * 原始模型备注
+     */
+    private String modelDescription;
+
+    /**
+     * 是否已生成原始模型
+     */
+    private String modelFlag;
 }
