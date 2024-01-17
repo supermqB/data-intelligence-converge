@@ -10,11 +10,12 @@ import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.*;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
+import com.lrhealth.data.converge.dao.entity.ConvTask;
 import com.lrhealth.data.converge.dao.entity.System;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.dao.service.SystemService;
 import com.lrhealth.data.converge.dao.service.XdsService;
-
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.*;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,8 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private KafkaService kafkaService;
     @Resource
     private TunnelService tunnelService;
+    @Resource
+    private ConvTaskService taskService;
 
 
     @Override
@@ -182,6 +185,12 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         if (CollUtil.isEmpty(systemList)) {
             return false;
         }
+        List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>().eq(ConvTask::getTunnelId, dbXdsMessageDto.getTunnelId())
+                .eq(ConvTask::getFedTaskId, dbXdsMessageDto.getConvTaskId())
+                .orderByDesc(ConvTask::getCreateTime));
+        if (CollUtil.isEmpty(convTasks)){
+            return false;
+        }
         Xds xds = Xds.builder()
                 .id(dbXdsMessageDto.getId())
                 .orgCode(systemList.get(0).getSourceCode())
@@ -194,7 +203,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .odsTableName(dbXdsMessageDto.getOdsTableName())
                 .createTime(LocalDateTime.now())
                 .dsConfigId(dbXdsMessageDto.getDsConfigId())
-                .convTaskId(dbXdsMessageDto.getConvTaskId())
+                .convTaskId(convTasks.get(0).getId())
                 .build();
         return xdsService.save(xds);
     }

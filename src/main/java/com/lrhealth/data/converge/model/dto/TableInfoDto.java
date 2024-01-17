@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author jinmengyu
@@ -28,7 +29,12 @@ public class TableInfoDto {
     private String sqlQuery;
 
     /**
-     * 增量字段
+     * 增量字段集合
      */
     private List<String> seqFields;
+
+    /**
+     * 增量字段-增量采集最新时间
+     */
+    private Map<String, String> incrTimeMap;
 }
