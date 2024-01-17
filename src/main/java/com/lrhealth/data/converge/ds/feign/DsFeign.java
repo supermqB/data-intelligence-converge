@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.ds.feign;
 
 import com.lrhealth.data.converge.ds.dto.DsResult;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,5 +55,11 @@ public interface DsFeign {
 //                                       @RequestParam(value = "version", required = false) Integer version,
 //                                       @RequestParam(value = "allLevelDependent", required = false, defaultValue = "false") boolean allLevelDependent,
                                        @RequestParam(value = "executionOrder", required = false) String executionOrder);
+
+
+    @GetMapping(value = "/projects/{projectCode}/process-instances/{id}")
+    DsResult queryProcessInstanceById(@RequestHeader(name = "token") String token,
+                                      @PathVariable long projectCode,
+                                      @PathVariable("id") Integer id);
 
 }

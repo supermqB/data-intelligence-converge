@@ -120,7 +120,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                 updateTaskResultView(taskDeque, taskStatusDto, convTask);
                 updateTaskResultFile(taskDeque, taskStatusDto, convTask);
                 // 启动ds工作流
-                startDsFlow(tunnel.getOrgCode(),tunnel.getId());
+//                startDsFlow(tunnel.getOrgCode(),tunnel.getId());
             }
         }
     }
@@ -140,12 +140,12 @@ public class ConvergeServiceImpl implements ConvergeService {
                 eq(ConvTask::getDelFlag,0).eq(ConvTask::getConvergeMethod,"1");
         List<ConvTask> list = convTaskService.list(queryWrapper);
         if(!CollectionUtils.isEmpty(list)){
-            log.info("startDsFlow，【】管道还有任务未执行完，不触发【】机构对应的ds工作流启动========",tunnelId,orgCode);
+            log.info("startDsFlow，【{}】管道还有任务未执行完，不触发【{}】机构对应的ds工作流启动========",tunnelId,orgCode);
             return;
         }
 
         LambdaQueryWrapper<ConvDolpscheRel> relWrapper = new LambdaQueryWrapper<>();
-        relWrapper.eq(ConvDolpscheRel::getConvOrgCode,orgCode).eq(ConvDolpscheRel::getDelFlag,1);
+        relWrapper.eq(ConvDolpscheRel::getConvOrgCode,orgCode).eq(ConvDolpscheRel::getDelFlag,0);
         List<ConvDolpscheRel> convDolpscheRelList = iConvDolpscheRelService.list(relWrapper);
         if(CollectionUtils.isEmpty(convDolpscheRelList)){
            log.error("startDsFlow error,汇聚和ds关系表无记录，请检查！");

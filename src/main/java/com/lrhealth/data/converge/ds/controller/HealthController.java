@@ -24,9 +24,9 @@ public class HealthController {
 
     @GetMapping(value = "/check")
     public String health() {
-        DsResult dsResult1 = dsFeignClient.createProject("医院16");
-        DsResult dsResult2 = dsFeignClient.createFlow(12283215452960L,"医院16-工作流1");
-        DsResult dsResult3 = dsFeignClient.releaseFlow(12283215452960L,12283220703904L,"ONLINE");
+//        DsResult dsResult1 = dsFeignClient.createProject("医院16");
+//        DsResult dsResult2 = dsFeignClient.createFlow(12283215452960L,"医院16-工作流1");
+//        DsResult dsResult3 = dsFeignClient.releaseFlow(12283215452960L,12283220703904L,"ONLINE");
         DsResult dsResult4 = dsFeignClient.startFlow(12283215452960L,12283220703904L);
         return "ok";
     }

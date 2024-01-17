@@ -4,6 +4,8 @@ import cn.hutool.core.util.IdUtil;
 import com.lrhealth.data.converge.ds.dto.DsResult;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
@@ -91,6 +93,17 @@ public class DsFeignClient {
                 "TASK_POST", "START_PROCESS", "NONE", "RUN_MODE_SERIAL",
                 "MEDIUM", "OFF_MODE", "DESC_ORDER"
         );
+        return dsResult;
+    }
+
+    /**
+     * 根据工作流实例id，查询出工作流实例的运行详情
+     * @param projectCode
+     * @param flowInstanceId
+     * @return
+     */
+    public DsResult queryFlowInstanceDetail(long projectCode, Integer flowInstanceId){
+        DsResult dsResult = dsFeign.queryProcessInstanceById(token, projectCode, flowInstanceId);
         return dsResult;
     }
 
