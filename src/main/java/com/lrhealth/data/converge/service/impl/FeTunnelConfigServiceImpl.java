@@ -3,18 +3,13 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
-import com.lrhealth.data.converge.dao.entity.ConvCollectField;
-import com.lrhealth.data.converge.dao.entity.ConvFeNode;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
-import com.lrhealth.data.converge.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.dao.service.ConvCollectFieldService;
-import com.lrhealth.data.converge.dao.service.ConvFeNodeService;
-import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
-import com.lrhealth.data.converge.dao.service.ConvTunnelService;
+import com.lrhealth.data.converge.dao.entity.*;
+import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.scheduled.DownloadFileTask;
 import com.lrhealth.data.converge.service.ConvergeService;
@@ -24,10 +19,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.lang.System;
+import java.util.*;
 
 /**
  * @author jinmengyu
@@ -47,6 +40,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private ConvergeService convergeService;
     @Resource
     private ConvOdsDatasourceConfigService odsDatasourceConfigService;
+    @Resource
+    private ConvCollectIncrTimeService incrTimeService;
 
 
     @Override
@@ -163,19 +158,35 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         List<String> tableList = Arrays.asList(tunnel.getCollectRange().split(","));
 
         // 增量字段
-        List<ConvCollectField> seqFieldList = collectFieldService.list(new LambdaQueryWrapper<ConvCollectField>()
+        List<ConvCollectField> collectFieldList = collectFieldService.list(new LambdaQueryWrapper<ConvCollectField>()
                         .in(ConvCollectField::getTableName, tableList)
                         .eq(ConvCollectField::getTunnelId, tunnel.getId())
                         .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
 
-        seqFieldList.forEach(model -> {
+        collectFieldList.forEach(model -> {
             TableInfoDto tableInfoDto = new TableInfoDto();
             tableInfoDto.setTableName(model.getTableName());
             tableInfoDto.setSqlQuery(model.getQuerySql());
-            tableInfoDto.setSeqFields(Collections.singletonList(model.getConditionField()));
+            List<String> incrFieldList = Collections.singletonList(model.getConditionField());
+            if (CollUtil.isNotEmpty(incrFieldList)){
+                tableInfoDto.setSeqFields(incrFieldList);
+                Map<String, String> fieldMap = new HashMap<>();
+                incrFieldList.forEach(incrField -> getIncrFieldMap(tunnel, model.getConditionField(), model.getTableName(), fieldMap));
+                tableInfoDto.setIncrTimeMap(fieldMap);
+            }
             tableInfoDtoList.add(tableInfoDto);
         });
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
+    }
+
+    private void getIncrFieldMap(ConvTunnel tunnel, String column, String tableName, Map<String, String> fieldMap){
+        ConvCollectIncrTime collectIncrTime = incrTimeService.getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
+                .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
+                .eq(ConvCollectIncrTime::getIncrField, column)
+                .eq(ConvCollectIncrTime::getTableName, tableName));
+        if (ObjectUtil.isNotNull(collectIncrTime)) {
+            fieldMap.put(column, collectIncrTime.getLatestTime());
+        }
     }
 
     private Integer getCronTimeUnit(Integer timeDif, String timeUnit){

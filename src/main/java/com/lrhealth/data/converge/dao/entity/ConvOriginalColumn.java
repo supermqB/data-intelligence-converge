@@ -124,4 +124,33 @@ public class ConvOriginalColumn implements Serializable {
      */
     private String businessTimeFlag;
 
+    /**
+     * 原始模型字段名称
+     */
+    private String columnName;
+
+    /**
+     * 原始模型字段描述
+     */
+    private String columnDescription;
+
+    /**
+     * 原始模型字段数据类型
+     */
+    private String columnFieldType;
+
+    /**
+     * 原始模型字段数据长度
+     */
+    private Integer columnFieldLength;
+
+    /**
+     * 客户端表结构原始字段标识:1-是 0-否
+     */
+    private String oriColumnFlag;
+
+    /**
+     * 映射规则
+     */
+    private String mappingRule;
 }

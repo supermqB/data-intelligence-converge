@@ -13,35 +13,40 @@ import java.time.LocalDateTime;
 
 /**
  * <p>
- * 客户端库表信息
+ * 增量采集时间表
  * </p>
  *
  * @author jinmengyu
- * @since 2024-01-03
+ * @since 2024-01-17
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("conv_original_table")
-public class ConvOriginalTable implements Serializable {
+@TableName("conv_collect_incr_time")
+public class ConvCollectIncrTime implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * 表中文名
+     * 管道id
      */
-    private String nameCn;
+    private Long tunnelId;
 
     /**
-     * 表英文名
+     * 表名称
      */
-    private String nameEn;
+    private String tableName;
 
     /**
-     * 备注信息
+     * 增量字段
      */
-    private String description;
+    private String incrField;
+
+    /**
+     * 最新采集时间
+     */
+    private String latestTime;
 
     /**
      * 逻辑删除标志(0:未删除;非0:已删除)
@@ -79,38 +84,8 @@ public class ConvOriginalTable implements Serializable {
     private String sysCode;
 
     /**
-     * 数据类型：1-字典数据 2-基础数据 3-报告文书 4-影像文件 5-业务数据
-     */
-    private String dataType;
-
-    /**
      * 主键ID
      */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
-
-    /**
-     * 数据条数
-     */
-    private Long dataCount;
-
-    /**
-     * 数据源ID,关联conv_ds_config表ID
-     */
-    private Integer convDsConfId;
-
-    /**
-     * 原始模型名称
-     */
-    private String modelName;
-
-    /**
-     * 原始模型备注
-     */
-    private String modelDescription;
-
-    /**
-     * 是否已生成原始模型
-     */
-    private String modelFlag;
 }

@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
@@ -40,8 +41,11 @@ public class OdsModelServiceImpl implements OdsModelService {
     public String getTableDataType(String odsTableName, String sysCode) {
         List<OriginalModel> tableList = originalModelService.list(new LambdaQueryWrapper<OriginalModel>().eq(CharSequenceUtil.isNotBlank(odsTableName), OriginalModel::getNameEn, odsTableName)
                 .eq(CharSequenceUtil.isNotBlank(sysCode), OriginalModel::getSysCode, sysCode));
-        if (tableList.size() != 1){
+        if (tableList.size() > 1){
             throw new CommonException("originalModel查询{}错误", odsTableName);
+        }
+        if (CollUtil.isEmpty(tableList)){
+            return null;
         }
         return tableList.get(0).getDataType();
     }
