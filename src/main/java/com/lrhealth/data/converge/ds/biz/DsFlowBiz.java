@@ -23,7 +23,7 @@ import java.util.List;
 @Slf4j
 public class DsFlowBiz {
 
-    private static SimpleDateFormat SDF = new SimpleDateFormat("yyyyMMdd HHmmss");
+    private static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     @Resource
     private IConvDolpscheRelService iConvDolpscheRelService;
 
@@ -62,7 +62,7 @@ public class DsFlowBiz {
         try {
             //        long projectCode =  Long.valueOf(String.valueOf(dsMap.get("projectCode")));
             LambdaQueryWrapper<ConvDolpscheRel> relWrapper = new LambdaQueryWrapper<>();
-            relWrapper.eq(ConvDolpscheRel::getDsProjectCode,dto.getProjectCode()).eq(ConvDolpscheRel::getDelFlag,0);
+            relWrapper.eq(ConvDolpscheRel::getDsProjectCode,String.valueOf(dto.getProjectCode())).eq(ConvDolpscheRel::getDelFlag,0);
             List<ConvDolpscheRel> convDolpscheRelList = iConvDolpscheRelService.list(relWrapper);
             if(CollectionUtils.isEmpty(convDolpscheRelList)){
                 log.error("startDsFlow error,汇聚和ds关系表无记录，请检查！");
@@ -83,7 +83,7 @@ public class DsFlowBiz {
             }
             Date flowInstanceStartTime = SDF.parse(String.valueOf(dsMap.get("startTime")));
             Date flowInstanceEndTime = SDF.parse(String.valueOf(dsMap.get("endTime")));
-            return ConvDolpscheFlowRunDetail.builder().orgCode(orgCode).projectCode(projectCode).projectName(projectCode).
+            return ConvDolpscheFlowRunDetail.builder().orgCode(orgCode).projectCode(projectCode).
                     flowCode(flowCode).flowName(flowName).flowInstanceId(flowInstanceId).flowInstanceName(flowInstanceName).
                     flowInstanceStatus(flowInstanceStatus).flowInstanceStartTime(flowInstanceStartTime).
                     flowInstanceEndTime(flowInstanceEndTime).build();

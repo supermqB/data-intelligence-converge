@@ -27,6 +27,9 @@ public class DsResult<T> {
      */
     private T data;
 
+    private boolean failed;
+    private boolean success;
+
     public DsResult() {
     }
 

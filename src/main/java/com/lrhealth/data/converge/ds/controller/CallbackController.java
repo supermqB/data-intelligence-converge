@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.ds.controller;
 
+import com.alibaba.fastjson2.JSON;
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.ds.biz.DsFlowBiz;
 import com.lrhealth.data.converge.ds.dto.FlowInstanceDto;
@@ -26,6 +27,7 @@ public class CallbackController {
      */
     @PostMapping(value = "/flow/callback")
     public ResultBase flowCallback(@RequestBody FlowInstanceDto dto) {
+        log.info("flowCallback,request={}", JSON.toJSONString(dto));
         dsFlowBiz.flowCallback(dto);
         return ResultBase.success("工作流实例回调完成");
     }
