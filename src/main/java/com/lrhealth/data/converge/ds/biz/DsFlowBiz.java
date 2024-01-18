@@ -10,6 +10,7 @@ import com.lrhealth.data.converge.ds.dto.DsResult;
 import com.lrhealth.data.converge.ds.dto.FlowInstanceDto;
 import com.lrhealth.data.converge.ds.feign.DsFeignClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -35,9 +36,16 @@ public class DsFlowBiz {
 
     /**
      * 组装工作流实例运行的结果，插入conv_dolpsche_flow_run_detail
+     * 注意：该回调逻辑配置在ds工作流中的最后一个任务，需要即时返回结果；也需要延迟几秒后，再去查询工作流执行情况，否则工作流还没有执行完成
      * @param dto
      */
+    @Async
     public void flowCallback(FlowInstanceDto dto){
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            log.error("flowCallback，等待时发生异常，dto={}", JSON.toJSONString(dto));
+        }
         DsResult dsResult = dsFeignClient.queryFlowInstanceDetail(dto.getProjectCode(),dto.getFlowInstanceId());
         if(!dsResult.isSuccess()){
             log.error("flowCallback，获取工作流实例的运行详情失败，dto={}", JSON.toJSONString(dto));
