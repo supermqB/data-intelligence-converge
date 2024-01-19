@@ -1,5 +1,5 @@
 server:
-  port: 8017
+  port: 8018
 
 spring:
   main:
@@ -13,7 +13,7 @@ spring:
 
 ## ds配置
 ds:
-  host: http://172.16.29.60:12345/dolphinscheduler/
-  token: 467313b9cefe7c21d9f5fe9eb1520dd5
+  host: http://172.16.29.59:12345/dolphinscheduler/
+  token: cc89787d1c5beb224873a818382d3f97
   switch: true
 
