@@ -135,3 +135,6 @@ datax:
 
 file-collect:
   structure-type: csv
+
+xds:
+  switch-on: true

@@ -18,6 +18,7 @@ import com.lrhealth.data.converge.dao.service.SystemService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -56,6 +57,8 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     private ConvTaskService taskService;
     @Resource
     private IncrTimeService incrTimeService;
+    @Value("${xds.switch-on}")
+    private boolean xdsSendToGove;
 
     @Override
     public Xds createXdsInfo(TaskDto taskDto, FileExecInfoDTO config) {
@@ -227,7 +230,9 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         xdsService.updateById(updateXds);
 
         // 发送kafka
-        kafkaService.xdsSendKafka(updateXds);
+        if (xdsSendToGove) {
+            kafkaService.xdsSendKafka(updateXds);
+        }
 
         incrTimeService.updateTableLatestTime(dbXdsMessageDto.getId());
         return true;
