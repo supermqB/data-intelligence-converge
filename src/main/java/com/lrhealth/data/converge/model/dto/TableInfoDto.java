@@ -29,6 +29,11 @@ public class TableInfoDto {
     private String sqlQuery;
 
     /**
+     * writer写入字段列表
+     */
+    private String writerColumns;
+
+    /**
      * 增量字段集合
      */
     private List<String> seqFields;

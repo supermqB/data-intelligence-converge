@@ -167,6 +167,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             TableInfoDto tableInfoDto = new TableInfoDto();
             tableInfoDto.setTableName(model.getTableName());
             tableInfoDto.setSqlQuery(model.getQuerySql());
+            tableInfoDto.setWriterColumns(model.getColumnField());
             List<String> incrFieldList = Collections.singletonList(model.getConditionField());
             if (CollUtil.isNotEmpty(incrFieldList)){
                 tableInfoDto.setSeqFields(incrFieldList);
