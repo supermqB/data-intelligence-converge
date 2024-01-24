@@ -209,9 +209,9 @@ public class XdsInfoServiceImpl implements XdsInfoService {
     public Boolean fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
         int dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
         DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
-        Integer avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
+        long avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
         // 文件中的数据写入后消耗的数据库容量
-        long dataSize = dataCount * avgRowLength;
+        long dataSize = avgRowLength * dataCount;
         List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>().eq(ConvTask::getTunnelId, dbXdsMessageDto.getTunnelId())
                 .eq(ConvTask::getFedTaskId, dbXdsMessageDto.getConvTaskId())
                 .orderByDesc(ConvTask::getCreateTime));
@@ -225,7 +225,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .dataCount(dataCount)
                 .dataSize(dataSize)
                 .updateTime(LocalDateTime.now())
-                .convTaskId(convTasks.get(0).getId())
+//                .convTaskId(convTasks.get(0).getId())
                 .build();
         xdsService.updateById(updateXds);
 

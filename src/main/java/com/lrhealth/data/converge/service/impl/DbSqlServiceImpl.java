@@ -80,7 +80,7 @@ public class DbSqlServiceImpl implements DbSqlService {
     }
 
     @Override
-    public Integer getAvgRowLength(String odsTableName, DataSourceDto dataSourceDto, String odsModelName){
+    public Long getAvgRowLength(String odsTableName, DataSourceDto dataSourceDto, String odsModelName){
         // 刷新配置,只需要执行一次
         // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
         String result = null;
@@ -96,7 +96,7 @@ public class DbSqlServiceImpl implements DbSqlService {
         if (CharSequenceUtil.isBlank(result) || result.equals("0")){
             return OdsDataSizeEnum.getValue(odsModelName);
         }
-        return Integer.parseInt(result);
+        return Long.parseLong(result);
     }
 
 

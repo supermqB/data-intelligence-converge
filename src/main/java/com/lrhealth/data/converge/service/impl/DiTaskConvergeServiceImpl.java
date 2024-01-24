@@ -18,14 +18,12 @@ import com.lrhealth.data.converge.dao.service.ConvTaskResultViewService;
 import com.lrhealth.data.converge.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
-
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.model.dto.FileMessageDTO;
 import com.lrhealth.data.converge.service.*;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.data.relational.core.sql.In;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -316,7 +314,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     }
 
     private void updateXds(Long xdsId, String odsTableName, Integer countNumber, DataSourceDto dataSourceDto, String odsModelName) {
-        Integer avgRowLength = dbSqlService.getAvgRowLength(odsTableName, dataSourceDto,odsModelName);
+        Long avgRowLength = dbSqlService.getAvgRowLength(odsTableName, dataSourceDto,odsModelName);
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = countNumber * avgRowLength;
         Xds updateXds = Xds.builder().id(xdsId).dataSize(dataSize)

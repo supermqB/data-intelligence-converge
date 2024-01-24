@@ -1,7 +1,5 @@
 package com.lrhealth.data.converge.common.enums;
 
-import org.springframework.data.relational.core.sql.In;
-
 import java.util.Objects;
 
 /**
@@ -161,11 +159,11 @@ public enum OdsDataSizeEnum {
     }
 
 
-    public static Integer getValue(String tableName) {
-        Integer value = null;
+    public static Long getValue(String tableName) {
+        Long value = null;
         for (OdsDataSizeEnum taskEnum : OdsDataSizeEnum.values()) {
             if (Objects.equals(taskEnum.tableName, tableName)) {
-                value =  taskEnum.getValue();
+                value = Long.valueOf(taskEnum.getValue());
             }
         }
         return (value == null || value == 0) ? 100 : value;
