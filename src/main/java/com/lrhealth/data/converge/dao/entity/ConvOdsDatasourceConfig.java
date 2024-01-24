@@ -44,7 +44,7 @@ public class ConvOdsDatasourceConfig implements Serializable {
     private String dsName;
 
     /**
-     * 数据源-类型  1：平台数据源  2：客户数据源 
+     * 数据源-类型  1：平台数据源  2：客户数据源
      */
     private Short dsType;
 
@@ -79,6 +79,8 @@ public class ConvOdsDatasourceConfig implements Serializable {
     private Short delFlag;
 
     private String schema;
+
+    private String dbType;
 
     private LocalDateTime createTime;
 

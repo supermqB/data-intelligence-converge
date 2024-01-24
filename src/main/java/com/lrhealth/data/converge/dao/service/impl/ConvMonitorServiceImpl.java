@@ -147,7 +147,8 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
                 .eq(ConvMonitor::getConvFeNodeId, convFeNode.getId())
                 .eq(ConvMonitor::getMonitorType, message.getMsgType())
-                .eq(ConvMonitor::getOrgCode, message.getOrgCode());
+                .eq(ConvMonitor::getOrgCode, message.getOrgCode())
+                .eq(ConvMonitor::getSysCode,convFeNode.getSysCode());
         List<ConvMonitor> convMonitorList = convMonitorMapper.selectList(queryWrapper);
         if (CollectionUtils.isNotEmpty(convMonitorList)) {
             monitor.setId(convMonitorList.get(0).getId());
