@@ -35,7 +35,7 @@ public class FepController {
     @Resource
     private ImportOriginalService importOriginalService;
 
-    @GetMapping("/config")
+    @PostMapping("/config")
     public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
                                                                  @RequestParam("port") Integer port){
         try {

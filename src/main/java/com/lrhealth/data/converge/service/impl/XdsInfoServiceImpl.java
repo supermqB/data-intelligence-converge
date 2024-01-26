@@ -225,7 +225,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .dataCount(dataCount)
                 .dataSize(dataSize)
                 .updateTime(LocalDateTime.now())
-//                .convTaskId(convTasks.get(0).getId())
+                .convTaskId(convTasks.get(0).getId())
                 .build();
         xdsService.updateById(updateXds);
 
