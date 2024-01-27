@@ -26,6 +26,10 @@ public class MonitorMsg implements Serializable {
      */
     private Long tunnelId;
     /**
+     * 数据源ID
+     */
+    private Integer dsId;
+    /**
      * 机构编码
      */
     private String orgCode;

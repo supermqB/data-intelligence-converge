@@ -52,6 +52,10 @@ public class ConvMonitor  implements Serializable {
      */
     private String monitorType;
     /**
+     * 数据源ID
+     */
+    private Integer dsId;
+    /**
      * 更新时间
      */
     private Date updateTime;
