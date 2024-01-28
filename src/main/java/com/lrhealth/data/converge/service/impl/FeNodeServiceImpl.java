@@ -146,17 +146,14 @@ public class FeNodeServiceImpl implements FeNodeService {
 
     @Override
     @Transactional
-    public ConvTask saveOrUpdateTask(TaskStatusDto taskStatusDto, ConvTunnel tunnel) {
+    public ConvTask saveOrUpdateTask(TaskStatusDto taskStatusDto, ConvTunnel tunnel, ConvTask oldTask) {
         ConvTask convTask = new ConvTask();
-        ConvTask one = convTaskService.getOne(new LambdaQueryWrapper<ConvTask>()
-                .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId())
-                .eq(ConvTask::getTunnelId, tunnel.getId()), false);
-        if (one != null && one.getStatus() > 3) {
-            return one;
+        if (oldTask != null && oldTask.getStatus() > 3) {
+            return oldTask;
         }
         BeanUtils.copyProperties(taskStatusDto, convTask);
-        if (one != null){
-            convTask.setId(one.getId());
+        if (oldTask != null){
+            convTask.setId(oldTask.getId());
         }
         convTask.setFedTaskId(taskStatusDto.getTaskId());
         convTask.setTunnelId(tunnel.getId());

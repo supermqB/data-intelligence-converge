@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.common.enums.conv.KafkaSendFlagEnum;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.model.dto.DsKafkaDto;
 import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +23,10 @@ import java.util.HashMap;
 public class KafkaServiceImpl implements KafkaService {
 
     @Value("${spring.kafka.topic.xds}")
-    private String topic;
+    private String xdsTopic;
+
+    @Value("${spring.kafka.topic.dolphinScheduler-task}")
+    private String dsTopic;
     @Resource
     private XdsInfoService xdsInfoService;
     @Resource
@@ -42,8 +46,16 @@ public class KafkaServiceImpl implements KafkaService {
         if (!KafkaSendFlagEnum.isSent(xds.getKafkaSendFlag())) {
             HashMap<String, Object> map = new HashMap<>();
             map.put("id", checkXds.getId());
-            kafkaTemplate.send(topic, JSON.toJSONString(map));
+            kafkaTemplate.send(xdsTopic, JSON.toJSONString(map));
             xdsInfoService.updateKafkaSent(xds);
         }
+    }
+
+    @Override
+    public void dsSendKafka(DsKafkaDto dto) {
+        if (ObjectUtil.isNull(dto)){
+            throw new CommonException("kafka send ds is null");
+        }
+        kafkaTemplate.send(dsTopic, JSON.toJSONString(dto));
     }
 }

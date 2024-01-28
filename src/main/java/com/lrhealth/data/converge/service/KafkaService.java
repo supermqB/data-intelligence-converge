@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.model.dto.DsKafkaDto;
 
 /**
  * @author jinmengyu
@@ -9,4 +10,6 @@ import com.lrhealth.data.converge.dao.entity.Xds;
 public interface KafkaService {
 
     void xdsSendKafka(Xds xds);
+
+    void dsSendKafka(DsKafkaDto dto);
 }

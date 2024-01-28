@@ -58,6 +58,7 @@ spring:
       cdc: cdc-data
       xds: gove-xds-${spring.profiles.active}
       fep-task: frontend-reschedule-${spring.profiles.active}
+      dolphinScheduler-task: dolphin-schedule-task-${spring.profiles.active}
     producer:
       retries: 3
       batch-size: 16384

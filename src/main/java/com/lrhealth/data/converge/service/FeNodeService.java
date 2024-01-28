@@ -20,7 +20,7 @@ public interface FeNodeService {
 
     ConvTunnel updateTunnel(TunnelStatusDto tunnelStatusDto);
 
-    ConvTask saveOrUpdateTask(TaskStatusDto taskStatusDto, ConvTunnel tunnel);
+    ConvTask saveOrUpdateTask(TaskStatusDto taskStatusDto, ConvTunnel tunnel,ConvTask oldTask);
 
     void saveOrUpdateLog(List<TaskLogDto> taskLogs, ConvTask convTask);
 

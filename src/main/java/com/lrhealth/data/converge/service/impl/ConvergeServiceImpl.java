@@ -1,30 +1,29 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import com.alibaba.fastjson2.JSON;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.config.ConvergeConfig;
+import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
-import com.lrhealth.data.converge.ds.dao.entity.ConvDolpscheRel;
 import com.lrhealth.data.converge.ds.dao.service.IConvDolpscheRelService;
-import com.lrhealth.data.converge.ds.dto.DsResult;
 import com.lrhealth.data.converge.ds.feign.DsFeignClient;
 import com.lrhealth.data.converge.model.FileTask;
 import com.lrhealth.data.converge.model.TaskFileConfig;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.ConvergeService;
 import com.lrhealth.data.converge.service.FeNodeService;
-import com.lrhealth.data.model.datasource.model.entity.Institution;
+import com.lrhealth.data.converge.service.KafkaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
-import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -65,6 +64,8 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     @Value("${ds.switch}")
     private boolean dsSwitch;
+    @Resource
+    private KafkaService kafkaService;
 
     @Override
     public void updateDownLoadFileTask(ConcurrentLinkedDeque<FileTask> taskDeque) {
@@ -113,14 +114,37 @@ public class ConvergeServiceImpl implements ConvergeService {
             }
             List<TaskStatusDto> taskStatusList = tunnelStatusDto.getTaskStatusList();
             for (TaskStatusDto taskStatusDto : taskStatusList) {
+                ConvTask oldTask = convTaskService.getOne(new LambdaQueryWrapper<ConvTask>()
+                        .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId())
+                        .eq(ConvTask::getTunnelId, tunnel.getId()), false);
                 //更新 task
-                ConvTask convTask = feNodeService.saveOrUpdateTask(taskStatusDto,tunnel);
+                ConvTask convTask = feNodeService.saveOrUpdateTask(taskStatusDto, tunnel, oldTask);
                 List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
                 feNodeService.saveOrUpdateLog(taskLogs, convTask);
                 updateTaskResultView(taskDeque, taskStatusDto, convTask);
                 updateTaskResultFile(taskDeque, taskStatusDto, convTask);
-                // 启动ds工作流
-//                startDsFlow(tunnel.getOrgCode(),tunnel.getId());
+                // 发送ds-kafka消息
+                if (ObjectUtil.isNotNull(oldTask) && !oldTask.getStatus().equals(TaskStatusEnum.DONE.getValue()) &&
+                convTask.getStatus().equals(TaskStatusEnum.DONE.getValue())){
+                    List<ConvTaskResultView> resultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
+                            .eq(ConvTaskResultView::getTaskId, convTask.getId()));
+                    if (CollUtil.isEmpty(resultViews)){
+                        return;
+                    }
+                    HashMap<String, String> paramMap = new HashMap<>();
+                    for (ConvTaskResultView resultView : resultViews){
+                        String tableName = resultView.getTableName();
+                        paramMap.put(tableName + "_start_position", resultView.getStartIndex());
+                        paramMap.put(tableName + "_end_position", resultView.getEndIndex());
+                    }
+                    DsKafkaDto kafkaDto = DsKafkaDto.builder()
+                            .paramMap(paramMap)
+                            .tunnelId(tunnel.getId())
+                            .build();
+
+                    // 发送ds-kafka给数智
+                    kafkaService.dsSendKafka(kafkaDto);
+                }
             }
         }
     }
@@ -128,8 +152,6 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     /**
      * 启动ds工作流
-     * @param orgCode
-     * @param tunnelId
      */
 //    private void startDsFlow(String orgCode,long tunnelId){
 //        if(!dsSwitch){
