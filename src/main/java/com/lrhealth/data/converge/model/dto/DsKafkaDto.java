@@ -21,4 +21,6 @@ public class DsKafkaDto {
 
     private Long tunnelId;
 
+    private Integer taskId;
+
 }

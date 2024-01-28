@@ -139,6 +139,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                     }
                     DsKafkaDto kafkaDto = DsKafkaDto.builder()
                             .paramMap(paramMap)
+                            .taskId(convTask.getId())
                             .tunnelId(tunnel.getId())
                             .build();
 
