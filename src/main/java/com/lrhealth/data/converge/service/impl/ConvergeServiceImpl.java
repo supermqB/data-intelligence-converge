@@ -138,7 +138,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                         paramMap.put(tableName + "_end_position", resultView.getEndIndex());
                     }
                     DsKafkaDto kafkaDto = DsKafkaDto.builder()
-                            .paramMap(paramMap)
+                            .startParams(paramMap)
                             .taskId(convTask.getId())
                             .tunnelId(tunnel.getId())
                             .build();

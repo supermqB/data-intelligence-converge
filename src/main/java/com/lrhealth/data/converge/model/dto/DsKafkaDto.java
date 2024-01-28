@@ -22,7 +22,7 @@ public class DsKafkaDto {
      * tableName_end_position
      *
      */
-    private Map<String, String> paramMap;
+    private Map<String, String> startParams;
 
     private Long tunnelId;
 
