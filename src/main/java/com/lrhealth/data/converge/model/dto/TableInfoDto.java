@@ -1,11 +1,11 @@
 package com.lrhealth.data.converge.model.dto;
 
+import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,9 +34,15 @@ public class TableInfoDto {
     private String writerColumns;
 
     /**
-     * 增量字段集合
+     * 增量字段
      */
-    private List<String> seqFields;
+    private String seqField;
+
+    /**
+     * 增量字段类型
+     * @see SeqFieldTypeEnum
+     */
+    private String seqFieldType;
 
     /**
      * 增量字段-增量采集最新时间

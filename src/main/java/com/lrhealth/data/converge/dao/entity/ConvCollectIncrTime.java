@@ -44,6 +44,16 @@ public class ConvCollectIncrTime implements Serializable {
     private String incrField;
 
     /**
+     * 增量字段类型
+     */
+    private String incrFieldType;
+
+    /**
+     * 最新增量序列
+     */
+    private String latestSeq;
+
+    /**
      * 最新采集时间
      */
     private String latestTime;

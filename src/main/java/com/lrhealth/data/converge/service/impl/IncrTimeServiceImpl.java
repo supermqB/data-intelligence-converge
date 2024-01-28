@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
 import com.lrhealth.data.converge.common.util.SqlExecUtil;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
@@ -65,7 +66,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
         }
         List<ConvOriginalColumn> convOriginalColumns = originalColumnService.list(new LambdaQueryWrapper<ConvOriginalColumn>()
                 .eq(ConvOriginalColumn::getTableId, table.getId())
-                .eq(ConvOriginalColumn::getIncrFlag, "1"));
+                .ne(ConvOriginalColumn::getIncrFlag, "0"));
         if (CollUtil.isEmpty(convOriginalColumns)){
             return;
         }
@@ -73,35 +74,47 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             String sql = getTaskLatestTimeSql(xds.getId(), xds.getOdsTableName(), column.getNameEn());
             List<Map<String, Object>> mapList = SqlExecUtil.execSql(sql, dto);
             if (CollUtil.isNotEmpty(mapList)){
-                Object latestTime = mapList.get(0).get(column.getNameEn());
-                DateTime dateTime = DateUtil.date((Date) latestTime);
-                updateCollectIncrTime(tunnel, xds, column.getNameEn(), dateTime);
+                Object latestValue = mapList.get(0).get(column.getNameEn());
+                updateCollectIncrTime(tunnel, xds, column, latestValue);
             }
         });
     }
 
-    private void updateCollectIncrTime(ConvTunnel tunnel, Xds xds, String column, DateTime latestTime){
+    private void updateCollectIncrTime(ConvTunnel tunnel, Xds xds, ConvOriginalColumn column, Object latestValue){
         ConvCollectIncrTime collectIncrTime = convCollectIncrTimeService.getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
                 .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
                 .eq(ConvCollectIncrTime::getTableName, xds.getOdsTableName())
-                .eq(ConvCollectIncrTime::getIncrField, column));
+                .eq(ConvCollectIncrTime::getIncrField, column.getNameEn()));
+        String incrType = column.getIncrFlag();
         if (ObjectUtil.isNotNull(collectIncrTime)) {
             ConvCollectIncrTime update = ConvCollectIncrTime.builder()
                     .id(collectIncrTime.getId())
-                    .latestTime(latestTime.toString())
-                    .updateTime(LocalDateTime.now()).build();
+                    .updateTime(LocalDateTime.now())
+                    .build();
+            if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
+                DateTime dateTime = DateUtil.date((Date) latestValue);
+                update.setLatestTime(dateTime.toString());
+            }else {
+                update.setLatestSeq(latestValue.toString());
+            }
             convCollectIncrTimeService.updateById(update);
             return;
         }
         ConvCollectIncrTime build = ConvCollectIncrTime.builder()
                 .tunnelId(tunnel.getId())
                 .tableName(xds.getOdsTableName())
-                .incrField(column)
-                .latestTime(latestTime.toString())
+                .incrField(column.getNameEn())
+                .incrFieldType(incrType)
                 .createTime(LocalDateTime.now())
                 .orgCode(xds.getOrgCode())
                 .sysCode(xds.getSysCode())
                 .build();
+        if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
+            DateTime dateTime = DateUtil.date((Date) latestValue);
+            build.setLatestTime(dateTime.toString());
+        }else {
+            build.setLatestSeq(latestValue.toString());
+        }
         convCollectIncrTimeService.saveOrUpdate(build);
     }
 
@@ -110,7 +123,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
 
     private String getTaskLatestTimeSql(Long xdsId, String tableName, String businessField){
         return "SELECT " + businessField + " FROM " + tableName +
-                " WHERE xds_id = '" + xdsId + "' ORDER BY " + businessField + " LIMIT 1";
+                " WHERE xds_id = '" + xdsId + "' ORDER BY " + businessField + " DESC LIMIT 1";
     }
 
     public static void main(String[] args) {

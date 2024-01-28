@@ -7,6 +7,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
+import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
@@ -168,11 +169,14 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             tableInfoDto.setTableName(model.getTableName());
             tableInfoDto.setSqlQuery(model.getQuerySql());
             tableInfoDto.setWriterColumns(model.getColumnField());
-            List<String> incrFieldList = Collections.singletonList(model.getConditionField());
-            if (CollUtil.isNotEmpty(incrFieldList)){
-                tableInfoDto.setSeqFields(incrFieldList);
+            String incrField = model.getConditionField();
+            if (CharSequenceUtil.isNotBlank(incrField)){
+                // 1-时间 2-序列
+                String fieldType = model.getConditionFieldType();
+                tableInfoDto.setSeqField(incrField);
+                tableInfoDto.setSeqFieldType(model.getConditionFieldType());
                 Map<String, String> fieldMap = new HashMap<>();
-                incrFieldList.forEach(incrField -> getIncrFieldMap(tunnel, model.getConditionField(), model.getTableName(), fieldMap));
+                getIncrFieldMap(tunnel, model.getConditionField(), model.getTableName(), fieldType, fieldMap);
                 tableInfoDto.setIncrTimeMap(fieldMap);
             }
             tableInfoDtoList.add(tableInfoDto);
@@ -180,13 +184,17 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
     }
 
-    private void getIncrFieldMap(ConvTunnel tunnel, String column, String tableName, Map<String, String> fieldMap){
+    private void getIncrFieldMap(ConvTunnel tunnel, String column, String tableName, String fieldType, Map<String, String> fieldMap){
         ConvCollectIncrTime collectIncrTime = incrTimeService.getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
                 .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
                 .eq(ConvCollectIncrTime::getIncrField, column)
                 .eq(ConvCollectIncrTime::getTableName, tableName));
         if (ObjectUtil.isNotNull(collectIncrTime)) {
-            fieldMap.put(column, collectIncrTime.getLatestTime());
+            if (SeqFieldTypeEnum.TIME.getValue().equals(fieldType)){
+                fieldMap.put(column, collectIncrTime.getLatestTime());
+            }else {
+                fieldMap.put(column, collectIncrTime.getLatestSeq());
+            }
         }
     }
 

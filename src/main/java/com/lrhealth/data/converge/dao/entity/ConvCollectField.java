@@ -41,9 +41,14 @@ public class ConvCollectField {
     private String orgCode;
 
     /**
-     * 条件字段
+     * 增量字段
      */
     private String conditionField;
+
+    /**
+     * 增量字段类型
+     */
+    private String conditionFieldType;
 
     private String tableName;
 
