@@ -58,9 +58,14 @@ public class DataSourceRepository {
         if(dataSourceMap.get(ds.getSysCode()) != null){
             return;
         }
-        dataSourceMap.put(ds.getSysCode(), new HikariDataSource(buildHikariConfig(ds)));
-        // 将新的数据源加入到bee框架，该数据源即时生效
-        BeeFactory.getInstance().setDataSourceMap(dataSourceMap);
+        try {
+            dataSourceMap.put(ds.getSysCode(), new HikariDataSource(buildHikariConfig(ds)));
+            // 将新的数据源加入到bee框架，该数据源即时生效
+            BeeFactory.getInstance().setDataSourceMap(dataSourceMap);
+        }catch (Exception e){
+            log.error("datasource set error");
+        }
+
     }
 
     /**

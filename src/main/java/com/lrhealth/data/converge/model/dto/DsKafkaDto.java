@@ -17,6 +17,11 @@ import java.util.Map;
 @AllArgsConstructor
 public class DsKafkaDto {
 
+    /**
+     * tableName_start_position
+     * tableName_end_position
+     *
+     */
     private Map<String, String> paramMap;
 
     private Long tunnelId;
