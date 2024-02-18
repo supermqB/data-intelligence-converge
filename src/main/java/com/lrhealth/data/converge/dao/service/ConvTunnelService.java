@@ -22,4 +22,6 @@ public interface ConvTunnelService extends IService<ConvTunnel> {
      * @param tunnelStatusEnum  管道状态
      */
     void updateTunnelStatus(Long tunnelId, TunnelStatusEnum tunnelStatusEnum);
+
+    ConvTunnel getTunnelWithoutDelFlag(Long tunnelId);
 }

@@ -34,4 +34,9 @@ public class ConvTunnelServiceImpl extends ServiceImpl<ConvTunnelMapper, ConvTun
         }
     }
 
+    @Override
+    public ConvTunnel getTunnelWithoutDelFlag(Long tunnelId) {
+        return this.baseMapper.getTunnelWithOutDelFlag(tunnelId);
+    }
+
 }

@@ -35,16 +35,16 @@ public class FepController {
     @Resource
     private ImportOriginalService importOriginalService;
 
-    @PostMapping("/config")
-    public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
-                                                                 @RequestParam("port") Integer port){
-        try {
-            return ResultBase.success(feTunnelConfigService.getFepTunnelConfig(ip, port));
-        }catch (Exception e){
-            log.error("fep get tunnel error, {}", ExceptionUtils.getStackTrace(e));
-            return ResultBase.fail(e.getMessage());
-        }
-    }
+//    @PostMapping("/config")
+//    public ResultBase<List<TunnelMessageDTO>> getFepTunnelConfig(@RequestParam("ip") String ip,
+//                                                                 @RequestParam("port") Integer port){
+//        try {
+//            return ResultBase.success(feTunnelConfigService.getFepTunnelConfig(ip, port));
+//        }catch (Exception e){
+//            log.error("fep get tunnel error, {}", ExceptionUtils.getStackTrace(e));
+//            return ResultBase.fail(e.getMessage());
+//        }
+//    }
 
     @PostMapping("/upload/log")
     public ResultBase<Void> updateFepStatus(@RequestBody ActiveFepUploadDto activeFepUploadDto){

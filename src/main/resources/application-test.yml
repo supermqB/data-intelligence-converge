@@ -2,7 +2,7 @@
 spring:
   #数据冶理&标准使用的redis配置
   redis:
-    host: 172.16.29.81
+    host: 172.16.29.60
     port: 6380
     password: ENC(Wlcmq4L+jNeLd0O8Rym9fqOo1ewJMdj0ehzGbVf6fQU=)
     redisson:

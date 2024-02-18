@@ -1,7 +1,7 @@
 spring:
   #数据冶理&标准使用的redis配置
   redis:
-    host: 172.16.29.81
+    host: 172.16.29.60
     port: 6380
     password: ENC(Wlcmq4L+jNeLd0O8Rym9fqOo1ewJMdj0ehzGbVf6fQU=)
     redisson:
@@ -57,6 +57,15 @@ spring:
       xds: gove-xds-${spring.profiles.active}
       fep-task: frontend-reschedule-${spring.profiles.active}
       dolphinScheduler-task: dolphin-schedule-task-${spring.profiles.active}
+      tunnel-datasource-change: tunnel-datasource-change-test
+      fep:
+        xds-create: xds-create
+        xds-update: xds-update
+        upload-tableCount: upload-tableCount
+        update-fepStatus: update-fepStatus
+        ## tunnel-config-change-${ip}-${port} 按照前置机ip和端口区分
+        tunnel-config-change: tunnel-config-change
+        original-data-source: original-data-source
     producer:
       retries: 3
       batch-size: 16384
@@ -64,6 +73,14 @@ spring:
       buffer-memory: 33554432
       acks: 1
       maxBlock: 1
+    consumer:
+      group-id: converge-consumer-group-${spring.profiles.active}
+      enable-auto-commit: false
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      max-poll-records: 1
+      auto-commit-interval: 1000
     listener:
       type: SINGLE
       ack-mode: MANUAL_IMMEDIATE
