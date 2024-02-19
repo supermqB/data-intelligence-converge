@@ -8,7 +8,10 @@ import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.service.ConvFeNodeService;
+import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.dao.service.ConvTunnelService;
+import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
+import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
 import com.lrhealth.data.converge.model.dto.FepScheduledDto;
 import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.service.DirectConnectCollectService;
@@ -38,6 +41,10 @@ public class DateIntelliConsumer {
     private KafkaTemplate<String, Object> kafkaTemplate;
     @Value("${spring.kafka.topic.fep.tunnel-config-change}")
     private String tunnelConfigTopic;
+    @Value("${spring.kafka.topic.fep.tunnel-schedule-task}")
+    private String tunnelScheduleTopic;
+    @Value("${spring.kafka.topic.fep.original-structure-config}")
+    private String originalStructureTopic;
     @Resource
     private ConvTunnelService tunnelService;
     @Resource
@@ -46,6 +53,8 @@ public class DateIntelliConsumer {
     private ConvFeNodeService feNodeService;
     @Resource
     private FeTunnelConfigService tunnelConfigService;
+    @Resource
+    private ConvOdsDatasourceConfigService odsDatasourceConfigService;
 
     @KafkaListener(topics = "${spring.kafka.topic.tunnel-datasource-change}")
     public void getFepTunnelConfig(@Payload String msgBody, Acknowledgment acknowledgment){
@@ -55,23 +64,12 @@ public class DateIntelliConsumer {
             for (Long tunnelId : tunnelList){
                 ConvTunnel tunnel = tunnelService.getTunnelWithoutDelFlag(tunnelId);
                 if (ObjectUtil.isNull(tunnel)) break;
-                String ip;
-                String fepPort;
-                if (tunnel.getFrontendId() == -1){
-                    log.info("直连管道{}配置被修改", tunnel.getId());
-                    ip = System.getProperty("converge.ip");
-                    fepPort = port;
-                }else {
-                    ConvFeNode convFeNode = feNodeService.getById(tunnel.getFrontendId());
-                    if (ObjectUtil.isNull(convFeNode)) break;
-                    ip = convFeNode.getIp();
-                    fepPort = String.valueOf(convFeNode.getPort());
-                }
+                String topicSuffix = topicSuffixIpPort(tunnel);
                 TunnelMessageDTO tunnelMessage = tunnelConfigService.getTunnelMessage(tunnel);
                 if (tunnel.getDelFlag() == 1){
                     tunnelMessage.setStatus(TunnelStatusEnum.ABANDON.getValue());
                 }
-                String topic = tunnelConfigTopic + CharPool.DASHED + ip + CharPool.DASHED + fepPort;
+                String topic = tunnelConfigTopic + CharPool.DASHED + topicSuffix;
                 kafkaTemplate.send(topic, JSON.toJSONString(tunnelMessage));
             }
         } catch (Exception e) {
@@ -93,15 +91,44 @@ public class DateIntelliConsumer {
                 directConnectCollectService.tunnelExec(null, tunnel.getId());
                 return;
             }
-            ConvFeNode convFeNode = feNodeService.getOne(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getId, tunnel.getFrontendId()));
-            // 暂时通过前置机网络情况进行添加任务
-            String key = convFeNode.getIp() + "-" + convFeNode.getPort() + "-" + dto.getTunnelId() + "-" + dto.getTaskId();
-//            convCache.putObject(key, dto);
+            String topic = tunnelScheduleTopic + CharPool.DASHED + topicSuffixIpPort(tunnel);
+            kafkaTemplate.send(topic, JSON.toJSONString(dto));
         } catch (Exception e) {
             log.error("task scheduled collect error, {}", ExceptionUtils.getStackTrace(e));
         } finally {
             acknowledgment.acknowledge();
         }
+    }
+
+    @KafkaListener(topics = "${spring.kafka.topic.original-structure-get}")
+    public void getOriginalStructure(@Payload String msgBody, Acknowledgment acknowledgment){
+        log.info("====================receive get-original-structure msgBody={}", msgBody);
+        try {
+            DataSourceParamDto dataSourceParam = JSON.parseObject(msgBody, DataSourceParamDto.class);
+            List<DataSourceInfoDto> orgReaderSource = odsDatasourceConfigService.getOrgReaderSource(dataSourceParam);
+            String topic = originalStructureTopic + CharPool.DASHED + dataSourceParam.getOrgCode();
+            kafkaTemplate.send(topic, JSON.toJSONString(orgReaderSource));
+        } catch (Exception e) {
+            log.error("get original structure error, {}", ExceptionUtils.getStackTrace(e));
+        } finally {
+            acknowledgment.acknowledge();
+        }
+    }
+
+
+    private String topicSuffixIpPort(ConvTunnel tunnel){
+        String ip;
+        String fepPort;
+        if (tunnel.getFrontendId() == -1){
+            log.info("直连管道{}配置被修改", tunnel.getId());
+            ip = System.getProperty("converge.ip");
+            fepPort = port;
+        }else {
+            ConvFeNode convFeNode = feNodeService.getById(tunnel.getFrontendId());
+            ip = convFeNode.getIp();
+            fepPort = String.valueOf(convFeNode.getPort());
+        }
+        return ip + CharPool.DASHED + fepPort;
     }
 
 }

@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.consumer;
+package com.lrhealth.data.converge.kafka;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;

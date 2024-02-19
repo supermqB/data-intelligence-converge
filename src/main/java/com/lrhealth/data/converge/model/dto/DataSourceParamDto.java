@@ -20,4 +20,9 @@ public class DataSourceParamDto {
     private String sysCode;
 
     private Integer dsConfigId;
+
+    /**
+     *  structure 1-库表 2-视图
+     */
+    private Integer structure;
 }

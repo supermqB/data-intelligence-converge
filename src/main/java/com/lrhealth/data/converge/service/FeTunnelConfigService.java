@@ -17,5 +17,7 @@ public interface FeTunnelConfigService {
 
     void updateFepStatus(ActiveFepUploadDto activeFepUploadDto);
 
+    void kafkaUpdateFepStatus(ActiveFepUploadDto activeFepUploadDto);
+
     TunnelMessageDTO getTunnelMessage(ConvTunnel tunnel);
 }
