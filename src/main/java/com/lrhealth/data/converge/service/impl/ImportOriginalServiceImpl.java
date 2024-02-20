@@ -1,16 +1,15 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.dao.entity.ConvFieldType;
 import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
-import com.lrhealth.data.converge.dao.service.ConvFieldTypeService;
-import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
-import com.lrhealth.data.converge.dao.service.ConvOriginalColumnService;
-import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;
+import com.lrhealth.data.converge.dao.entity.System;
+import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.ColumnInfoDTO;
 import com.lrhealth.data.converge.model.dto.OriginalStructureDto;
 import com.lrhealth.data.converge.model.dto.OriginalTableCountDto;
@@ -22,9 +21,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -44,11 +41,19 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
 
     @Resource
     private ConvFieldTypeService convFieldTypeService;
+    @Resource
+    private SystemService systemService;
 
     @Override
     public void importConvOriginal(OriginalStructureDto structureDto) {
         String orgCode = structureDto.getOrgCode();
         String sysCode = structureDto.getSysCode();
+        // todo: 暂时给原始结构写入第一个系统编码，流程修改之后删除
+        if (CharSequenceUtil.isBlank(sysCode)) {
+            System system = systemService.getOne(new LambdaQueryWrapper<System>().eq(System::getSourceCode, structureDto.getOrgCode())
+                    .last("LIMIT 1"));
+            sysCode = system.getSystemCode();
+        }
         List<OriginalTableDto> originalTableDtoList = structureDto.getOriginalTables();
         if (CollUtil.isEmpty(originalTableDtoList)) {
             return;
@@ -95,14 +100,17 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
 
     private void processOriginalColumn(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
         List<ConvOriginalTable> originalTableList = originalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
-                .eq(ConvOriginalTable::getSysCode, sysCode)
+                .eq(CharSequenceUtil.isNotBlank(sysCode), ConvOriginalTable::getSysCode, sysCode)
                 .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
                 .eq(ConvOriginalTable::getCreateTime, saveTime));
         Map<String, Long> tableNameIdMapping = originalTableList.stream().collect(Collectors.toMap(ConvOriginalTable::getNameEn, ConvOriginalTable::getId));
 
         // 获取平台数据源相关数据库类型
         LambdaQueryWrapper<ConvOdsDatasourceConfig> configLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        configLambdaQueryWrapper.eq(ConvOdsDatasourceConfig::getOrgCode, orgCode).eq(ConvOdsDatasourceConfig::getSysCode, sysCode).eq(ConvOdsDatasourceConfig::getDelFlag, 0);
+        configLambdaQueryWrapper.eq(ConvOdsDatasourceConfig::getOrgCode, orgCode)
+                .eq(CharSequenceUtil.isNotBlank(sysCode),ConvOdsDatasourceConfig::getSysCode, sysCode)
+                .eq(dsConfigId != null, ConvOdsDatasourceConfig::getId, dsConfigId)
+                .eq(ConvOdsDatasourceConfig::getDelFlag, 0);
         List<ConvOdsDatasourceConfig> convOdsDatasourceConfigList = convOdsDatasourceConfigService.list(configLambdaQueryWrapper);
         if (CollUtil.isEmpty(convOdsDatasourceConfigList)) {
             return;

@@ -1,15 +1,17 @@
 package com.lrhealth.data.converge.controller;
 
-import com.alibaba.fastjson2.JSON;
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
-import com.lrhealth.data.converge.model.dto.*;
-import com.lrhealth.data.converge.service.*;
+import com.lrhealth.data.converge.model.dto.ActiveFepUploadDto;
+import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
+import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
+import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -28,10 +30,6 @@ public class FepController {
     private FeTunnelConfigService feTunnelConfigService;
     @Resource
     private ConvOdsDatasourceConfigService odsDatasourceConfigService;
-    @Resource(name = "kafkaTemplate")
-    private KafkaTemplate<String, Object> kafkaTemplate;
-    @Value("${spring.kafka.topic.original-structure-get}")
-    private String originalStructureTopic;
 
 
     @PostMapping("/upload/log")
@@ -52,15 +50,6 @@ public class FepController {
         }catch (Exception e){
             log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
             return ResultBase.fail(e.getMessage());
-        }
-    }
-
-    @PostMapping("/original/structure/kafka")
-    public void sendOriginalStructureKafka(@RequestBody DataSourceParamDto dto){
-        try {
-            kafkaTemplate.send(originalStructureTopic, JSON.toJSONString(dto));
-        }catch (Exception e){
-            log.error("fep get schedule task error, {}", ExceptionUtils.getStackTrace(e));
         }
     }
 }

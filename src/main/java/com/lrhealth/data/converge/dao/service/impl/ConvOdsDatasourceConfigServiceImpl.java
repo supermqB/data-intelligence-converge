@@ -41,6 +41,8 @@ public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatas
                     .username(datasourceConfig.getDsUsername())
                     .password(datasourceConfig.getDsPwd())
                     .schema(datasourceConfig.getSchema())
+                    // TODO: 换成数智kafka接口之后删除
+                    .structure(dto.getStructure())
                     .build();
             dataSourceDtoList.add(sourceInfoDto);
         });

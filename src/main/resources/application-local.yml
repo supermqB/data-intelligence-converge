@@ -52,13 +52,26 @@ spring:
     # kafka 消费者设置
   kafka:
     bootstrap-servers: 172.16.29.48:9092
+    producer:
+      retries: 3
+      batch-size: 1000
+      linger-ms: 5
+      buffer-memory: 33554432
+      acks: 1
+      maxBlock: 1
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      type: SINGLE
     topic:
       cdc: cdc-data
       xds: gove-xds-${spring.profiles.active}
-      fep-task: frontend-reschedule-${spring.profiles.active}
       dolphinScheduler-task: dolphin-schedule-task-${spring.profiles.active}
-      tunnel-datasource-change: tunnel-datasource-change-test
-      original-structure-get: original-structure-get
+      intelligence:
+        fep-task: frontend-reschedule-${spring.profiles.active}
+        tunnel-datasource-change: tunnel-datasource-change-test
+        original-structure-get: original-structure-get
       fep:
         xds-create: xds-create
         xds-update: xds-update
@@ -70,24 +83,6 @@ spring:
         upload-original-structure: upload-original-structure
         upload-original-table-count: upload-original-table-count
         tunnel-schedule-task: tunnel-schedule-task
-    producer:
-      retries: 3
-      batch-size: 16384
-      linger-ms: 5
-      buffer-memory: 33554432
-      acks: 1
-      maxBlock: 1
-    consumer:
-      group-id: converge-consumer-group-${spring.profiles.active}
-      enable-auto-commit: false
-      auto-offset-reset: latest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      max-poll-records: 1
-      auto-commit-interval: 1000
-    listener:
-      type: SINGLE
-      ack-mode: MANUAL_IMMEDIATE
 
   servlet:
     multipart:

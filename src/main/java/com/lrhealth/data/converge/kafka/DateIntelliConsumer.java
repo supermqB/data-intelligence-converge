@@ -56,7 +56,7 @@ public class DateIntelliConsumer {
     @Resource
     private ConvOdsDatasourceConfigService odsDatasourceConfigService;
 
-    @KafkaListener(topics = "${spring.kafka.topic.tunnel-datasource-change}")
+    @KafkaListener(topics = "${spring.kafka.topic.intelligence.tunnel-datasource-change}")
     public void getFepTunnelConfig(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive tunnel-config msgBody={}", msgBody);
         try {
@@ -80,7 +80,7 @@ public class DateIntelliConsumer {
     }
 
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep-task}")
+    @KafkaListener(topics = "${spring.kafka.topic.intelligence.fep-task}")
     public void getScheduleTask(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive datax-task msgBody={}", msgBody);
         try {
@@ -100,7 +100,7 @@ public class DateIntelliConsumer {
         }
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.original-structure-get}")
+    @KafkaListener(topics = "${spring.kafka.topic.intelligence.original-structure-get}")
     public void getOriginalStructure(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive get-original-structure msgBody={}", msgBody);
         try {

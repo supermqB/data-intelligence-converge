@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.common.config;
 
+import cn.hutool.core.map.MapUtil;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,14 +12,13 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Kafka生产者
  *
  * @author lr
- * @date 2022-11-28
+ * @since 2022-11-28
  */
 @Configuration
 @EnableKafka
@@ -47,7 +47,7 @@ public class KafkaProducerConfig {
      */
     @Bean
     public Map<String, Object> producerConfigs() {
-        Map<String, Object> props = new HashMap<>();
+        Map<String, Object> props = MapUtil.newHashMap();
         //发送消息持久化参数  1（等待leader响应）  0（不等待任何响应）  -1/all（等待所有）
         props.put(ProducerConfig.ACKS_CONFIG, acks);
         //ip
@@ -83,5 +83,6 @@ public class KafkaProducerConfig {
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
+
 
 }

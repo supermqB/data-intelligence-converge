@@ -13,7 +13,6 @@ import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.service.DirectConnectCollectService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +35,7 @@ public class FepScheduleConsumer {
     @Resource
     private DirectConnectCollectService directConnectCollectService;
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep-task}")
+//    @KafkaListener(topics = "${spring.kafka.topic.intelligence.fep-task}")
     public void consume(@Payload String msgBody) {
         try {
             FepScheduledDto dto = JSON.parseObject(msgBody, FepScheduledDto.class);
