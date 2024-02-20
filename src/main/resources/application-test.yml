@@ -53,21 +53,41 @@ spring:
   # kafka 消费者设置
   kafka:
     bootstrap-servers: 172.16.29.48:9092
-    topic:
-      cdc: cdc-data
-      xds: gove-xds-${spring.profiles.active}
-      fep-task: frontend-reschedule-${spring.profiles.active}
-      dolphinScheduler-task: dolphin-schedule-task-${spring.profiles.active}
     producer:
       retries: 3
-      batch-size: 16384
+      batch-size: 1000
       linger-ms: 5
       buffer-memory: 33554432
       acks: 1
       maxBlock: 1
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     listener:
       type: SINGLE
-      ack-mode: MANUAL_IMMEDIATE
+    topic:
+      cdc: cdc-data
+      xds: gove-xds-${spring.profiles.active}
+      dolphinScheduler-task: dolphin-schedule-task-${spring.profiles.active}
+      intelligence:
+        fep-task: frontend-reschedule-test
+        tunnel-datasource-change: tunnel-datasource-change-test
+        original-structure-get: original-structure-get
+      fep:
+        ## listen
+        xds-create: xds-create
+        xds-update: xds-update
+        upload-tableCount: upload-tableCount
+        update-fepStatus: update-fepStatus
+        upload-original-structure: upload-original-structure
+        upload-original-table-count: upload-original-table-count
+        ## send
+        ## tunnel-config-change-${ip}-${port} 按照前置机ip和端口区分
+        tunnel-config-change: tunnel-config-change
+        ## original-structure-config-${orgCode} 按照系统编码区分
+        original-structure-config: original-structure-config
+        ## tunnel-schedule-task-${ip}-${port} 按照前置机ip和端口区分
+        tunnel-schedule-task: tunnel-schedule-task
 
   servlet:
     multipart:
