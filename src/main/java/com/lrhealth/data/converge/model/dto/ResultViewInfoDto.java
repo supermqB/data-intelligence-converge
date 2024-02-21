@@ -1,13 +1,17 @@
 package com.lrhealth.data.converge.model.dto;
 
-import lombok.Data;
+import lombok.*;
 
 /**
  * @author jinmengyu
  * @date 2023-09-20
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class ResultViewInfoDto {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ResultViewInfoDto extends TaskInfoKafkaDto{
 
     private Integer resultViewId;
 

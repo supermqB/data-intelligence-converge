@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.kafka;
 
 import com.alibaba.fastjson.JSON;
-import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.ImportOriginalService;
@@ -9,6 +8,7 @@ import com.lrhealth.data.converge.service.TaskResultViewService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -31,17 +31,16 @@ public class FepKafkaConsumer {
     @Resource
     private FeTunnelConfigService feTunnelConfigService;
     @Resource
-    private ConvOdsDatasourceConfigService odsDatasourceConfigService;
-    @Resource
     private ImportOriginalService importOriginalService;
 
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.update-fepStatus}")
-    public void updateFepStatus(@Payload String msgBody, Acknowledgment acknowledgment){
-        log.info("====================receive update-fepStatus msgBody={}", msgBody);
+    @KafkaListener(topics = "${spring.kafka.topic.fep.update-collect-message}")
+    public void updateCollectInfo(ConsumerRecord<String, String> record, Acknowledgment acknowledgment){
+        log.info("====================receive update-fepStatus msgBody={}", record);
         try {
-            ActiveFepUploadDto activeFepUploadDto = JSON.parseObject(msgBody, ActiveFepUploadDto.class);
-            feTunnelConfigService.updateFepStatus(activeFepUploadDto);
+            String key = record.key();
+            String msgBody = record.value();
+            feTunnelConfigService.kafkaUpdateFepStatus(key, msgBody);
         } catch (Exception e) {
             log.error("fepStatus update error,{}", ExceptionUtils.getStackTrace(e));
         } finally {

@@ -3,6 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import cn.hutool.crypto.asymmetric.RSA;
 import cn.hutool.http.HttpRequest;
@@ -15,6 +16,7 @@ import com.lrhealth.data.converge.common.exception.PingException;
 import com.lrhealth.data.converge.common.util.RsaUtils;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
+import com.lrhealth.data.converge.model.FileTask;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.FeNodeService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
@@ -133,7 +136,7 @@ public class FeNodeServiceImpl implements FeNodeService {
 
     @Override
     @Transactional
-    public ConvTunnel updateTunnel(TunnelStatusDto tunnelStatusDto) {
+    public ConvTunnel updateTunnel(TunnelStatusKafkaDto tunnelStatusDto) {
         Long tunnelId = tunnelStatusDto.getTunnelId();
         ConvTunnel tunnel = convTunnelService.getById(tunnelId);
         if (tunnel == null){
@@ -146,48 +149,52 @@ public class FeNodeServiceImpl implements FeNodeService {
 
     @Override
     @Transactional
-    public ConvTask saveOrUpdateTask(TaskStatusDto taskStatusDto, ConvTunnel tunnel, ConvTask oldTask) {
+    public ConvTask saveOrUpdateTask(TaskInfoKafkaDto dto, ConvTunnel tunnel, ConvTask oldTask) {
         ConvTask convTask = new ConvTask();
         if (oldTask != null && oldTask.getStatus() > 3) {
             return oldTask;
         }
-        BeanUtils.copyProperties(taskStatusDto, convTask);
         if (oldTask != null){
             convTask.setId(oldTask.getId());
         }
-        convTask.setFedTaskId(taskStatusDto.getTaskId());
-        convTask.setTunnelId(tunnel.getId());
-        convTask.setName(tunnel.getName() + "_任务" + taskStatusDto.getTaskId());
-        convTask.setSysCode(tunnel.getSysCode());
-        convTask.setOrgCode(tunnel.getOrgCode());
-        convTask.setConvergeMethod(tunnel.getConvergeMethod());
+        convTask.setStatus(dto.getStatus());
+        convTask.setFedTaskId(dto.getTaskId());
+        if (ObjectUtil.isNotNull(tunnel)){
+            convTask.setTunnelId(tunnel.getId());
+            convTask.setName(tunnel.getName() + "_任务" + dto.getTaskId());
+            convTask.setSysCode(tunnel.getSysCode());
+            convTask.setOrgCode(tunnel.getOrgCode());
+            convTask.setConvergeMethod(tunnel.getConvergeMethod());
+        }
         DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        convTask.setStartTime(LocalDateTime.parse(taskStatusDto.getStartTime(), df));
-        if (taskStatusDto.getEndTime() != null) {
-            convTask.setEndTime(LocalDateTime.parse(taskStatusDto.getEndTime(), df));
+        if (dto.getStartTime() != null) {
+            convTask.setStartTime(LocalDateTime.parse(dto.getStartTime(), df));
+        }
+        if (dto.getEndTime() != null) {
+            convTask.setEndTime(LocalDateTime.parse(dto.getEndTime(), df));
         }
         convTask.setDelFlag(0);
         convTaskService.saveOrUpdate(convTask, new LambdaQueryWrapper<ConvTask>()
-                .eq(ConvTask::getTunnelId, tunnel.getId())
-                .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId()));
+                .eq(ConvTask::getFedTaskId, dto.getTaskId()));
         return convTask;
     }
 
     @Override
     @Transactional
-    public void saveOrUpdateLog(List<TaskLogDto> taskLogs, ConvTask convTask) {
+    public void saveOrUpdateLog(List<TaskLogDto> taskLogs, Integer taskId) {
         if (CollUtil.isEmpty(taskLogs)){
             return;
         }
         DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        List<TaskLogDto> newLogList = taskLogs.stream().filter(taskLogDto -> !logIdMap.containsKey(convTask.getId() + "-" + taskLogDto.getLogId())).collect(Collectors.toList());
+        List<TaskLogDto> newLogList =
+                taskLogs.stream().filter(taskLogDto -> !logIdMap.containsKey(taskId + "-" + taskLogDto.getLogId())).collect(Collectors.toList());
         if (CollUtil.isEmpty(newLogList)){
             return;
         }
         List<ConvTaskLog> convTaskLogList = new ArrayList<>();
         newLogList.forEach(newLogDto -> {
             ConvTaskLog convTaskLog = new ConvTaskLog();
-            convTaskLog.setTaskId(convTask.getId());
+            convTaskLog.setTaskId(taskId);
             convTaskLog.setFedLogId(newLogDto.getLogId());
             convTaskLog.setLogDetail(newLogDto.getLogDetail());
             convTaskLog.setTimestamp(LocalDateTime.parse(newLogDto.getLogTime(), df));
@@ -195,23 +202,23 @@ public class FeNodeServiceImpl implements FeNodeService {
         });
         boolean insert = convTaskLogService.saveOrUpdateBatch(convTaskLogList);
         if (insert){
-            convTaskLogList.forEach(convTaskLog -> logIdMap.put(convTask.getId() + "-" + convTaskLog.getFedLogId(), true));
+            convTaskLogList.forEach(convTaskLog -> logIdMap.put(taskId + "-" + convTaskLog.getFedLogId(), true));
         }
     }
 
     @Override
     @Transactional
-    public ConvTaskResultView saveOrUpdateFile(ResultViewInfoDto resultViewInfoDto, ConvTask convTask) {
+    public ConvTaskResultView saveOrUpdateFile(ResultViewInfoDto resultViewInfoDto, Integer taskId) {
         ConvTaskResultView convTaskResultView = new ConvTaskResultView();
         ConvTaskResultView taskResultView =
                 convTaskResultViewService.getOne(new LambdaQueryWrapper<ConvTaskResultView>()
-                .eq(ConvTaskResultView::getTaskId, convTask.getId())
+                .eq(ConvTaskResultView::getTaskId, taskId)
                 .eq(ConvTaskResultView::getTableName,resultViewInfoDto.getTableName()), false);
         if (taskResultView != null  && taskResultView.getStatus() > 1){
             return taskResultView;
         }
         BeanUtils.copyProperties(resultViewInfoDto, convTaskResultView);
-        convTaskResultView.setTaskId(convTask.getId());
+        convTaskResultView.setTaskId(taskId);
         // 过滤条数
         if (null != resultViewInfoDto.getRecordCount() && resultViewInfoDto.getRecordCount() != 0){
             convTaskResultView.setDataItemCount(resultViewInfoDto.getRecordCount());
@@ -219,7 +226,7 @@ public class FeNodeServiceImpl implements FeNodeService {
 
         convTaskResultView.setFeStoredPath(resultViewInfoDto.getFilePath());
         if(!StringUtils.isEmpty(resultViewInfoDto.getFileName())){
-            String destPath = convergeConfig.getOutputPath() + File.separator + convTask.getId()
+            String destPath = convergeConfig.getOutputPath() + File.separator + taskId
                     + File.separator + resultViewInfoDto.getFileName().replace(".","_") + File.separator;
             convTaskResultView.setStoredPath(destPath + resultViewInfoDto.getFileName());
             convTaskResultView.setFeStoredFilename(resultViewInfoDto.getFileName());
@@ -231,7 +238,7 @@ public class FeNodeServiceImpl implements FeNodeService {
         convTaskResultView.setDelFlag(0);
 
         convTaskResultViewService.saveOrUpdate(convTaskResultView,new LambdaQueryWrapper<ConvTaskResultView>()
-                .eq(ConvTaskResultView::getTaskId, convTask.getId())
+                .eq(ConvTaskResultView::getTaskId, taskId)
                 .eq(ConvTaskResultView::getTableName, resultViewInfoDto.getTableName()));
         return convTaskResultView;
     }
@@ -275,5 +282,60 @@ public class FeNodeServiceImpl implements FeNodeService {
                 .eq(ConvTaskResultFile::getTaskId, convTask.getId())
                 .eq(ConvTaskResultFile::getFeStoredFilename, resultFileInfoDto.getFileName()));
         return convTaskResultFile;
+    }
+
+    @Override
+    public void updateTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, List<ResultViewInfoDto> resultViewInfoDtoList, ConvTask convTask) {
+        if (CollUtil.isEmpty(resultViewInfoDtoList)){
+            return;
+        }
+        for (ResultViewInfoDto resultViewInfoDto : resultViewInfoDtoList) {
+            if (resultViewInfoDto == null) {
+                continue;
+            }
+            //更新 file
+            ConvTaskResultView taskResultView = this.saveOrUpdateFile(resultViewInfoDto, convTask.getId());
+
+            //添加任务
+            if (convTask.getStatus() == 3 && taskResultView.getStatus() == 1) {
+                if ("null".equals(taskResultView.getFeStoredFilename())
+                        || null == taskResultView.getDataItemCount() || taskResultView.getDataItemCount() == 0){
+                    continue;
+                }
+                FileTask fileTask = new FileTask(convTask.getId(), taskResultView.getFeStoredFilename());
+                if (!taskDeque.contains(fileTask)) {
+                    taskDeque.add(fileTask);
+                    taskResultView.setStatus(2);
+                    convTaskResultViewService.updateById(taskResultView);
+                    log.info("添加文件下载任务: " + taskResultView);
+                }
+            }
+        }
+    }
+
+
+    @Override
+    public void updateTaskResultFile(ConcurrentLinkedDeque<FileTask> taskDeque, List<ResultFileInfoDto> resultFileInfoDtoList, ConvTask convTask) {
+        if (CollUtil.isEmpty(resultFileInfoDtoList)){
+            return;
+        }
+        for (ResultFileInfoDto resultFileInfoDto : resultFileInfoDtoList) {
+            if (resultFileInfoDto == null) {
+                continue;
+            }
+            //更新 file
+            ConvTaskResultFile taskResultFile = this.saveOrUpdateFile(resultFileInfoDto, convTask);
+
+            //添加任务
+            if (convTask.getStatus() == 3 && taskResultFile.getStatus() == 1) {
+                FileTask fileTask = new FileTask(convTask.getId(), taskResultFile.getFeStoredFilename());
+                if (!taskDeque.contains(fileTask)) {
+                    taskDeque.add(fileTask);
+                    taskResultFile.setStatus(2);
+                    convTaskResultFileService.updateById(taskResultFile);
+                    log.info("添加文件下载任务: " + taskResultFile);
+                }
+            }
+        }
     }
 }

@@ -100,7 +100,7 @@ public class DateIntelliConsumer {
         }
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.intelligence.original-structure-get}")
+    @KafkaListener(topics = "${spring.kafka.topic.intelligence.original-structure}")
     public void getOriginalStructure(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive get-original-structure msgBody={}", msgBody);
         try {

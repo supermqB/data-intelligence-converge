@@ -107,7 +107,10 @@ public class ConvergeServiceImpl implements ConvergeService {
         List<TunnelStatusDto> tunnelStatusDtoList = frontendStatusDto.getTunnelStatusDtoList();
         for (TunnelStatusDto tunnelStatusDto : tunnelStatusDtoList) {
             //更新 tunnel
-            ConvTunnel tunnel = feNodeService.updateTunnel(tunnelStatusDto);
+            TunnelStatusKafkaDto tunnelStatus = new TunnelStatusKafkaDto();
+            tunnelStatus.setTunnelId(tunnelStatusDto.getTunnelId());
+            tunnelStatus.setTunnelStatus(tunnelStatusDto.getTunnelStatus());
+            ConvTunnel tunnel = feNodeService.updateTunnel(tunnelStatus);
             if(tunnel == null){
                 log.warn("不存在的管道信息！" + tunnelStatusDto.getTunnelId());
                 continue;
@@ -118,35 +121,50 @@ public class ConvergeServiceImpl implements ConvergeService {
                         .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId())
                         .eq(ConvTask::getTunnelId, tunnel.getId()), false);
                 //更新 task
-                ConvTask convTask = feNodeService.saveOrUpdateTask(taskStatusDto, tunnel, oldTask);
-                List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
-                feNodeService.saveOrUpdateLog(taskLogs, convTask);
-                updateTaskResultView(taskDeque, taskStatusDto, convTask);
-                updateTaskResultFile(taskDeque, taskStatusDto, convTask);
-                // 发送ds-kafka消息
-                if (ObjectUtil.isNotNull(oldTask) && !oldTask.getStatus().equals(TaskStatusEnum.DONE.getValue()) &&
-                convTask.getStatus().equals(TaskStatusEnum.DONE.getValue())){
-                    List<ConvTaskResultView> resultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
-                            .eq(ConvTaskResultView::getTaskId, convTask.getId()));
-                    if (CollUtil.isEmpty(resultViews)){
-                        return;
-                    }
-                    HashMap<String, String> paramMap = new HashMap<>();
-                    for (ConvTaskResultView resultView : resultViews){
-                        String tableName = resultView.getTableName();
-                        paramMap.put(tableName + "_start_position", resultView.getStartIndex());
-                        paramMap.put(tableName + "_end_position", resultView.getEndIndex());
-                    }
-                    DsKafkaDto kafkaDto = DsKafkaDto.builder()
-                            .startParams(paramMap)
-                            .taskId(convTask.getId())
-                            .tunnelId(tunnel.getId())
-                            .build();
+                TaskInfoKafkaDto taskDto = new TaskInfoKafkaDto();
+                taskDto.setTaskId(taskStatusDto.getTaskId());
+                taskDto.setStartTime(taskStatusDto.getStartTime());
+                taskDto.setEndTime(taskStatusDto.getEndTime());
+                taskDto.setStatus(taskStatusDto.getStatus());
+                ConvTask convTask = feNodeService.saveOrUpdateTask(taskDto, tunnel, oldTask);
 
-                    // 发送ds-kafka给数智
-                    kafkaService.dsSendKafka(kafkaDto);
-                }
+                List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
+                feNodeService.saveOrUpdateLog(taskLogs, convTask.getId());
+
+                List<ResultViewInfoDto> resultViewInfoDtoList = taskStatusDto.getDataxInfoList();
+                feNodeService.updateTaskResultView(taskDeque, resultViewInfoDtoList, convTask);
+
+                List<ResultFileInfoDto> resultFileInfoDtoList = taskStatusDto.getFileInfoList();
+                feNodeService.updateTaskResultFile(taskDeque, resultFileInfoDtoList, convTask);
+
+                sendDsKafka(convTask, oldTask, tunnel.getId());
             }
+        }
+    }
+
+    private void sendDsKafka(ConvTask convTask, ConvTask oldTask, Long tunnelId){
+        // 发送ds-kafka消息
+        if (ObjectUtil.isNotNull(oldTask) && !oldTask.getStatus().equals(TaskStatusEnum.DONE.getValue()) &&
+                convTask.getStatus().equals(TaskStatusEnum.DONE.getValue())){
+            List<ConvTaskResultView> resultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
+                    .eq(ConvTaskResultView::getTaskId, convTask.getId()));
+            if (CollUtil.isEmpty(resultViews)){
+                return;
+            }
+            HashMap<String, String> paramMap = new HashMap<>();
+            for (ConvTaskResultView resultView : resultViews){
+                String tableName = resultView.getTableName();
+                paramMap.put(tableName + "_start_position", resultView.getStartIndex());
+                paramMap.put(tableName + "_end_position", resultView.getEndIndex());
+            }
+            DsKafkaDto kafkaDto = DsKafkaDto.builder()
+                    .startParams(paramMap)
+                    .taskId(convTask.getId())
+                    .tunnelId(tunnelId)
+                    .build();
+
+            // 发送ds-kafka给数智
+            kafkaService.dsSendKafka(kafkaDto);
         }
     }
 
@@ -317,58 +335,4 @@ public class ConvergeServiceImpl implements ConvergeService {
         }
     }
 
-
-    private void updateTaskResultFile(ConcurrentLinkedDeque<FileTask> taskDeque, TaskStatusDto taskStatusDto, ConvTask convTask) {
-        List<ResultFileInfoDto> fileInfoList = taskStatusDto.getFileInfoList();
-        if (CollUtil.isEmpty(fileInfoList)){
-            return;
-        }
-        for (ResultFileInfoDto resultFileInfoDto : fileInfoList) {
-            if (resultFileInfoDto == null) {
-                continue;
-            }
-            //更新 file
-            ConvTaskResultFile taskResultFile = feNodeService.saveOrUpdateFile(resultFileInfoDto, convTask);
-
-            //添加任务
-            if (convTask.getStatus() == 3 && taskResultFile.getStatus() == 1) {
-                FileTask fileTask = new FileTask(convTask.getId(), taskResultFile.getFeStoredFilename());
-                if (!taskDeque.contains(fileTask)) {
-                    taskDeque.add(fileTask);
-                    taskResultFile.setStatus(2);
-                    convTaskResultFileService.updateById(taskResultFile);
-                    log.info("添加文件下载任务: " + taskResultFile);
-                }
-            }
-        }
-    }
-
-    private void updateTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, TaskStatusDto taskStatusDto, ConvTask convTask) {
-        List<ResultViewInfoDto> fileInfoList = taskStatusDto.getDataxInfoList();
-        if (CollUtil.isEmpty(fileInfoList)){
-            return;
-        }
-        for (ResultViewInfoDto resultViewInfoDto : fileInfoList) {
-            if (resultViewInfoDto == null) {
-                continue;
-            }
-            //更新 file
-            ConvTaskResultView taskResultView = feNodeService.saveOrUpdateFile(resultViewInfoDto, convTask);
-
-            //添加任务
-            if (convTask.getStatus() == 3 && taskResultView.getStatus() == 1) {
-                if ("null".equals(taskResultView.getFeStoredFilename())
-                        || null == taskResultView.getDataItemCount() || taskResultView.getDataItemCount() == 0){
-                    continue;
-                }
-                FileTask fileTask = new FileTask(convTask.getId(), taskResultView.getFeStoredFilename());
-                if (!taskDeque.contains(fileTask)) {
-                    taskDeque.add(fileTask);
-                    taskResultView.setStatus(2);
-                    convTaskResultViewService.updateById(taskResultView);
-                    log.info("添加文件下载任务: " + taskResultView);
-                }
-            }
-        }
-    }
 }

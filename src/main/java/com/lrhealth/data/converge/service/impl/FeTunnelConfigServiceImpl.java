@@ -4,7 +4,9 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.google.common.collect.Lists;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
@@ -14,6 +16,7 @@ import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.scheduled.DownloadFileTask;
 import com.lrhealth.data.converge.service.ConvergeService;
+import com.lrhealth.data.converge.service.FeNodeService;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -34,7 +37,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     @Resource
     private ConvTunnelService tunnelService;
     @Resource
-    private ConvFeNodeService feNodeService;
+    private ConvFeNodeService convFeNodeService;
     @Resource
     private ConvCollectFieldService collectFieldService;
     @Resource
@@ -43,6 +46,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private ConvOdsDatasourceConfigService odsDatasourceConfigService;
     @Resource
     private ConvCollectIncrTimeService incrTimeService;
+    @Resource
+    private FeNodeService feNodeService;
+    @Resource
+    private ConvTaskService taskService;
 
 
     @Override
@@ -73,11 +80,48 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         convergeService.updateFepStatus(frontendStatusDto, DownloadFileTask.taskDeque);
     }
 
+    @Override
+    public void kafkaUpdateFepStatus(String key, String msgBody) {
+        if (CharSequenceUtil.isBlank(key)) return;
+        switch (key){
+            case "tunnel":
+                TunnelStatusKafkaDto dto = JSON.parseObject(msgBody, TunnelStatusKafkaDto.class);
+                feNodeService.updateTunnel(dto);
+                break;
+            case "task":
+                TaskInfoKafkaDto taskInfoKafkaDto = JSON.parseObject(msgBody, TaskInfoKafkaDto.class);
+                ConvTask oldTask = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
+                        .eq(ConvTask::getFedTaskId, taskInfoKafkaDto.getTaskId())
+                        .eq(ConvTask::getTunnelId, taskInfoKafkaDto.getTunnelId()), false);
+                ConvTunnel tunnel = tunnelService.getById(taskInfoKafkaDto.getTunnelId());
+                //更新 task
+                feNodeService.saveOrUpdateTask(taskInfoKafkaDto, tunnel, oldTask);
+                break;
+            case "taskResultView":
+                ResultViewInfoDto resultViewInfoDto = JSON.parseObject(msgBody, ResultViewInfoDto.class);
+                ConvTask task = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
+                        .eq(ConvTask::getFedTaskId, resultViewInfoDto.getTaskId())
+                        .eq(ConvTask::getTunnelId, resultViewInfoDto.getTunnelId()));
+                feNodeService.updateTaskResultView(DownloadFileTask.taskDeque, Lists.newArrayList(resultViewInfoDto), task);
+                break;
+            case "taskLog":
+                TaskLogDto taskLogDto = JSON.parseObject(msgBody, TaskLogDto.class);
+                ConvTask convTask = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
+                        .eq(ConvTask::getFedTaskId, taskLogDto.getTaskId())
+                        .eq(ConvTask::getTunnelId, taskLogDto.getTunnelId()));
+                feNodeService.saveOrUpdateLog(Lists.newArrayList(taskLogDto), convTask.getId());
+                break;
+            default:
+                throw new CommonException("不存在的kafka标识：" + key);
+        }
+    }
+
+
     private List<ConvFeNode> getFepListByIpAndPort(String ip, Integer port){
         if (CharSequenceUtil.isBlank(ip)){
             throw new CommonException("请输入前置机ip地址");
         }
-        List<ConvFeNode> fepList = feNodeService.list(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getIp, ip)
+        List<ConvFeNode> fepList = convFeNodeService.list(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getIp, ip)
                 .eq((port != null), ConvFeNode::getPort, port)
                 .eq(ConvFeNode::getDelFlag, 0));
         if (CollUtil.isEmpty(fepList)){

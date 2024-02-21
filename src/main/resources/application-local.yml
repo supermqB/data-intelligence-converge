@@ -71,13 +71,13 @@ spring:
       intelligence:
         fep-task: frontend-reschedule-test
         tunnel-datasource-change: tunnel-datasource-change-test
-        original-structure-get: original-structure-get
+        original-structure: original-structure
       fep:
         ## listen
         xds-create: xds-create
         xds-update: xds-update
         upload-tableCount: upload-tableCount
-        update-fepStatus: update-fepStatus
+        update-collect-message: update-collect-message
         upload-original-structure: upload-original-structure
         upload-original-table-count: upload-original-table-count
         ## send

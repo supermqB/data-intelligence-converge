@@ -1,19 +1,17 @@
 package com.lrhealth.data.converge.model.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author jinmengyu
  * @date 2023-09-22
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TaskLogDto {
+public class TaskLogDto extends TaskInfoKafkaDto{
 
     private Integer logId;
 

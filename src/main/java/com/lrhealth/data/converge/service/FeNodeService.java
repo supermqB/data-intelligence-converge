@@ -4,9 +4,11 @@ package com.lrhealth.data.converge.service;
 import com.lrhealth.data.converge.common.exception.FeNodeStatusException;
 import com.lrhealth.data.converge.common.exception.PingException;
 import com.lrhealth.data.converge.dao.entity.*;
+import com.lrhealth.data.converge.model.FileTask;
 import com.lrhealth.data.converge.model.dto.*;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public interface FeNodeService {
 
@@ -18,15 +20,19 @@ public interface FeNodeService {
 
     public FrontendStatusDto recover(FeNodeStatusException e);
 
-    ConvTunnel updateTunnel(TunnelStatusDto tunnelStatusDto);
+    ConvTunnel updateTunnel(TunnelStatusKafkaDto tunnelStatusDto);
 
-    ConvTask saveOrUpdateTask(TaskStatusDto taskStatusDto, ConvTunnel tunnel,ConvTask oldTask);
+    ConvTask saveOrUpdateTask(TaskInfoKafkaDto taskInfoKafkaDto, ConvTunnel tunnel,ConvTask oldTask);
 
-    void saveOrUpdateLog(List<TaskLogDto> taskLogs, ConvTask convTask);
+    void saveOrUpdateLog(List<TaskLogDto> taskLogs, Integer taskId);
 
-    ConvTaskResultView saveOrUpdateFile(ResultViewInfoDto resultViewInfoDto, ConvTask convTask);
+    ConvTaskResultView saveOrUpdateFile(ResultViewInfoDto resultViewInfoDto, Integer taskId);
 
     ConvTaskResultCdc saveOrUpdateFile(ResultCDCInfoDTO cdcInfoDTO, ConvTask convTask);
 
     ConvTaskResultFile saveOrUpdateFile(ResultFileInfoDto resultFileInfoDto, ConvTask convTask);
+
+    void updateTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, List<ResultViewInfoDto> resultViewInfoDtoList, ConvTask convTask);
+
+    void updateTaskResultFile(ConcurrentLinkedDeque<FileTask> taskDeque, List<ResultFileInfoDto> resultFileInfoDtoList, ConvTask convTask);
 }
