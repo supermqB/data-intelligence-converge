@@ -10,7 +10,9 @@ import com.lrhealth.data.converge.common.util.SqlExecUtil;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
+import com.lrhealth.data.converge.model.dto.IncrSequenceDto;
 import com.lrhealth.data.converge.service.IncrTimeService;
+import com.lrhealth.data.converge.service.KafkaService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +44,8 @@ public class IncrTimeServiceImpl implements IncrTimeService {
     private ConvOriginalColumnService originalColumnService;
     @Resource
     private ConvCollectIncrTimeService convCollectIncrTimeService;
+    @Resource
+    private KafkaService kafkaService;
 
     @Async
     @Override
@@ -116,6 +120,15 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             build.setLatestSeq(latestValue.toString());
         }
         convCollectIncrTimeService.saveOrUpdate(build);
+
+        // 给前置机更新最新采集时间
+        IncrSequenceDto incrSequenceDto = IncrSequenceDto.builder()
+                .tunnelId(build.getTunnelId())
+                .tableName(build.getTableName())
+                .seqField(build.getIncrField())
+                .incrSequence(SeqFieldTypeEnum.TIME.getValue().equals(incrType) ? build.getLatestTime() : build.getLatestSeq())
+                .build();
+        kafkaService.updateFepIncrSequence(incrSequenceDto, tunnel);
     }
 
 

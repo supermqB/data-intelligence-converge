@@ -233,7 +233,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
         if (xdsSendToGove) {
             kafkaService.xdsSendKafka(updateXds);
         }
-
+        // 更新最新采集时间
         incrTimeService.updateTableLatestTime(dbXdsMessageDto.getId());
         return true;
     }

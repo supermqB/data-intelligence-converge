@@ -112,5 +112,5 @@ public class ConvOriginalTable implements Serializable {
     /**
      * 是否已生成原始模型
      */
-    private String modelFlag;
+    private Long modelId;
 }

@@ -164,7 +164,7 @@ public class ConvTunnel implements Serializable {
 
     /**
      * 采集类型
-     * 1-全量采集 2-增量采集
+     * 1-单次自定义采集 2-增量采集 3-全量采集
      */
     private Integer colType;
 
@@ -218,4 +218,6 @@ public class ConvTunnel implements Serializable {
      * 时间差单位
      */
     private String timeUnit;
+
+    private String dependenceTunnelId;
 }

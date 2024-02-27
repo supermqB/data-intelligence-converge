@@ -88,6 +88,8 @@ spring:
         original-structure-config: original-structure-config
         ## tunnel-schedule-task-${ip}-${port} 按照前置机ip和端口区分
         tunnel-schedule-task: tunnel-schedule-task
+        ## increment-sequence-${ip}-${port} 按照前置机ip和端口区分
+        increment-sequence: increment-sequence
 
   servlet:
     multipart:

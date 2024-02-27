@@ -5,9 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
-import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.dao.service.ConvFeNodeService;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
@@ -16,6 +14,7 @@ import com.lrhealth.data.converge.model.dto.FepScheduledDto;
 import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.service.DirectConnectCollectService;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
+import com.lrhealth.data.converge.service.KafkaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,8 +34,6 @@ import java.util.List;
 @Slf4j
 @Component
 public class DateIntelliConsumer {
-    @Value("${server.port}")
-    private String port;
     @Resource(name = "kafkaTemplate")
     private KafkaTemplate<String, Object> kafkaTemplate;
     @Value("${spring.kafka.topic.fep.tunnel-config-change}")
@@ -50,11 +47,11 @@ public class DateIntelliConsumer {
     @Resource
     private DirectConnectCollectService directConnectCollectService;
     @Resource
-    private ConvFeNodeService feNodeService;
-    @Resource
     private FeTunnelConfigService tunnelConfigService;
     @Resource
     private ConvOdsDatasourceConfigService odsDatasourceConfigService;
+    @Resource
+    private KafkaService kafkaService;
 
     @KafkaListener(topics = "${spring.kafka.topic.intelligence.tunnel-datasource-change}")
     public void getFepTunnelConfig(@Payload String msgBody, Acknowledgment acknowledgment){
@@ -64,7 +61,7 @@ public class DateIntelliConsumer {
             for (Long tunnelId : tunnelList){
                 ConvTunnel tunnel = tunnelService.getTunnelWithoutDelFlag(tunnelId);
                 if (ObjectUtil.isNull(tunnel)) break;
-                String topicSuffix = topicSuffixIpPort(tunnel);
+                String topicSuffix = kafkaService.topicSuffixIpPort(tunnelId, tunnel.getFrontendId());
                 TunnelMessageDTO tunnelMessage = tunnelConfigService.getTunnelMessage(tunnel);
                 if (tunnel.getDelFlag() == 1){
                     tunnelMessage.setStatus(TunnelStatusEnum.ABANDON.getValue());
@@ -91,7 +88,7 @@ public class DateIntelliConsumer {
                 directConnectCollectService.tunnelExec(null, tunnel.getId());
                 return;
             }
-            String topic = tunnelScheduleTopic + CharPool.DASHED + topicSuffixIpPort(tunnel);
+            String topic = tunnelScheduleTopic + CharPool.DASHED + kafkaService.topicSuffixIpPort(tunnel.getId(), tunnel.getFrontendId());
             kafkaTemplate.send(topic, JSON.toJSONString(dto));
         } catch (Exception e) {
             log.error("task scheduled collect error, {}", ExceptionUtils.getStackTrace(e));
@@ -113,22 +110,6 @@ public class DateIntelliConsumer {
         } finally {
             acknowledgment.acknowledge();
         }
-    }
-
-
-    private String topicSuffixIpPort(ConvTunnel tunnel){
-        String ip;
-        String fepPort;
-        if (tunnel.getFrontendId() == -1){
-            log.info("直连管道{}配置被修改", tunnel.getId());
-            ip = System.getProperty("converge.ip");
-            fepPort = port;
-        }else {
-            ConvFeNode convFeNode = feNodeService.getById(tunnel.getFrontendId());
-            ip = convFeNode.getIp();
-            fepPort = String.valueOf(convFeNode.getPort());
-        }
-        return ip + CharPool.DASHED + fepPort;
     }
 
 }

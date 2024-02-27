@@ -85,4 +85,9 @@ public class TunnelMessageDTO {
      */
     private String collectRange;
 
+    /**
+     * 管道依赖
+     */
+    private Long dependenceTunnelId;
+
 }

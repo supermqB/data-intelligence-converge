@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
  * @Author lei
  * @Date: 2023/11/30/17:47
@@ -55,4 +57,9 @@ public class ConvCollectField {
     private String querySql;
 
     private String storeTableName;
+
+    private LocalDateTime timePoint;
+
+    private Integer numPoint;
+
 }

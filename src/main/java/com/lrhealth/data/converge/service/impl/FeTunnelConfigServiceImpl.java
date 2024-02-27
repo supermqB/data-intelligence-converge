@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson2.JSON;
@@ -11,6 +12,7 @@ import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
+import com.lrhealth.data.converge.common.enums.TunnelColTypeEnum;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.lang.System;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -162,6 +165,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 管道基本信息
         BeanUtil.copyProperties(tunnel, tunnelMessageDTO);
         tunnelMessageDTO.setTimeDif(getCronTimeUnit(tunnel.getTimeDif(), tunnel.getTimeUnit()));
+        tunnelMessageDTO.setDependenceTunnelId(tunnel.getDependenceTunnelId() != null ? Long.valueOf(tunnel.getDependenceTunnelId()) : null);
         if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())
                 || tunnel.getConvergeMethod().equals(TunnelCMEnum.CDC_LOG.getCode())){
             // 库表/日志的读库信息
@@ -213,14 +217,12 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             tableInfoDto.setTableName(model.getTableName());
             tableInfoDto.setSqlQuery(model.getQuerySql());
             tableInfoDto.setWriterColumns(model.getColumnField());
-            String incrField = model.getConditionField();
-            if (CharSequenceUtil.isNotBlank(incrField)){
+            if (tunnel.getColType().equals(TunnelColTypeEnum.FREQUENCY_INCREMENT.getValue())){
                 // 1-时间 2-序列
-                String fieldType = model.getConditionFieldType();
-                tableInfoDto.setSeqField(incrField);
+                tableInfoDto.setSeqField(model.getConditionField());
                 tableInfoDto.setSeqFieldType(model.getConditionFieldType());
                 Map<String, String> fieldMap = new HashMap<>();
-                getIncrFieldMap(tunnel, model.getConditionField(), model.getTableName(), fieldType, fieldMap);
+                getIncrFieldMap(tunnel, model, fieldMap);
                 tableInfoDto.setIncrTimeMap(fieldMap);
             }
             tableInfoDtoList.add(tableInfoDto);
@@ -228,19 +230,31 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
     }
 
-    private void getIncrFieldMap(ConvTunnel tunnel, String column, String tableName, String fieldType, Map<String, String> fieldMap){
+    private void getIncrFieldMap(ConvTunnel tunnel, ConvCollectField field, Map<String, String> fieldMap){
+        String column = field.getConditionField();
         ConvCollectIncrTime collectIncrTime = incrTimeService.getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
                 .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
                 .eq(ConvCollectIncrTime::getIncrField, column)
-                .eq(ConvCollectIncrTime::getTableName, tableName));
+                .eq(ConvCollectIncrTime::getTableName, field.getTableName()));
         if (ObjectUtil.isNotNull(collectIncrTime)) {
-            if (SeqFieldTypeEnum.TIME.getValue().equals(fieldType)){
+            // 已进行增量采集，使用最新采集时间
+            if (SeqFieldTypeEnum.TIME.getValue().equals(field.getConditionFieldType())){
                 fieldMap.put(column, collectIncrTime.getLatestTime());
             }else {
                 fieldMap.put(column, collectIncrTime.getLatestSeq());
             }
+        }else {
+            // 第一次增量采集，使用初始点位
+            if (SeqFieldTypeEnum.TIME.getValue().equals(field.getConditionFieldType())){
+                LocalDateTime timePoint = field.getTimePoint();
+                String format = DateUtil.format(timePoint, "yyyy-MM-dd HH:mm:ss");
+                fieldMap.put(column, format);
+            }else {
+                fieldMap.put(column, String.valueOf(field.getNumPoint()));
+            }
         }
     }
+
 
     private Integer getCronTimeUnit(Integer timeDif, String timeUnit){
         int seconds = 0;
