@@ -165,7 +165,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 管道基本信息
         BeanUtil.copyProperties(tunnel, tunnelMessageDTO);
         tunnelMessageDTO.setTimeDif(getCronTimeUnit(tunnel.getTimeDif(), tunnel.getTimeUnit()));
-        tunnelMessageDTO.setDependenceTunnelId(tunnel.getDependenceTunnelId() != null ? Long.valueOf(tunnel.getDependenceTunnelId()) : null);
+        tunnelMessageDTO.setDependenceTunnelId(CharSequenceUtil.isNotBlank(tunnel.getDependenceTunnelId()) ? Long.valueOf(tunnel.getDependenceTunnelId()) : null);
         if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())
                 || tunnel.getConvergeMethod().equals(TunnelCMEnum.CDC_LOG.getCode())){
             // 库表/日志的读库信息

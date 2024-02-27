@@ -100,16 +100,6 @@ public class ConvOriginalTable implements Serializable {
     private Integer convDsConfId;
 
     /**
-     * 原始模型名称
-     */
-    private String modelName;
-
-    /**
-     * 原始模型备注
-     */
-    private String modelDescription;
-
-    /**
      * 是否已生成原始模型
      */
     private Long modelId;

@@ -89,9 +89,8 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         List<ConvOriginalTable> convOriginalTableList = CollUtil.newArrayList();
         tableList.forEach(tableDto -> {
             ConvOriginalTable originalTable = ConvOriginalTable.builder().nameEn(tableDto.getTableName()).
-                    nameCn(tableDto.getTableRemarks()).modelName(tableDto.getTableName()).
-                    modelDescription(tableDto.getTableRemarks()).
-                    convDsConfId(dsConfigId).orgCode(orgCode).sysCode(sysCode).
+                    nameCn(tableDto.getTableRemarks())
+                    .convDsConfId(dsConfigId).orgCode(orgCode).sysCode(sysCode).
                     createTime(saveTime).build();
             convOriginalTableList.add(originalTable);
         });
