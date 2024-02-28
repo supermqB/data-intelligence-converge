@@ -28,25 +28,22 @@ public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatas
     public List<DataSourceInfoDto> getOrgReaderSource(DataSourceParamDto dto) {
         List<ConvOdsDatasourceConfig> datasourceConfigs = this.list(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
                 .eq(CharSequenceUtil.isNotBlank(dto.getOrgCode()), ConvOdsDatasourceConfig::getOrgCode, dto.getOrgCode())
-                .eq(CharSequenceUtil.isNotBlank(dto.getSysCode()), ConvOdsDatasourceConfig::getSysCode, dto.getSysCode())
-                .eq(dto.getDsConfigId() != null, ConvOdsDatasourceConfig::getId, dto.getDsConfigId())
-                .eq(ConvOdsDatasourceConfig::getDsType, 2));
-        List<DataSourceInfoDto> dataSourceDtoList = new ArrayList<>();
-        datasourceConfigs.forEach(datasourceConfig -> {
+                .eq(dto.getDsConfigId() != null, ConvOdsDatasourceConfig::getId, dto.getDsConfigId()));
+        List<DataSourceInfoDto> dataSourceInfoDtoList = new ArrayList<>();
+        for (ConvOdsDatasourceConfig datasourceConfig : datasourceConfigs){
             DataSourceInfoDto sourceInfoDto = DataSourceInfoDto.builder()
                     .dsConfId(datasourceConfig.getId())
                     .orgCode(datasourceConfig.getOrgCode())
-                    .sysCode(datasourceConfig.getSysCode())
+                    .sysCode(dto.getSysCode())
                     .jdbcUrl(datasourceConfig.getDsUrl())
                     .username(datasourceConfig.getDsUsername())
                     .password(datasourceConfig.getDsPwd())
                     .schema(datasourceConfig.getSchema())
-                    // TODO: 换成数智kafka接口之后删除
                     .structure(dto.getStructure())
                     .build();
-            dataSourceDtoList.add(sourceInfoDto);
-        });
-        return dataSourceDtoList;
+            dataSourceInfoDtoList.add(sourceInfoDto);
+        }
+        return dataSourceInfoDtoList;
     }
 
 }
