@@ -8,7 +8,6 @@ import com.lrhealth.data.converge.dao.entity.ConvFieldType;
 import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
-import com.lrhealth.data.converge.dao.entity.System;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.ColumnInfoDTO;
 import com.lrhealth.data.converge.model.dto.OriginalStructureDto;
@@ -48,12 +47,6 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     public void importConvOriginal(OriginalStructureDto structureDto) {
         String orgCode = structureDto.getOrgCode();
         String sysCode = structureDto.getSysCode();
-        // todo: 暂时给原始结构写入第一个系统编码，流程修改之后删除
-        if (CharSequenceUtil.isBlank(sysCode)) {
-            System system = systemService.getOne(new LambdaQueryWrapper<System>().eq(System::getSourceCode, structureDto.getOrgCode())
-                    .last("LIMIT 1"));
-            sysCode = system.getSystemCode();
-        }
         List<OriginalTableDto> originalTableDtoList = structureDto.getOriginalTables();
         if (CollUtil.isEmpty(originalTableDtoList)) {
             return;
@@ -88,10 +81,13 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     private void processOriginalTable(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
         List<ConvOriginalTable> convOriginalTableList = CollUtil.newArrayList();
         tableList.forEach(tableDto -> {
-            ConvOriginalTable originalTable = ConvOriginalTable.builder().nameEn(tableDto.getTableName()).
-                    nameCn(tableDto.getTableRemarks())
-                    .convDsConfId(dsConfigId).orgCode(orgCode).sysCode(sysCode).
-                    createTime(saveTime).build();
+            ConvOriginalTable originalTable = ConvOriginalTable.builder()
+                    .nameEn(tableDto.getTableName())
+                    .nameCn(tableDto.getTableRemarks())
+                    .convDsConfId(dsConfigId)
+                    .orgCode(orgCode)
+                    .sysCode(sysCode)
+                    .createTime(saveTime).build();
             convOriginalTableList.add(originalTable);
         });
         originalTableService.saveBatch(convOriginalTableList);
