@@ -2,10 +2,8 @@ package com.lrhealth.data.converge.controller;
 
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
-import com.lrhealth.data.converge.model.dto.ActiveFepUploadDto;
 import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
 import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
-import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,21 +25,9 @@ import java.util.List;
 public class FepController {
 
     @Resource
-    private FeTunnelConfigService feTunnelConfigService;
-    @Resource
     private ConvOdsDatasourceConfigService odsDatasourceConfigService;
 
 
-    @PostMapping("/upload/log")
-    public ResultBase<Void> updateFepStatus(@RequestBody ActiveFepUploadDto activeFepUploadDto){
-        try {
-            feTunnelConfigService.updateFepStatus(activeFepUploadDto);
-            return ResultBase.success();
-        }catch (Exception e){
-            log.error("get fep status error, {}", ExceptionUtils.getStackTrace(e));
-            return ResultBase.fail(e.getMessage());
-        }
-    }
 
     @PostMapping("/datasource/list")
     public ResultBase<List<DataSourceInfoDto>> getDataSource(@RequestBody DataSourceParamDto dto){

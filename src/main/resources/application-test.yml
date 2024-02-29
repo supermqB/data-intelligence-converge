@@ -81,6 +81,7 @@ spring:
         update-collect-message: update-collect-message
         upload-original-structure: upload-original-structure
         upload-original-table-count: upload-original-table-count
+        monitor-msg: monitor-msg-upload
         ## send
         ## tunnel-config-change-${ip}-${port} 按照前置机ip和端口区分
         tunnel-config-change: tunnel-config-change

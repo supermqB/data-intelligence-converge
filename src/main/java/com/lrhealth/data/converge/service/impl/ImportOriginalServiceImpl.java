@@ -4,11 +4,12 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.dao.entity.ConvFieldType;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
-import com.lrhealth.data.converge.dao.service.*;
+import com.lrhealth.data.converge.dao.service.ConvFieldTypeService;
+import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
+import com.lrhealth.data.converge.dao.service.ConvOriginalColumnService;
+import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;
 import com.lrhealth.data.converge.model.dto.ColumnInfoDTO;
 import com.lrhealth.data.converge.model.dto.OriginalStructureDto;
 import com.lrhealth.data.converge.model.dto.OriginalTableCountDto;
@@ -40,8 +41,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
 
     @Resource
     private ConvFieldTypeService convFieldTypeService;
-    @Resource
-    private SystemService systemService;
+
 
     @Override
     public void importConvOriginal(OriginalStructureDto structureDto) {
@@ -101,33 +101,33 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         Map<String, Long> tableNameIdMapping = originalTableList.stream().collect(Collectors.toMap(ConvOriginalTable::getNameEn, ConvOriginalTable::getId));
 
         // 获取平台数据源相关数据库类型
-        LambdaQueryWrapper<ConvOdsDatasourceConfig> configLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        configLambdaQueryWrapper.eq(ConvOdsDatasourceConfig::getOrgCode, orgCode)
-                .eq(CharSequenceUtil.isNotBlank(sysCode),ConvOdsDatasourceConfig::getSysCode, sysCode)
-                .eq(dsConfigId != null, ConvOdsDatasourceConfig::getId, dsConfigId)
-                .eq(ConvOdsDatasourceConfig::getDelFlag, 0);
-        List<ConvOdsDatasourceConfig> convOdsDatasourceConfigList = convOdsDatasourceConfigService.list(configLambdaQueryWrapper);
-        if (CollUtil.isEmpty(convOdsDatasourceConfigList)) {
-            return;
-        }
-        String platformSource = StrUtil.EMPTY;
-        String clientSource = StrUtil.EMPTY;
-        for (ConvOdsDatasourceConfig convOdsDatasourceConfig : convOdsDatasourceConfigList) {
-            if (convOdsDatasourceConfig.getDsType() == 1) {
-                platformSource = convOdsDatasourceConfig.getDbType();
-            } else {
-                clientSource = convOdsDatasourceConfig.getDbType();
-            }
-        }
+//        LambdaQueryWrapper<ConvOdsDatasourceConfig> configLambdaQueryWrapper = new LambdaQueryWrapper<>();
+//        configLambdaQueryWrapper.eq(ConvOdsDatasourceConfig::getOrgCode, orgCode)
+//                .eq(dsConfigId != null, ConvOdsDatasourceConfig::getId, dsConfigId)
+//                .eq(ConvOdsDatasourceConfig::getDelFlag, 0);
+//        List<ConvOdsDatasourceConfig> convOdsDatasourceConfigList = convOdsDatasourceConfigService.list(configLambdaQueryWrapper);
+//        if (CollUtil.isEmpty(convOdsDatasourceConfigList)) {
+//            return;
+//        }
+//        String platformSource = StrUtil.EMPTY;
+//        String clientSource = StrUtil.EMPTY;
+//        for (ConvOdsDatasourceConfig convOdsDatasourceConfig : convOdsDatasourceConfigList) {
+//            if (convOdsDatasourceConfig.getDsType() == 1) {
+//                platformSource = convOdsDatasourceConfig.getDbType();
+//            } else {
+//                clientSource = convOdsDatasourceConfig.getDbType();
+//            }
+//        }
 
-        LambdaQueryWrapper<ConvFieldType> convFieldTypeLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        convFieldTypeLambdaQueryWrapper.eq(ConvFieldType::getPlatformSource, platformSource).eq(ConvFieldType::getClientSource, clientSource);
-        List<ConvFieldType> convFieldTypeList = convFieldTypeService.list(convFieldTypeLambdaQueryWrapper);
-        if (CollUtil.isEmpty(convFieldTypeList)) {
-            log.error("数据源字段映射不存在, orgCode: {}, sysCode: {}", orgCode, sysCode);
-        }
+//        LambdaQueryWrapper<ConvFieldType> convFieldTypeLambdaQueryWrapper = new LambdaQueryWrapper<>();
+//        convFieldTypeLambdaQueryWrapper.eq(ConvFieldType::getPlatformSource, platformSource)
+//                .eq(ConvFieldType::getClientSource, clientSource);
+//        List<ConvFieldType> convFieldTypeList = convFieldTypeService.list(convFieldTypeLambdaQueryWrapper);
+//        if (CollUtil.isEmpty(convFieldTypeList)) {
+//            log.error("数据源字段映射不存在, orgCode: {}, sysCode: {}", orgCode, sysCode);
+//        }
 
-        Map<String, String> fieldTypeMap = convFieldTypeList.stream().collect(Collectors.toMap(ConvFieldType::getClientFieldType, ConvFieldType::getPlatformFieldType));
+//        Map<String, String> fieldTypeMap = convFieldTypeList.stream().collect(Collectors.toMap(ConvFieldType::getClientFieldType, ConvFieldType::getPlatformFieldType));
 
         List<ConvOriginalColumn> originalColumnList = CollUtil.newArrayList();
         for (OriginalTableDto tableDto : tableList) {
@@ -153,7 +153,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                         .columnName(columnInfoDTO.getColumnName())
                         .columnDescription(columnInfoDTO.getRemark())
                         .columnFieldLength(columnInfoDTO.getColumnLength())
-                        .columnFieldType(getFieldType(fieldTypeMap, columnInfoDTO.getColumnTypeName()))
+//                        .columnFieldType(getFieldType(fieldTypeMap, columnInfoDTO.getColumnTypeName()))
                         .build();
                 i++;
                 originalColumnList.add(convOriginalColumn);

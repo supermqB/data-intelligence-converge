@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.kafka;
 
 import com.alibaba.fastjson.JSON;
+import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.ImportOriginalService;
@@ -32,6 +33,8 @@ public class FepKafkaConsumer {
     private FeTunnelConfigService feTunnelConfigService;
     @Resource
     private ImportOriginalService importOriginalService;
+    @Resource
+    private ConvMonitorService convMonitorService;
 
 
     @KafkaListener(topics = "${spring.kafka.topic.fep.update-collect-message}")
@@ -112,6 +115,20 @@ public class FepKafkaConsumer {
         try {
             OriginalTableCountDto tableCountDto = JSON.parseObject(msgBody, OriginalTableCountDto.class);
             importOriginalService.updateOriginalTableCount(tableCountDto);
+        } catch (Exception e) {
+            log.error("upload originalTable count error,{}", ExceptionUtils.getStackTrace(e));
+        } finally {
+            acknowledgment.acknowledge();
+        }
+    }
+
+
+    @KafkaListener(topics = "${spring.kafka.topic.fep.monitor-msg}")
+    public void uploadMonitorMsg(@Payload String msgBody, Acknowledgment acknowledgment){
+        log.info("====================receive monitor-msg from fep, msgBody={}", msgBody);
+        try {
+            MonitorMsg monitorMsg = JSON.parseObject(msgBody, MonitorMsg.class);
+            convMonitorService.handleMonitorMsg(monitorMsg);
         } catch (Exception e) {
             log.error("upload originalTable count error,{}", ExceptionUtils.getStackTrace(e));
         } finally {
