@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
@@ -80,7 +81,21 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
 
     private void processOriginalTable(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
         List<ConvOriginalTable> convOriginalTableList = CollUtil.newArrayList();
-        tableList.forEach(tableDto -> {
+        for (OriginalTableDto tableDto : tableList){
+            ConvOriginalTable table = originalTableService.getOne(new LambdaQueryWrapper<ConvOriginalTable>()
+                    .eq(ConvOriginalTable::getNameEn, tableDto.getTableName())
+                    .eq(ConvOriginalTable::getSysCode, sysCode)
+                    .eq(ConvOriginalTable::getConvDsConfId, dsConfigId));
+            if (ObjectUtil.isNotNull(table)){
+                // 已存在的进行更新
+                ConvOriginalTable originalTable = ConvOriginalTable.builder()
+                        .id(table.getId())
+                        .createTime(saveTime)
+                        .updateTime(saveTime)
+                        .build();
+                convOriginalTableList.add(originalTable);
+                continue;
+            }
             ConvOriginalTable originalTable = ConvOriginalTable.builder()
                     .nameEn(tableDto.getTableName())
                     .nameCn(tableDto.getTableRemarks())
@@ -93,8 +108,8 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                     .modelDescription(tableDto.getTableRemarks())
                     .build();
             convOriginalTableList.add(originalTable);
-        });
-        originalTableService.saveBatch(convOriginalTableList);
+        }
+        originalTableService.saveOrUpdateBatch(convOriginalTableList);
     }
 
     private void processOriginalColumn(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
@@ -104,35 +119,6 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 .eq(ConvOriginalTable::getCreateTime, saveTime));
         Map<String, Long> tableNameIdMapping = originalTableList.stream().collect(Collectors.toMap(ConvOriginalTable::getNameEn, ConvOriginalTable::getId));
 
-        // 获取平台数据源相关数据库类型
-//        LambdaQueryWrapper<ConvOdsDatasourceConfig> configLambdaQueryWrapper = new LambdaQueryWrapper<>();
-//        configLambdaQueryWrapper.eq(ConvOdsDatasourceConfig::getOrgCode, orgCode)
-//                .eq(dsConfigId != null, ConvOdsDatasourceConfig::getId, dsConfigId)
-//                .eq(ConvOdsDatasourceConfig::getDelFlag, 0);
-//        List<ConvOdsDatasourceConfig> convOdsDatasourceConfigList = convOdsDatasourceConfigService.list(configLambdaQueryWrapper);
-//        if (CollUtil.isEmpty(convOdsDatasourceConfigList)) {
-//            return;
-//        }
-//        String platformSource = StrUtil.EMPTY;
-//        String clientSource = StrUtil.EMPTY;
-//        for (ConvOdsDatasourceConfig convOdsDatasourceConfig : convOdsDatasourceConfigList) {
-//            if (convOdsDatasourceConfig.getDsType() == 1) {
-//                platformSource = convOdsDatasourceConfig.getDbType();
-//            } else {
-//                clientSource = convOdsDatasourceConfig.getDbType();
-//            }
-//        }
-
-//        LambdaQueryWrapper<ConvFieldType> convFieldTypeLambdaQueryWrapper = new LambdaQueryWrapper<>();
-//        convFieldTypeLambdaQueryWrapper.eq(ConvFieldType::getPlatformSource, platformSource)
-//                .eq(ConvFieldType::getClientSource, clientSource);
-//        List<ConvFieldType> convFieldTypeList = convFieldTypeService.list(convFieldTypeLambdaQueryWrapper);
-//        if (CollUtil.isEmpty(convFieldTypeList)) {
-//            log.error("数据源字段映射不存在, orgCode: {}, sysCode: {}", orgCode, sysCode);
-//        }
-
-//        Map<String, String> fieldTypeMap = convFieldTypeList.stream().collect(Collectors.toMap(ConvFieldType::getClientFieldType, ConvFieldType::getPlatformFieldType));
-
         List<ConvOriginalColumn> originalColumnList = CollUtil.newArrayList();
         for (OriginalTableDto tableDto : tableList) {
             Long tableId = tableNameIdMapping.get(tableDto.getTableName());
@@ -140,9 +126,17 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 log.error("original table [{}] 表不存在", tableDto.getTableName());
                 continue;
             }
+
+            List<ConvOriginalColumn> convOriginalColumns = originalColumnService.list(new LambdaQueryWrapper<ConvOriginalColumn>()
+                    .eq(ConvOriginalColumn::getTableId, tableId));
+            List<String> nameList = convOriginalColumns.stream().map(ConvOriginalColumn::getColumnName).collect(Collectors.toList());
+
             List<ColumnInfoDTO> columnInfoDTOS = tableDto.getColumnInfoDTOS();
             int i = 1;
             for (ColumnInfoDTO columnInfoDTO : columnInfoDTOS) {
+                if (nameList.contains(columnInfoDTO.getColumnName())){
+                    continue;
+                }
                 ConvOriginalColumn convOriginalColumn = ConvOriginalColumn.builder()
                         .tableId(tableId)
                         .nameCn(columnInfoDTO.getRemark())
@@ -157,7 +151,6 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                         .columnName(columnInfoDTO.getColumnName())
                         .columnDescription(columnInfoDTO.getRemark())
                         .columnFieldLength(columnInfoDTO.getColumnLength())
-//                        .columnFieldType(getFieldType(fieldTypeMap, columnInfoDTO.getColumnTypeName()))
                         .build();
                 i++;
                 originalColumnList.add(convOriginalColumn);
