@@ -78,14 +78,14 @@ spring:
         xds-update: xds-update
         upload-tableCount: upload-tableCount
         update-collect-message: update-collect-message
-        upload-original-structure: upload-original-structure-local
-        upload-original-table-count: upload-original-table-count-local
+        upload-original-structure: upload-original-structure
+        upload-original-table-count: upload-original-table-count
         monitor-msg: monitor-msg-upload
         ## send
         ## tunnel-config-change-${ip}-${port} 按照前置机ip和端口区分
         tunnel-config-change: tunnel-config-change
         ## original-structure-config-${orgCode} 按照系统编码区分
-        original-structure-config: original-structure-config-local
+        original-structure-config: original-structure-config
         ## tunnel-schedule-task-${ip}-${port} 按照前置机ip和端口区分
         tunnel-schedule-task: tunnel-schedule-task
         ## increment-sequence-${ip}-${port} 按照前置机ip和端口区分
