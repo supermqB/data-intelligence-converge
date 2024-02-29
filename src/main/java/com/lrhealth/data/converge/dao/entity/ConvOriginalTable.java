@@ -103,4 +103,16 @@ public class ConvOriginalTable implements Serializable {
      * 是否已生成原始模型
      */
     private Long modelId;
+
+    private Integer dataSource;
+
+    /**
+     * 原始模型名称
+     */
+    private String modelName;
+
+    /**
+     * 原始模型备注
+     */
+    private String modelDescription;
 }

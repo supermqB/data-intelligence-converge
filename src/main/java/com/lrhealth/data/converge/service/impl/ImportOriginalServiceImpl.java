@@ -87,7 +87,11 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                     .convDsConfId(dsConfigId)
                     .orgCode(orgCode)
                     .sysCode(sysCode)
-                    .createTime(saveTime).build();
+                    .createTime(saveTime)
+                    .dataSource(0)
+                    .modelName(tableDto.getTableName())
+                    .modelDescription(tableDto.getTableRemarks())
+                    .build();
             convOriginalTableList.add(originalTable);
         });
         originalTableService.saveBatch(convOriginalTableList);
