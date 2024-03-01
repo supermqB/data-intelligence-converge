@@ -71,7 +71,7 @@ spring:
       intelligence:
         fep-task: frontend-reschedule-test
         tunnel-datasource-change: tunnel-datasource-change-test
-        original-structure: original-structure-local
+        original-structure: original-structure
       fep:
         ## listen
         xds-create: xds-create
