@@ -24,7 +24,7 @@ public class UtilTestController {
 
     @Value("${spring.kafka.topic.intelligence.tunnel-datasource-change}")
     private String tunnelChangeTopic;
-    @Value("${spring.kafka.topic.intelligence.original-structure-get}")
+    @Value("${spring.kafka.topic.intelligence.original-structure}")
     private String originalStructureTopic;
     @Value("${spring.kafka.topic.intelligence.fep-task}")
     private String fepTaskTopic;
