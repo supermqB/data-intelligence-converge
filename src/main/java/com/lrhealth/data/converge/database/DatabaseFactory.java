@@ -5,12 +5,14 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.QueryParserUtil;
 import com.lrhealth.data.converge.database.impl.*;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * @author jinmengyu
  * @date 2023-08-31
  */
+@Slf4j
 public class DatabaseFactory {
 
     public DatabaseHandler getReader(String jdbcUrl, String dbUserName, String dbPassword){
@@ -36,7 +38,8 @@ public class DatabaseFactory {
             case "oceanbase":
                 return new OceanbaseHandler(jdbcUrl, dbUserName, dbPassword, dbType);
             default:
-                throw new CommonException("不支持的dataXReader");
+                log.error("不支持的dataXReader dataType = {}",dbType);
         }
+        return null;
     }
 }
