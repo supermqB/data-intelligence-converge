@@ -94,7 +94,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         List<ConvMonitor> monitors = convMonitorMapper.selectList(queryWrapper);
         if (CollectionUtils.isNotEmpty(monitors)){
             ConvMonitor convMonitor = monitors.get(0);
-            convMonitor.setState(1);
+            convMonitor.setState(0);
             convMonitor.setUpdateTime(new Date());
             convMonitorMapper.updateById(convMonitor);
         }else {
