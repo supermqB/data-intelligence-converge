@@ -100,7 +100,7 @@ public class ConvMonitorTask implements CommandLineRunner {
             return;
         }
         targetDbList.forEach(dsConf -> {
-            dbLinkAndHttpPost(MonitorMsg.MsgTypeEnum.WRITER_DB_CHECK,dsConf);
+            dbLinkAndHttpPost(MonitorMsg.MsgTypeEnum.TARGET_DB_CHECK,dsConf);
         });
     }
 

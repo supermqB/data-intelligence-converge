@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.dao.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
 import com.lrhealth.data.converge.dao.mapper.ConvFeNodeMapper;
@@ -38,12 +39,12 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
             processFepConvMonitor(convFeNodes, message);
             return;
         }
-        if (MonitorMsg.MsgTypeEnum.WRITER_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())){
-            processDbMonitor(message,MonitorMsg.MsgTypeEnum.WRITER_DB_CHECK);
+        if (MonitorMsg.MsgTypeEnum.TARGET_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())){
+            processDbMonitor(message,MonitorMsg.MsgTypeEnum.TARGET_DB_CHECK);
             return;
         }
-        if (MonitorMsg.MsgTypeEnum.READER_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())){
-            processDbMonitor(message,MonitorMsg.MsgTypeEnum.READER_DB_CHECK);
+        if (MonitorMsg.MsgTypeEnum.MIRROR_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())){
+            processDbMonitor(message,MonitorMsg.MsgTypeEnum.MIRROR_DB_CHECK);
             return;
         }
         if (MonitorMsg.MsgTypeEnum.MIRROR_DB_INCR_CHECK.getMsgTypeCode().equals(message.getMsgType())){
@@ -59,6 +60,9 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      * 处理目标库监测消息
      */
     private synchronized void processDbMonitor(MonitorMsg message, MonitorMsg.MsgTypeEnum msgTypeEnum) {
+        if (StringUtils.isEmpty(message.getOrgCode()) || message.getDsId() == null){
+            return;
+        }
         LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
                 .eq(ConvMonitor::getMonitorType, message.getMsgType())
                 .eq(ConvMonitor::getOrgCode, message.getOrgCode())
