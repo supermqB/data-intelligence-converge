@@ -40,6 +40,10 @@ public class ConvMonitor  implements Serializable {
      */
     private Long convFeNodeId;
     /**
+     * 镜像库表名称
+     */
+    private String tableName;
+    /**
      * 机构编码
      */
     private String orgCode;

@@ -81,6 +81,8 @@ public class ConvOdsDatasourceConfig implements Serializable {
     private String schema;
 
     private String dbType;
+    private String dbIp;
+    private String dbPort;
 
     private LocalDateTime createTime;
 

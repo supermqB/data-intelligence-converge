@@ -122,10 +122,9 @@ public class FepKafkaConsumer {
         }
     }
 
-
     @KafkaListener(topics = "${spring.kafka.topic.fep.monitor-msg}")
     public void uploadMonitorMsg(@Payload String msgBody, Acknowledgment acknowledgment){
-        log.info("====================receive monitor-msg from fep, msgBody={}", msgBody);
+        log.info("====================receive upload monitor message msgBody={}", msgBody);
         try {
             MonitorMsg monitorMsg = JSON.parseObject(msgBody, MonitorMsg.class);
             convMonitorService.handleMonitorMsg(monitorMsg);

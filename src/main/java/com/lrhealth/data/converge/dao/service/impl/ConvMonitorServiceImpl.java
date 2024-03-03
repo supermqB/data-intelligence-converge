@@ -2,13 +2,10 @@ package com.lrhealth.data.converge.dao.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.cache.Cache;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
-import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.mapper.ConvFeNodeMapper;
 import com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper;
-import com.lrhealth.data.converge.dao.mapper.ConvTunnelMapper;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.model.dto.MonitorDTO;
 import com.lrhealth.data.converge.model.dto.MonitorMsg;
@@ -31,21 +28,85 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
     private ConvFeNodeMapper convFeNodeMapper;
     @Resource
     private ConvMonitorMapper convMonitorMapper;
-    @Resource
-    private ConvTunnelMapper convTunnelMapper;
-    @Resource
-    private Cache convCache;
-    private static final String TUNNEL_CONCAT = "|";
-    private static final String FE_CONCAT = "*";
-    private static final String FE_NODE_PREFIX = "fe_node:";
-
 
     @Async
     @Override
     public void handleMonitorMsg(MonitorMsg message) {
-        //根据IP端口机构编码查询所有前置机
-        List<ConvFeNode> convFeNodes = queryFeNodeFromDatabase(message);
-        processFepConvMonitor(convFeNodes, message);
+        if (MonitorMsg.MsgTypeEnum.FEP_STA.getMsgTypeCode().equals(message.getMsgType())){
+            //根据IP端口机构编码查询所有前置机
+            List<ConvFeNode> convFeNodes = queryFeNodeFromDatabase(message);
+            processFepConvMonitor(convFeNodes, message);
+            return;
+        }
+        if (MonitorMsg.MsgTypeEnum.WRITER_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())){
+            processDbMonitor(message,MonitorMsg.MsgTypeEnum.WRITER_DB_CHECK);
+            return;
+        }
+        if (MonitorMsg.MsgTypeEnum.READER_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())){
+            processDbMonitor(message,MonitorMsg.MsgTypeEnum.READER_DB_CHECK);
+            return;
+        }
+        if (MonitorMsg.MsgTypeEnum.MIRROR_DB_INCR_CHECK.getMsgTypeCode().equals(message.getMsgType())){
+            List<String> tableNames = message.getTableNames();
+            for (String tableName : tableNames) {
+                processMirrorDbIncrMonitor(message,tableName);
+            }
+        }
+    }
+
+
+    /**
+     * 处理目标库监测消息
+     */
+    private synchronized void processDbMonitor(MonitorMsg message, MonitorMsg.MsgTypeEnum msgTypeEnum) {
+        LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
+                .eq(ConvMonitor::getMonitorType, message.getMsgType())
+                .eq(ConvMonitor::getOrgCode, message.getOrgCode())
+                .eq(ConvMonitor::getDsId, message.getDsId());
+        List<ConvMonitor> monitors = convMonitorMapper.selectList(queryWrapper);
+        if (CollectionUtils.isNotEmpty(monitors)){
+            ConvMonitor convMonitor = monitors.get(0);
+            convMonitor.setState(message.getStatus() ? 0 : 1);
+            convMonitor.setExceptionDes(message.getMsg());
+            convMonitor.setUpdateTime(new Date());
+            convMonitorMapper.updateById(convMonitor);
+        }else {
+            ConvMonitor convMonitor = new ConvMonitor();
+            convMonitor.setOrgCode(message.getOrgCode());
+            convMonitor.setDsId(message.getDsId());
+            convMonitor.setState(message.getStatus() ? 0 : 1);
+            convMonitor.setExceptionDes(message.getMsg());
+            convMonitor.setMonitorType(msgTypeEnum.getMsgTypeCode());
+            convMonitor.setUpdateTime(new Date());
+            convMonitorMapper.insert(convMonitor);
+        }
+    }
+
+    /**
+     * 处理镜像库增量数据
+     */
+    private synchronized void processMirrorDbIncrMonitor(MonitorMsg message,String tableName) {
+        LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
+                .eq(ConvMonitor::getTableName, tableName)
+                .eq(ConvMonitor::getMonitorType, message.getMsgType())
+                .eq(ConvMonitor::getOrgCode, message.getOrgCode())
+                .eq(ConvMonitor::getDsId, message.getDsId());
+        List<ConvMonitor> monitors = convMonitorMapper.selectList(queryWrapper);
+        if (CollectionUtils.isNotEmpty(monitors)){
+            ConvMonitor convMonitor = monitors.get(0);
+            convMonitor.setState(1);
+            convMonitor.setUpdateTime(new Date());
+            convMonitorMapper.updateById(convMonitor);
+        }else {
+            ConvMonitor convMonitor = new ConvMonitor();
+            convMonitor.setTableName(tableName);
+            convMonitor.setState(0);
+            convMonitor.setOrgCode(message.getOrgCode());
+            convMonitor.setDsId(message.getDsId());
+            convMonitor.setMonitorType(MonitorMsg.MsgTypeEnum.MIRROR_DB_INCR_CHECK.getMsgTypeCode());
+            convMonitor.setUpdateTime(new Date());
+            convMonitorMapper.insert(convMonitor);
+        }
     }
 
     /**
@@ -64,10 +125,10 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
             convMonitorList = queryFeNodeConvMonitor(convFeNodes, message);
         }
         //目标库监控
-        if (MonitorMsg.MsgTypeEnum.READER_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())
+        /*if (MonitorMsg.MsgTypeEnum.READER_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())
                 || MonitorMsg.MsgTypeEnum.WRITER_DB_CHECK.getMsgTypeCode().equals(message.getMsgType())) {
             convMonitorList = queryDBConnectConvMonitor(convFeNodes, message);
-        }
+        }*/
         Map<Long, ConvMonitor> convMonitorMap = null;
         if (CollectionUtils.isNotEmpty(convMonitorList)) {
             convMonitorMap = convMonitorList.stream().collect(Collectors.toMap(ConvMonitor::getConvFeNodeId, e -> e, (m1, m2) -> m1));
@@ -123,7 +184,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
                 .eq(ConvFeNode::getIp, message.getSourceIp())
                 .eq(ConvFeNode::getPort, Integer.parseInt(message.getSourcePort()));
         //管道监控
-        if (message.getTunnelId() != null) {
+        /*if (message.getTunnelId() != null) {
             ConvTunnel convTunnel = convTunnelMapper.selectOne(new LambdaQueryWrapper<ConvTunnel>()
                     .eq(ConvTunnel::getId, message.getTunnelId()));
             if (convTunnel == null || convTunnel.getFrontendId() < 0) {
@@ -131,7 +192,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
                 return null;
             }
             queryWrapper.eq(ConvFeNode::getId, convTunnel.getFrontendId());
-        }
+        }*/
         queryWrapper.eq(ConvFeNode::getOrgCode, message.getOrgCode());
         return convFeNodeMapper.selectList(queryWrapper);
     }
