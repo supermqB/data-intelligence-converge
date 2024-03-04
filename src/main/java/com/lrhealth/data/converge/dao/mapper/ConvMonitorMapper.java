@@ -1,8 +1,11 @@
 package com.lrhealth.data.converge.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 /**
  * <p>
@@ -14,5 +17,7 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface ConvMonitorMapper extends BaseMapper<ConvMonitor> {
+
+    List<ConvFeNode> selectFepByMonitor();
 
 }

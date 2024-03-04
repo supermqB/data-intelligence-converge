@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.dao.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
@@ -16,6 +17,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -222,87 +224,16 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         return newMonitor;
     }
 
-    /**
-     * 处理汇聚监视器信息
-     *
-     * @param monitorDTO 前置机
-     * @param message    监测消息
-     */
     @Override
-    public synchronized void processConvMonitor(MonitorDTO monitorDTO, MonitorMsg message) {
-       /* monitorDTO.setStatus(message.getStatus());
-        ConvMonitor monitor = buildConvMonitor(monitorDTO, message);
-        if (monitor.getId() == null) {
-            convMonitorMapper.insert(monitor);
-            monitorDTO.setId(monitor.getId());
-        } else {
-            convMonitorMapper.updateById(monitor);
+    public List<ConvFeNode> getAliveFepInfoByMonitor() {
+        List<ConvFeNode> feNodes = convMonitorMapper.selectFepByMonitor();
+        //TODO: 超过十分钟前置机默认下线即非存活状态
+        if (CollectionUtils.isNotEmpty(feNodes)){
+            Date nowTime = new Date();
+            return feNodes.stream()
+                    .filter(entity -> Duration.between(entity.getUpdateTime().toInstant(), nowTime.toInstant()).toMinutes() <= 10)
+                    .collect(Collectors.toList());
         }
-        //首次插入 或 有异常 或 状态变更时 操作库
-
-        Boolean currentStatus = message.getStatus();
-        Boolean cacheStatus = monitorDTO.getStatus();
-        if (monitor.getId() == null || !currentStatus || !currentStatus.equals(cacheStatus)) {
-        if (monitor.getId() == null) {
-            convMonitorMapper.insert(monitor);
-            monitorDTO.setId(monitor.getId());
-        } else {
-            convMonitorMapper.updateById(monitor);
-        }
-        }*/
-    }
-
-
-    /**
-     * 构建缓存DTO
-     *
-     * @param convFeNode 前置机
-     * @param message    消息
-     * @return MonitorDTO
-     */
-    public MonitorDTO buildMonitorDTO(ConvFeNode convFeNode, MonitorMsg message) {
-        if (Objects.isNull(convFeNode)) {
-            return null;
-        }
-        MonitorDTO monitor = new MonitorDTO();
-        LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
-                .eq(ConvMonitor::getConvFeNodeId, convFeNode.getId())
-                .eq(ConvMonitor::getMonitorType, message.getMsgType())
-                .eq(ConvMonitor::getOrgCode, message.getOrgCode())
-                .eq(ConvMonitor::getSysCode, convFeNode.getSysCode());
-        List<ConvMonitor> convMonitorList = convMonitorMapper.selectList(queryWrapper);
-        if (CollectionUtils.isNotEmpty(convMonitorList)) {
-            monitor.setId(convMonitorList.get(0).getId());
-        }
-        monitor.setConvFeNodeId(convFeNode.getId());
-        monitor.setOrgCode(convFeNode.getOrgCode());
-        monitor.setSysCode(convFeNode.getSysCode());
-        monitor.setMonitorType(message.getMsgType());
-        monitor.setStatus(message.getStatus());
-        monitor.setUpdateTime(message.getSendTime());
-        return monitor;
-    }
-
-    /**
-     * 构建汇聚前置机监测信息
-     *
-     * @param monitorDTO 监测信息
-     * @param message    监测消息
-     * @return 监测信息
-     */
-    private ConvMonitor buildConvMonitor(MonitorDTO monitorDTO, MonitorMsg message) {
-        ConvMonitor monitor = new ConvMonitor();
-        monitor.setUpdateTime(new Date());
-        monitor.setId(monitorDTO.getId());
-        monitor.setConvFeNodeId(monitorDTO.getConvFeNodeId());
-        monitor.setSysCode(monitorDTO.getSysCode());
-        monitor.setOrgCode(monitorDTO.getOrgCode());
-        monitor.setMonitorType(monitorDTO.getMonitorType());
-        monitor.setState(message.getStatus() ? 0 : 1);
-        monitor.setExceptionDes(message.getMsg());
-        if (!message.getStatus()) {
-            monitor.setExceptionTime(Objects.isNull(message.getSendTime()) ? new Date() : message.getSendTime());
-        }
-        return monitor;
+        return null;
     }
 }
