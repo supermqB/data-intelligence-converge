@@ -125,9 +125,13 @@ public class ConvMonitorTask implements CommandLineRunner {
         if (CollectionUtils.isEmpty(targetDbList)) {
             return;
         }
-        targetDbList.forEach(dsConf -> {
-            dbLinkAndHttpPost(MonitorMsg.MsgTypeEnum.TARGET_DB_CHECK,dsConf);
-        });
+        for (ConvOdsDatasourceConfig dsConfig : targetDbList) {
+            for (ConvFeNode convFeNode : convFeNodes) {
+                if (dsConfig.getOrgCode().equals(convFeNode.getOrgCode())){
+                    dbLinkAndHttpPost(MonitorMsg.MsgTypeEnum.TARGET_DB_CHECK,dsConfig);
+                }
+            }
+        }
     }
 
     public void dbLinkAndHttpPost(MonitorMsg.MsgTypeEnum msgTypeEnum, ConvOdsDatasourceConfig dsConfig) {

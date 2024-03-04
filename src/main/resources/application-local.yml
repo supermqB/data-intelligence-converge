@@ -80,7 +80,7 @@ spring:
         update-collect-message: update-collect-message
         upload-original-structure: upload-original-structure
         upload-original-table-count: upload-original-table-count
-        monitor-msg: monitor-msg-upload
+        monitor-msg: monitor-msg-upload-local
         ## send
         ## tunnel-config-change-${ip}-${port} 按照前置机ip和端口区分
         tunnel-config-change: tunnel-config-change
@@ -91,7 +91,7 @@ spring:
         ## increment-sequence-${ip}-${port} 按照前置机ip和端口区分
         increment-sequence: increment-sequence
         ## link-monitor-task-${ip}-${port} 按照前置机ip和端口区分
-        link-monitor-task: link-monitor-task
+        link-monitor-task: link-monitor-task-local
 
   servlet:
     multipart:
