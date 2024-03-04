@@ -142,7 +142,8 @@ public class ConvergeServiceImpl implements ConvergeService {
         }
     }
 
-    private void sendDsKafka(ConvTask convTask, ConvTask oldTask, Long tunnelId){
+    @Override
+    public void sendDsKafka(ConvTask convTask, ConvTask oldTask, Long tunnelId){
         // 发送ds-kafka消息
         if (ObjectUtil.isNotNull(oldTask) && !oldTask.getStatus().equals(TaskStatusEnum.DONE.getValue()) &&
                 convTask.getStatus().equals(TaskStatusEnum.DONE.getValue())){

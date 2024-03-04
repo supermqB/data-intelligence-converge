@@ -106,9 +106,9 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         }
 
         // 删除之前的库里存在的多余的表
-        if (CollUtil.isNotEmpty(storedTables)){
-            originalTableService.removeBatchByIds(storedTables);
-        }
+//        if (CollUtil.isNotEmpty(storedTables)){
+//            originalTableService.removeBatchByIds(storedTables);
+//        }
 
         originalTableService.saveOrUpdateBatch(convOriginalTableList);
     }
@@ -177,9 +177,9 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             }
             deleteColumnList.addAll(convOriginalColumns);
         }
-        if (CollUtil.isNotEmpty(deleteColumnList)){
-            originalColumnService.removeBatchByIds(deleteColumnList);
-        }
+//        if (CollUtil.isNotEmpty(deleteColumnList)){
+//            originalColumnService.removeBatchByIds(deleteColumnList);
+//        }
         originalColumnService.saveOrUpdateBatch(originalColumnList);
     }
 

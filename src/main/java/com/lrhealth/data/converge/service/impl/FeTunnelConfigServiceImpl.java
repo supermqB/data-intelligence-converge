@@ -98,7 +98,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                         .eq(ConvTask::getTunnelId, taskInfoKafkaDto.getTunnelId()), false);
                 ConvTunnel tunnel = tunnelService.getById(taskInfoKafkaDto.getTunnelId());
                 //更新 task
-                feNodeService.saveOrUpdateTask(taskInfoKafkaDto, tunnel, oldTask);
+                ConvTask convTask = feNodeService.saveOrUpdateTask(taskInfoKafkaDto, tunnel, oldTask);
+                convergeService.sendDsKafka(convTask, oldTask, tunnel.getId());
                 break;
             case "taskResultView":
                 ResultViewInfoDto resultViewInfoDto = JSON.parseObject(msgBody, ResultViewInfoDto.class);
@@ -109,10 +110,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 break;
             case "taskLog":
                 TaskLogDto taskLogDto = JSON.parseObject(msgBody, TaskLogDto.class);
-                ConvTask convTask = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
+                ConvTask relateTask = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
                         .eq(ConvTask::getFedTaskId, taskLogDto.getTaskId())
                         .eq(ConvTask::getTunnelId, taskLogDto.getTunnelId()));
-                feNodeService.saveOrUpdateLog(Lists.newArrayList(taskLogDto), convTask.getId());
+                feNodeService.saveOrUpdateLog(Lists.newArrayList(taskLogDto), relateTask.getId());
                 break;
             default:
                 throw new CommonException("不存在的kafka标识：" + key);

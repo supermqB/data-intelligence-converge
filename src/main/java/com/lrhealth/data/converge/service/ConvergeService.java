@@ -21,4 +21,6 @@ public interface ConvergeService {
     boolean updateFileStatus(TaskFileConfig taskFileConfig, long l);
 
     void updateFepStatus(FrontendStatusDto frontendStatusDto, ConcurrentLinkedDeque<FileTask> taskDeque);
+
+    void sendDsKafka(ConvTask convTask, ConvTask oldTask, Long tunnelId);
 }
