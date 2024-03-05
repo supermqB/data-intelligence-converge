@@ -86,6 +86,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     @Override
     public void kafkaUpdateFepStatus(String key, String msgBody) {
         if (CharSequenceUtil.isBlank(key)) return;
+        log.info("kafkaUpdateFepStatus,key={}",key);
         switch (key){
             case "tunnel":
                 TunnelStatusKafkaDto dto = JSON.parseObject(msgBody, TunnelStatusKafkaDto.class);

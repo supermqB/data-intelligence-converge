@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.config.ConvergeConfig;
 import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
@@ -161,6 +162,7 @@ public class ConvergeServiceImpl implements ConvergeService {
                     .build();
 
             // 发送ds-kafka给数智
+            log.info("sendDsKafka,body={}", JSON.toJSONString(kafkaDto));
             kafkaService.dsSendKafka(kafkaDto);
         }
     }
