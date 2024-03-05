@@ -27,4 +27,6 @@ public class DbXdsMessageDto {
 
     private Integer convTaskId;
 
+    private Long xdsId;
+
 }

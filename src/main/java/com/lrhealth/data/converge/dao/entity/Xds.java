@@ -166,4 +166,6 @@ public class Xds implements Serializable {
      * 汇聚任务id
      */
     private Integer convTaskId;
+
+    private Long xdsId;
 }

@@ -201,6 +201,7 @@ public class XdsInfoServiceImpl implements XdsInfoService {
                 .odsTableName(dbXdsMessageDto.getOdsTableName())
                 .createTime(LocalDateTime.now())
                 .dsConfigId(dbXdsMessageDto.getDsConfigId())
+                .xdsId(dbXdsMessageDto.getXdsId())
                 .build();
         return xdsService.save(xds);
     }
