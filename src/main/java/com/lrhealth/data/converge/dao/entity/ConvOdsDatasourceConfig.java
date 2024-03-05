@@ -88,5 +88,7 @@ public class ConvOdsDatasourceConfig implements Serializable {
 
     private LocalDateTime updateTime;
 
+    private LocalDateTime heartBeatTime;
+
     private String dsUrlForFront;
 }

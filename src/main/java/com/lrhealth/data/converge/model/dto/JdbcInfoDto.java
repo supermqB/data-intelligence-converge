@@ -33,6 +33,11 @@ public class JdbcInfoDto {
     private String dbPasswd;
 
     /**
+     * 读库的模式
+     */
+    private String dbSchema;
+
+    /**
      * 采集模式
      * 0-库到文件 1-库到库
      */
