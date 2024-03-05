@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.dto.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
  * @author lr
  * @since 2023/7/19 11:44
  */
-public interface XdsInfoService {
+public interface XdsInfoService  extends IService<Xds> {
 
     /**
      * 创建XDS信息

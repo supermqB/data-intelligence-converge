@@ -6,6 +6,7 @@ import cn.hutool.core.net.NetUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lrhealth.data.common.constant.CommonConstant;
 import com.lrhealth.data.common.enums.conv.*;
 import com.lrhealth.data.common.exception.CommonException;
@@ -13,6 +14,7 @@ import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.ConvTask;
 import com.lrhealth.data.converge.dao.entity.System;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.mapper.XdsMapper;
 import com.lrhealth.data.converge.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.dao.service.SystemService;
 import com.lrhealth.data.converge.dao.service.XdsService;
@@ -40,7 +42,7 @@ import static cn.hutool.core.text.CharSequenceUtil.*;
  * @since 2023/7/19 11:44
  */
 @Service
-public class XdsInfoServiceImpl implements XdsInfoService {
+public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements XdsInfoService {
     @Resource
     private XdsService xdsService;
     @Resource

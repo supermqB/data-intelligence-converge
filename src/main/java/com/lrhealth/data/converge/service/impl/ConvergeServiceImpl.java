@@ -15,17 +15,21 @@ import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.ConvergeService;
 import com.lrhealth.data.converge.service.FeNodeService;
 import com.lrhealth.data.converge.service.KafkaService;
+import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.stream.Collectors;
 
 /**
  * @author zhaohui
@@ -55,17 +59,10 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     @Resource
     private ConvergeConfig convergeConfig;
-
-    @Resource
-    private DsFeignClient dsFeignClient;
-
-    @Resource
-    private IConvDolpscheRelService iConvDolpscheRelService;
-
-    @Value("${ds.switch}")
-    private boolean dsSwitch;
     @Resource
     private KafkaService kafkaService;
+    @Resource
+    private XdsInfoService xdsInfoService;
 
     @Override
     public void updateDownLoadFileTask(ConcurrentLinkedDeque<FileTask> taskDeque) {
@@ -152,14 +149,13 @@ public class ConvergeServiceImpl implements ConvergeService {
             if (CollUtil.isEmpty(resultViews)){
                 return;
             }
-            HashMap<String, String> paramMap = new HashMap<>();
-            for (ConvTaskResultView resultView : resultViews){
-                String tableName = resultView.getTableName();
-                paramMap.put(tableName + "_start_position", resultView.getStartIndex());
-                paramMap.put(tableName + "_end_position", resultView.getEndIndex());
-            }
+//            for (ConvTaskResultView resultView : resultViews){
+//                String tableName = resultView.getTableName();
+//                paramMap.put(tableName + "_start_position", resultView.getStartIndex());
+//                paramMap.put(tableName + "_end_position", resultView.getEndIndex());
+//            }
             DsKafkaDto kafkaDto = DsKafkaDto.builder()
-                    .startParams(paramMap)
+                    .startParams(buildStartParams(convTask))
                     .taskId(convTask.getId())
                     .tunnelId(tunnelId)
                     .build();
@@ -167,6 +163,24 @@ public class ConvergeServiceImpl implements ConvergeService {
             // 发送ds-kafka给数智
             kafkaService.dsSendKafka(kafkaDto);
         }
+    }
+
+    /** 生成ds需要的启动参数 startParams
+     * ○ xds_id：数据采集生成的XDSID
+     * ○ table_list：表名称集合，以逗号隔开
+     */
+    private HashMap<String, String> buildStartParams(ConvTask convTask) {
+        HashMap<String, String> startParams = new HashMap<>();
+        LambdaQueryWrapper<Xds> xdsWrapper = new LambdaQueryWrapper<>();
+        xdsWrapper.eq(Xds::getConvTaskId, convTask.getId());
+        List<Xds> xdsList = xdsInfoService.list(xdsWrapper);
+        if(!CollectionUtils.isEmpty(xdsList)){
+            startParams.put("xds_id",xdsList.get(0).getXdsId().toString());
+            String tableList = xdsList.stream().map(Xds::getOdsTableName).
+                            collect(Collectors.joining(","));
+            startParams.put("table_list",tableList);
+        }
+        return startParams;
     }
 
 
