@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -45,7 +46,7 @@ public class ConvFeNode implements Serializable {
     /**
      * 更新时间
      */
-    private Date updateTime;
+    private LocalDateTime updateTime;
 
     /**
      * 更新者
@@ -78,6 +79,11 @@ public class ConvFeNode implements Serializable {
      * 上下线状态， 0-离线，1-在线
      */
     private Integer state;
+
+    /**
+     * 心跳时间
+     */
+    private LocalDateTime heartBeatTime;
 
 
     /**

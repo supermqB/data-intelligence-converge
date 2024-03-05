@@ -175,6 +175,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             jdbcInfoDto.setJdbcUrl(CharSequenceUtil.isBlank(readerDs.getDsUrlForFront()) ? readerDs.getDsUrl() : readerDs.getDsUrlForFront());
             jdbcInfoDto.setDbUserName(readerDs.getDsUsername());
             jdbcInfoDto.setDbPasswd(readerDs.getDsPwd());
+            jdbcInfoDto.setDbSchema(readerDs.getSchema());
             // 库表采集
             if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())){
                 // 全量/增量采集

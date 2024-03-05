@@ -90,8 +90,6 @@ spring:
         tunnel-schedule-task: tunnel-schedule-task
         ## increment-sequence-${ip}-${port} 按照前置机ip和端口区分
         increment-sequence: increment-sequence
-        ## link-monitor-task-${ip}-${port} 按照前置机ip和端口区分
-        link-monitor-task: link-monitor-task-local
 
   servlet:
     multipart:

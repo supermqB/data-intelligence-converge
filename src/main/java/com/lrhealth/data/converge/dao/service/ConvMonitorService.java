@@ -1,9 +1,6 @@
 package com.lrhealth.data.converge.dao.service;
 
-import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.model.dto.MonitorMsg;
-
-import java.util.List;
 
 /**
  * @author admin
@@ -16,11 +13,5 @@ public interface ConvMonitorService {
      */
     void handleMonitorMsg(MonitorMsg monitorMsg);
 
-
-    /**
-     * 根据监测信息获取前置机
-     * @return list
-     */
-    List<ConvFeNode> getAliveFepInfoByMonitor();
 
 }
