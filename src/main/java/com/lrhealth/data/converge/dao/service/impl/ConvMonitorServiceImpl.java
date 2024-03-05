@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.dao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
@@ -11,7 +10,6 @@ import com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper;
 import com.lrhealth.data.converge.dao.mapper.ConvOdsDatasourceConfigMapper;
 import com.lrhealth.data.converge.dao.service.ConvFeNodeService;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
-import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.model.dto.MonitorMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -66,6 +64,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      */
     private synchronized void processDbMonitor(MonitorMsg message) {
         if (StringUtils.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
+            log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()),message.getOrgCode(),message.getDsId());
             return;
         }
         ConvOdsDatasourceConfig dsConfig = convOdsDatasourceConfigMapper.selectOne(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()

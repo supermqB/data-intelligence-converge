@@ -48,7 +48,7 @@ public class ConvMonitorTask implements CommandLineRunner {
     public void targetDataBaseMonitorTask() {
         List<ConvOdsDatasourceConfig> targetDbConfList = convOdsDatasourceConfigService.list(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
                 .eq(ConvOdsDatasourceConfig::getDsType, 1).eq(ConvOdsDatasourceConfig::getDelFlag, 0));
-        if (CollectionUtils.isNotEmpty(targetDbConfList)){
+        if (CollectionUtils.isEmpty(targetDbConfList)){
             return;
         }
         for (ConvOdsDatasourceConfig dsConf : targetDbConfList) {
