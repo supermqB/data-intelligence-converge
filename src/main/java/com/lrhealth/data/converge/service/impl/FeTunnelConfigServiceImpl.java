@@ -173,6 +173,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             // 库表/日志的读库信息
             JdbcInfoDto jdbcInfoDto = new JdbcInfoDto();
             ConvOdsDatasourceConfig readerDs = odsDatasourceConfigService.getById(tunnel.getReaderDatasourceId());
+            jdbcInfoDto.setDsId(readerDs.getId());
             jdbcInfoDto.setJdbcUrl(CharSequenceUtil.isBlank(readerDs.getDsUrlForFront()) ? readerDs.getDsUrl() : readerDs.getDsUrlForFront());
             jdbcInfoDto.setDbUserName(readerDs.getDsUsername());
             jdbcInfoDto.setDbPasswd(readerDs.getDsPwd());

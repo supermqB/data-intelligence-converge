@@ -13,4 +13,5 @@ import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
  */
 public interface ConvOdsDatasourceConfigMapper extends BaseMapper<ConvOdsDatasourceConfig> {
 
+    void updateTime(Boolean status,Integer dsId);
 }

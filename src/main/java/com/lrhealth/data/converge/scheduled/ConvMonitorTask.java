@@ -74,7 +74,7 @@ public class ConvMonitorTask implements CommandLineRunner {
     private MonitorMsg buildMonitorMsg(ConvOdsDatasourceConfig dsConfig,MonitorMsg.MsgTypeEnum msgTypeEnum,boolean dbLink){
         MonitorMsg monitorMsg = MonitorMsg.builder()
                 .sourceIp(dsConfig.getDbIp())
-                .sourcePort(dsConfig.getDbPort())
+                .sourcePort(dsConfig.getDbPort() + "")
                 .msgType(msgTypeEnum.getMsgTypeCode())
                 .status(dbLink)
                 .tableNames(null)

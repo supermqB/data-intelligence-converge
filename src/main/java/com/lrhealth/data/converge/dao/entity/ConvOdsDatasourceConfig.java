@@ -82,7 +82,7 @@ public class ConvOdsDatasourceConfig implements Serializable {
 
     private String dbType;
     private String dbIp;
-    private String dbPort;
+    private Integer dbPort;
 
     private LocalDateTime createTime;
 

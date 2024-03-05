@@ -1,12 +1,14 @@
 package com.lrhealth.data.converge.dao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
 import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
 import com.lrhealth.data.converge.dao.mapper.ConvFeNodeMapper;
 import com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper;
+import com.lrhealth.data.converge.dao.mapper.ConvOdsDatasourceConfigMapper;
 import com.lrhealth.data.converge.dao.service.ConvFeNodeService;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
@@ -20,6 +22,7 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author admin
@@ -30,7 +33,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
     @Resource
     private ConvFeNodeMapper convFeNodeMapper;
     @Resource
-    private ConvOdsDatasourceConfigService convOdsDatasourceConfigService;
+    private ConvOdsDatasourceConfigMapper convOdsDatasourceConfigMapper;
     @Resource
     private ConvFeNodeService convFeNodeService;
     @Resource
@@ -65,18 +68,13 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         if (StringUtils.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
             return;
         }
-        List<ConvOdsDatasourceConfig> dsConfigs = convOdsDatasourceConfigService.list(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
+        ConvOdsDatasourceConfig dsConfig = convOdsDatasourceConfigMapper.selectOne(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
                 .eq(ConvOdsDatasourceConfig::getOrgCode, message.getOrgCode())
                 .eq(ConvOdsDatasourceConfig::getId, message.getDsId()).eq(ConvOdsDatasourceConfig::getDelFlag, 0));
-        if (CollectionUtils.isEmpty(dsConfigs)) {
+        if (Objects.isNull(dsConfig)) {
             return;
         }
-        LocalDateTime now = LocalDateTime.now();
-        dsConfigs.forEach(dsConf -> {
-            dsConf.setUpdateTime(now);
-            dsConf.setHeartBeatTime(message.getStatus() ? now : null);
-        });
-        convOdsDatasourceConfigService.updateBatchById(dsConfigs);
+        convOdsDatasourceConfigMapper.updateTime(message.getStatus(),dsConfig.getId());
     }
 
     /**

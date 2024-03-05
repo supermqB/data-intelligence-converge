@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JdbcInfoDto {
-
+    private Integer dsId;
     /**
      * 读库的jdbc链接地址
      */
