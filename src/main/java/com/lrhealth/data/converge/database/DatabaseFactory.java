@@ -37,6 +37,8 @@ public class DatabaseFactory {
                 return new CacheHandler(jdbcUrl, dbUserName, dbPassword, dbType);
             case "oceanbase":
                 return new OceanbaseHandler(jdbcUrl, dbUserName, dbPassword, dbType);
+            case "hive2": //青岛环境使用默认hive驱动,无需新增依赖
+                return new ArgoDBHandler(jdbcUrl, dbUserName, dbPassword, dbType);
             default:
                 log.error("不支持的dataXReader dataType = {}",dbType);
         }
