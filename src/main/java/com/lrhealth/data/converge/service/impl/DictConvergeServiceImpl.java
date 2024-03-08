@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.converge.common.util.file.FileToJsonUtil;
 import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
@@ -39,7 +40,7 @@ public class DictConvergeServiceImpl implements DictConvergeService {
     @Resource
     private XdsInfoService xdsInfoService;
     @Resource
-    private TunnelService tunnelService;
+    private ConvTunnelService tunnelService;
 
     @Override
     public void dictConverge(MultipartFile file, String orgCode, String sysCode) {

@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.net.NetUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lrhealth.data.common.constant.CommonConstant;
@@ -12,10 +13,12 @@ import com.lrhealth.data.common.enums.conv.*;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.common.util.OdsModelUtil;
 import com.lrhealth.data.converge.dao.entity.ConvTask;
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.entity.System;
 import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.dao.mapper.XdsMapper;
 import com.lrhealth.data.converge.dao.service.ConvTaskService;
+import com.lrhealth.data.converge.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.dao.service.SystemService;
 import com.lrhealth.data.converge.dao.service.XdsService;
 import com.lrhealth.data.converge.model.dto.*;
@@ -54,7 +57,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
     @Resource
     private KafkaService kafkaService;
     @Resource
-    private TunnelService tunnelService;
+    private ConvTunnelService tunnelService;
     @Resource
     private ConvTaskService taskService;
     @Resource
@@ -218,7 +221,8 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
         List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>().eq(ConvTask::getTunnelId, dbXdsMessageDto.getTunnelId())
                 .eq(ConvTask::getFedTaskId, dbXdsMessageDto.getConvTaskId())
                 .orderByDesc(ConvTask::getCreateTime));
-        if (CollUtil.isEmpty(convTasks)){
+        ConvTunnel tunnel = tunnelService.getById(dbXdsMessageDto.getTunnelId());
+        if (CollUtil.isEmpty(convTasks) || ObjectUtil.isNull(tunnel)){
             return false;
         }
         Xds updateXds = Xds.builder()
@@ -229,6 +233,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
                 .dataSize(dataSize)
                 .updateTime(LocalDateTime.now())
                 .convTaskId(convTasks.get(0).getId())
+                .colType(tunnel.getColType())
                 .build();
         xdsService.updateById(updateXds);
 

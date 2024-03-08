@@ -168,4 +168,10 @@ public class Xds implements Serializable {
     private Integer convTaskId;
 
     private Long xdsId;
+
+    /**
+     * 采集类型
+     * 1-单次自定义采集 2-增量采集 3-全量采集
+     */
+    private Integer colType;
 }

@@ -4,6 +4,7 @@ package com.lrhealth.data.converge.dao.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.model.dto.DataSourceDto;
 
 
 /**
@@ -24,4 +25,8 @@ public interface ConvTunnelService extends IService<ConvTunnel> {
     void updateTunnelStatus(Long tunnelId, TunnelStatusEnum tunnelStatusEnum);
 
     ConvTunnel getTunnelWithoutDelFlag(Long tunnelId);
+
+    DataSourceDto getWriterDataSourceByTunnel(Long tunnelId);
+
+    DataSourceDto getDataSourceBySys(String sysCode);
 }

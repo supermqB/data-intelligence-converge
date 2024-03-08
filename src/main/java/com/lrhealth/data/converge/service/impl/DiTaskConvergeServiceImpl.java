@@ -13,10 +13,7 @@ import com.lrhealth.data.converge.dao.entity.ConvTask;
 import com.lrhealth.data.converge.dao.entity.ConvTaskResultFile;
 import com.lrhealth.data.converge.dao.entity.ConvTaskResultView;
 import com.lrhealth.data.converge.dao.entity.Xds;
-import com.lrhealth.data.converge.dao.service.ConvTaskResultFileService;
-import com.lrhealth.data.converge.dao.service.ConvTaskResultViewService;
-import com.lrhealth.data.converge.dao.service.ConvTaskService;
-import com.lrhealth.data.converge.dao.service.XdsService;
+import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.model.dto.FileMessageDTO;
@@ -70,7 +67,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     @Resource
     private DbSqlService dbSqlService;
     @Resource
-    private TunnelService tunnelService;
+    private ConvTunnelService tunnelService;
 
     @Scheduled(cron = "${lrhealth.converge.dataSaveCron}")
     @Override

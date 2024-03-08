@@ -7,7 +7,6 @@ import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.service.DbSqlService;
-import com.lrhealth.data.converge.service.TunnelService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
@@ -24,8 +23,6 @@ import java.util.List;
 public class DbSqlServiceImpl implements DbSqlService {
     @Resource
     private JDBCRepository jdbcRepository;
-    @Resource
-    private TunnelService tunnelService;
 
     @Override
     public void createTable(List<ColumnDbBo> header, String odsTableName, DataSourceDto dataSourceDto) {
