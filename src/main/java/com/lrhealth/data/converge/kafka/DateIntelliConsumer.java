@@ -8,10 +8,8 @@ import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.dao.service.ConvTunnelService;
-import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
-import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
-import com.lrhealth.data.converge.model.dto.FepScheduledDto;
-import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
+import com.lrhealth.data.converge.model.dto.*;
+import com.lrhealth.data.converge.scheduled.ConvMonitorTask;
 import com.lrhealth.data.converge.service.DirectConnectCollectService;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.KafkaService;
@@ -52,6 +50,10 @@ public class DateIntelliConsumer {
     private ConvOdsDatasourceConfigService odsDatasourceConfigService;
     @Resource
     private KafkaService kafkaService;
+    @Value("${spring.kafka.topic.intelligence.link-state}")
+    private String linkStateTopic;
+    @Resource
+    private ConvMonitorTask convMonitorTask;
 
     @KafkaListener(topics = "${spring.kafka.topic.intelligence.tunnel-datasource-change}")
     public void getFepTunnelConfig(@Payload String msgBody, Acknowledgment acknowledgment){
@@ -111,5 +113,21 @@ public class DateIntelliConsumer {
             acknowledgment.acknowledge();
         }
     }
+
+    @KafkaListener(topics = "${spring.kafka.topic.fep.converge-link}")
+    public void doPlatformLink(@Payload String msgBody, Acknowledgment acknowledgment){
+        log.info("====================receive doPlatformLink msgBody={}", msgBody);
+        try {
+            DsLinkDTO dsLinkDTO = JSON.parseObject(msgBody, DsLinkDTO.class);
+            boolean linkStatus = convMonitorTask.doConnectLinkStatus(dsLinkDTO);
+            dsLinkDTO.setLinkState(linkStatus);
+            kafkaTemplate.send(linkStateTopic, JSON.toJSONString(dsLinkDTO));
+        } catch (Exception e) {
+            log.error("do platform link error, {}", ExceptionUtils.getStackTrace(e));
+        } finally {
+            acknowledgment.acknowledge();
+        }
+    }
+
 
 }

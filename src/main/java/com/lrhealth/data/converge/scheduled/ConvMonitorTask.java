@@ -9,7 +9,7 @@ import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.database.DatabaseFactory;
 import com.lrhealth.data.converge.database.DatabaseHandler;
-import com.lrhealth.data.converge.model.dto.DataSourceConnectDTO;
+import com.lrhealth.data.converge.model.dto.DsLinkDTO;
 import com.lrhealth.data.converge.model.dto.MonitorMsg;
 import com.lrhealth.data.converge.model.vo.DbValidVo;
 import lombok.extern.slf4j.Slf4j;
@@ -92,15 +92,14 @@ public class ConvMonitorTask implements CommandLineRunner {
         return monitorMsg;
     }
 
-    public boolean doConnectLinkStatus(DataSourceConnectDTO dsConfig) {
-        DbValidVo dbMessage = QueryParserUtil.getDbMessage(dsConfig.getDsUrl());
+    public boolean doConnectLinkStatus(DsLinkDTO dsLinkDTO) {
+        DbValidVo dbMessage = QueryParserUtil.getDbMessage(dsLinkDTO.getDsUrl());
         if (ObjectUtil.isEmpty(dbMessage)) {
             return false;
         }
         try {
-            DatabaseHandler reader = new DatabaseFactory().getReader(dsConfig.getDsUrl(), dsConfig.getDsUserName(), dsConfig.getDsPwd());
-            boolean dbLink = reader.testConnection();
-            return dbLink;
+            DatabaseHandler reader = new DatabaseFactory().getReader(dsLinkDTO.getDsUrl(), dsLinkDTO.getDsUserName(), dsLinkDTO.getDsPwd());
+            return reader.testConnection();
         } catch (Exception e) {
             log.error("database check error: {}", ExceptionUtils.getStackTrace(e));
         }

@@ -72,6 +72,7 @@ spring:
         fep-task: frontend-reschedule-test
         tunnel-datasource-change: tunnel-datasource-change-test
         original-structure: original-structure
+        link-state: link-state
       fep:
         ## listen
         xds-create: xds-create
@@ -81,6 +82,7 @@ spring:
         upload-original-structure: upload-original-structure
         upload-original-table-count: upload-original-table-count
         monitor-msg: monitor-msg-upload-local
+        converge-link: converge-link
         ## send
         ## tunnel-config-change-${ip}-${port} 按照前置机ip和端口区分
         tunnel-config-change: tunnel-config-change
