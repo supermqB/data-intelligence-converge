@@ -76,6 +76,12 @@ public class OdsModelServiceImpl implements OdsModelService {
                 .eq(OriginalModelColumn::getDelFlag, 0));
     }
 
+    @Override
+    public List<OriginalModel> getModelList(List<Long> modelIdList) {
+       return originalModelService.list(new LambdaQueryWrapper<OriginalModel>().in(OriginalModel::getId,modelIdList)
+                .eq(OriginalModel::getDelFlag,0));
+    }
+
     public static void main(String[] args) {
         String original="LRSH@2022";
         System.out.println("原文=\t"+original);

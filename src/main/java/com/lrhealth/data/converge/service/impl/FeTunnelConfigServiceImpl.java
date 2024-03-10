@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -13,6 +14,7 @@ import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelColTypeEnum;
+import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
@@ -20,7 +22,11 @@ import com.lrhealth.data.converge.scheduled.DownloadFileTask;
 import com.lrhealth.data.converge.service.ConvergeService;
 import com.lrhealth.data.converge.service.FeNodeService;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
+import com.lrhealth.data.converge.service.OdsModelService;
+import com.lrhealth.data.model.original.model.OriginalModel;
+import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.ha.HAAdmin;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +34,7 @@ import javax.annotation.Resource;
 import java.lang.System;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author jinmengyu
@@ -53,6 +60,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private FeNodeService feNodeService;
     @Resource
     private ConvTaskService taskService;
+    @Resource
+    private OdsModelService odsModelService;
 
 
     @Override
@@ -189,15 +198,17 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 // 单表采集还是自定义sql
                 jdbcInfoDto.setColTableType(tunnel.getColTableType());
                 // 库到库
+                String dbType = null;
                 if(LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())){
                     ConvOdsDatasourceConfig writerDs = odsDatasourceConfigService.getById(tunnel.getWriterDatasourceId());
                     jdbcInfoDto.setJdbcUrlForIn(writerDs.getDsUrl());
                     jdbcInfoDto.setDbUserNameForIn(writerDs.getDsUsername());
                     jdbcInfoDto.setDbPasswdForIn(writerDs.getDsPwd());
                     jdbcInfoDto.setDsConfigId(tunnel.getWriterDatasourceId());
+                    dbType = writerDs.getDbType();
                 }
                 // 表以及对应的sql信息
-                assembleTableInfoMessage(tunnel, jdbcInfoDto);
+                assembleTableInfoMessage(tunnel, jdbcInfoDto,"Hive".equals(dbType));
             }
             tunnelMessageDTO.setJdbcInfoDto(jdbcInfoDto);
         }
@@ -205,22 +216,36 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
 
-    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto){
+    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto,Boolean isHive){
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
         List<String> tableList = Arrays.asList(tunnel.getCollectRange().split(","));
-
         // 增量字段
         List<ConvCollectField> collectFieldList = collectFieldService.list(new LambdaQueryWrapper<ConvCollectField>()
                         .in(ConvCollectField::getTableName, tableList)
                         .eq(ConvCollectField::getTunnelId, tunnel.getId())
                         .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
-
+        Map<String, List<OriginalModelColumn>> modelColumnMap = new HashMap<>(collectFieldList.size());
+        Map<String, String> hdfsMap = new HashMap<>();
+        if (isHive){
+            List<Long> modelIdList = new ArrayList<>();
+            for (ConvCollectField collectField : collectFieldList) {
+                List<OriginalModelColumn> modelColumns = odsModelService.getcolumnList(collectField.getTableName(), collectField.getSystemCode());
+                modelColumnMap.put(collectField.getTableName(),modelColumns);
+                modelIdList.add(modelColumns.get(0).getModelId());
+            }
+            //TODO 暂时用create_by代替待表添加字段后统一替换 hdfsPath
+            List<OriginalModel> modelList = odsModelService.getModelList(modelIdList);
+            hdfsMap = modelList.stream()
+                    .collect(Collectors.toMap(OriginalModel::getNameEn, e -> StringUtils.isNotEmpty(e.getCreateBy()) ? e.getCreateBy() : ""));
+        }
+        Map<String, String> finalHdfsMap = hdfsMap;
         collectFieldList.forEach(model -> {
             TableInfoDto tableInfoDto = new TableInfoDto();
             tableInfoDto.setTableName(model.getTableName());
             tableInfoDto.setSqlQuery(model.getQuerySql());
-            tableInfoDto.setWriterColumns(model.getColumnField());
+            tableInfoDto.setHdfsPath(finalHdfsMap.get(model.getTableName()));
+            tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(modelColumnMap,model) : model.getColumnField() );
             if (tunnel.getColType().equals(TunnelColTypeEnum.FREQUENCY_INCREMENT.getValue())){
                 // 1-时间 2-序列
                 tableInfoDto.setSeqField(model.getConditionField());
@@ -232,6 +257,53 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             tableInfoDtoList.add(tableInfoDto);
         });
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
+    }
+
+    /**
+     * 创建hive库columns映射关系
+     */
+    private String doGetHiveColumns(Map<String, List<OriginalModelColumn>> modelColumnMap,ConvCollectField field) {
+        List<OriginalModelColumn> originalModelColumns = modelColumnMap.get(field.getTableName());
+        if (CollectionUtil.isEmpty(originalModelColumns)){
+            return null;
+        }
+        if (StringUtils.isNotEmpty(field.getColumnField())){
+            List<String> existNames = Arrays.asList(field.getColumnField().split(","));
+            originalModelColumns = originalModelColumns.stream().filter(column -> existNames.contains(column.getNameEn())).collect(Collectors.toList());
+        }
+        StringBuilder sb = new StringBuilder();
+        for (OriginalModelColumn modelColumn : originalModelColumns) {
+            sb.append("{\"name\":\"").append(modelColumn.getNameEn())
+                    .append("\",\"type\":\"").append(transformDataType(modelColumn.getFieldType()))
+                    .append("\"}").append(",\n");
+        }
+        return sb.substring(0, sb.length() - 2);
+    }
+
+    private String transformDataType(String fieldType) {
+        fieldType = fieldType.toLowerCase();
+        String transformStr;
+       switch (fieldType){
+           case "varchar":
+               transformStr = "string";
+               break;
+           case "int4":
+               transformStr = "int";
+               break;
+           case "int8":
+               transformStr = "long";
+               break;
+           case "datetime":
+               transformStr = "date";
+               break;
+           case "numeric":
+               transformStr = "decimal";
+               break;
+           default:
+               transformStr = fieldType;
+               break;
+       }
+       return transformStr;
     }
 
     private void getIncrFieldMap(ConvTunnel tunnel, ConvCollectField field, Map<String, String> fieldMap){

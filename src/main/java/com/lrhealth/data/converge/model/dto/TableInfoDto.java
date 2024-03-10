@@ -34,6 +34,11 @@ public class TableInfoDto {
     private String writerColumns;
 
     /**
+     * hive表存储路径
+     */
+    private String hdfsPath;
+
+    /**
      * 增量字段
      */
     private String seqField;
