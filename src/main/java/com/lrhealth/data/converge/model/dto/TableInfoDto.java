@@ -39,6 +39,11 @@ public class TableInfoDto {
     private String hdfsPath;
 
     /**
+     * hive文件存储格式
+     */
+    private String hiveFileType;
+
+    /**
      * 增量字段
      */
     private String seqField;

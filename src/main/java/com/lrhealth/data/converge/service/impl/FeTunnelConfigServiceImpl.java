@@ -19,14 +19,10 @@ import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.scheduled.DownloadFileTask;
-import com.lrhealth.data.converge.service.ConvergeService;
-import com.lrhealth.data.converge.service.FeNodeService;
-import com.lrhealth.data.converge.service.FeTunnelConfigService;
-import com.lrhealth.data.converge.service.OdsModelService;
+import com.lrhealth.data.converge.service.*;
 import com.lrhealth.data.model.original.model.OriginalModel;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.ha.HAAdmin;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -62,6 +58,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private ConvTaskService taskService;
     @Resource
     private OdsModelService odsModelService;
+    @Resource
+    private ModelConfigService modelConfigService;
 
 
     @Override
@@ -208,7 +206,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                     dbType = writerDs.getDbType();
                 }
                 // 表以及对应的sql信息
-                assembleTableInfoMessage(tunnel, jdbcInfoDto,"Hive".equals(dbType));
+                assembleTableInfoMessage(tunnel, jdbcInfoDto,"HDFS".equals(dbType));
             }
             tunnelMessageDTO.setJdbcInfoDto(jdbcInfoDto);
         }
@@ -227,6 +225,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                         .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
         Map<String, List<OriginalModelColumn>> modelColumnMap = new HashMap<>(collectFieldList.size());
         Map<String, String> hdfsMap = new HashMap<>();
+        Map<String, String> hiveConfigMap = new HashMap<>();
         if (isHive){
             List<Long> modelIdList = new ArrayList<>();
             for (ConvCollectField collectField : collectFieldList) {
@@ -234,17 +233,21 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 modelColumnMap.put(collectField.getTableName(),modelColumns);
                 modelIdList.add(modelColumns.get(0).getModelId());
             }
-            //TODO 暂时用create_by代替待表添加字段后统一替换 hdfsPath
             List<OriginalModel> modelList = odsModelService.getModelList(modelIdList);
-            hdfsMap = modelList.stream()
-                    .collect(Collectors.toMap(OriginalModel::getNameEn, e -> StringUtils.isNotEmpty(e.getCreateBy()) ? e.getCreateBy() : ""));
+            hdfsMap = modelList.stream().filter(e -> StringUtils.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(OriginalModel::getNameEn, OriginalModel::getStoragePath));
+            //查询hive配置
+            List<ModelConfig> modelConfigs = modelConfigService.list(new LambdaQueryWrapper<ModelConfig>().in(ModelConfig::getModelId, modelIdList));
+            hiveConfigMap = modelConfigs.stream().filter(e -> StringUtils.isNotEmpty(e.getTableType())).collect(Collectors.toMap(ModelConfig::getTableName, ModelConfig::getTableType));
+
         }
         Map<String, String> finalHdfsMap = hdfsMap;
+        Map<String, String> finalHiveConfigMap = hiveConfigMap;
         collectFieldList.forEach(model -> {
             TableInfoDto tableInfoDto = new TableInfoDto();
             tableInfoDto.setTableName(model.getTableName());
             tableInfoDto.setSqlQuery(model.getQuerySql());
             tableInfoDto.setHdfsPath(finalHdfsMap.get(model.getTableName()));
+            tableInfoDto.setHiveFileType(finalHiveConfigMap.get(model.getTableName()));
             tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(modelColumnMap,model) : model.getColumnField() );
             if (tunnel.getColType().equals(TunnelColTypeEnum.FREQUENCY_INCREMENT.getValue())){
                 // 1-时间 2-序列
@@ -269,7 +272,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         }
         if (StringUtils.isNotEmpty(field.getColumnField())){
             List<String> existNames = Arrays.asList(field.getColumnField().split(","));
-            originalModelColumns = originalModelColumns.stream().filter(column -> existNames.contains(column.getNameEn())).collect(Collectors.toList());
+            originalModelColumns = originalModelColumns.stream().filter(column -> existNames.contains(column.getNameEn()))
+                    .sorted(Comparator.comparing(OriginalModelColumn::getNameEn)).collect(Collectors.toList());
         }
         StringBuilder sb = new StringBuilder();
         for (OriginalModelColumn modelColumn : originalModelColumns) {
@@ -285,19 +289,22 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         String transformStr;
        switch (fieldType){
            case "varchar":
-               transformStr = "string";
+               transformStr = "VARCHAR";
                break;
            case "int4":
-               transformStr = "int";
+               transformStr = "INT";
                break;
            case "int8":
-               transformStr = "long";
+               transformStr = "BIGINT";
                break;
            case "datetime":
-               transformStr = "date";
+               transformStr = "DATE";
                break;
            case "numeric":
-               transformStr = "decimal";
+               transformStr = "DOUBLE";
+               break;
+           case "timestamp":
+               transformStr = "TIMESTAMP";
                break;
            default:
                transformStr = fieldType;
