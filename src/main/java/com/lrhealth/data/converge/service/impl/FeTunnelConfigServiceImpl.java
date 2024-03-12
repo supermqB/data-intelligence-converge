@@ -273,7 +273,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         if (StringUtils.isNotEmpty(field.getColumnField())){
             List<String> existNames = Arrays.asList(field.getColumnField().split(","));
             originalModelColumns = originalModelColumns.stream().filter(column -> existNames.contains(column.getNameEn()))
-                    .sorted(Comparator.comparing(OriginalModelColumn::getNameEn)).collect(Collectors.toList());
+                    .sorted(Comparator.comparing(OriginalModelColumn::getSeqNo)).collect(Collectors.toList());
         }
         StringBuilder sb = new StringBuilder();
         for (OriginalModelColumn modelColumn : originalModelColumns) {
