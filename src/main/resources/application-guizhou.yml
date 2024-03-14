@@ -1,3 +1,5 @@
+switch:
+  kafka-listener: true
 
 spring:
   #数据冶理&标准使用的redis配置

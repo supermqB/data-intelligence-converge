@@ -37,7 +37,7 @@ public class FepKafkaConsumer {
     private ConvMonitorService convMonitorService;
 
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.update-collect-message}")
+    @KafkaListener(topics = "${spring.kafka.topic.fep.update-collect-message}", autoStartup = "${switch.kafka-listener}")
     public void updateCollectInfo(ConsumerRecord<String, String> record, Acknowledgment acknowledgment){
         log.info("====================receive update-fepStatus msgBody={}", record);
         try {
@@ -51,7 +51,7 @@ public class FepKafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.xds-create}")
+    @KafkaListener(topics = "${spring.kafka.topic.fep.xds-create}", autoStartup = "${switch.kafka-listener}")
     public Boolean fepCreateXds(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive xds-create msgBody={}", msgBody);
         Boolean createResult = false;
@@ -66,7 +66,7 @@ public class FepKafkaConsumer {
         return createResult;
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.xds-update}")
+    @KafkaListener(topics = "${spring.kafka.topic.fep.xds-update}", autoStartup = "${switch.kafka-listener}")
     public Boolean fepUpdateXds(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive xds-update msgBody={}", msgBody);
         Boolean updateResult = false;
@@ -81,7 +81,7 @@ public class FepKafkaConsumer {
         return updateResult;
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.upload-tableCount}")
+    @KafkaListener(topics = "${spring.kafka.topic.fep.upload-tableCount}", autoStartup = "${switch.kafka-listener}")
     public void uploadTaskResultViewCount(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive taskResultView-upload msgBody={}", msgBody);
         try {
@@ -95,7 +95,7 @@ public class FepKafkaConsumer {
     }
 
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.upload-original-structure}")
+    @KafkaListener(topics = "${spring.kafka.topic.fep.upload-original-structure}", autoStartup = "${switch.kafka-listener}")
     public void uploadStructure(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive upload originalStructure msgBody={}", msgBody);
         try {
@@ -109,7 +109,7 @@ public class FepKafkaConsumer {
     }
 
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.upload-original-table-count}")
+    @KafkaListener(topics = "${spring.kafka.topic.fep.upload-original-table-count}", autoStartup = "${switch.kafka-listener}")
     public void uploadTableCount(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive upload originalTable count msgBody={}", msgBody);
         try {
@@ -122,7 +122,7 @@ public class FepKafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.monitor-msg}")
+    @KafkaListener(topics = "${spring.kafka.topic.fep.monitor-msg}", autoStartup = "${switch.kafka-listener}")
     public void uploadMonitorMsg(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive upload monitor message msgBody={}", msgBody);
         try {
