@@ -80,6 +80,10 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      * 处理镜像库增量数据
      */
     private synchronized void processMirrorDbIncrMonitor(MonitorMsg message, String tableName) {
+        if (StringUtils.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
+            log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()),message.getOrgCode(),message.getDsId());
+            return;
+        }
         LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
                 .eq(ConvMonitor::getTableName, tableName)
                 .eq(ConvMonitor::getMonitorType, message.getMsgType())
