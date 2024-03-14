@@ -16,6 +16,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JdbcInfoDto {
+    /**
+     * Reader 数据源id
+     */
     private Integer dsId;
     /**
      * 读库的jdbc链接地址
