@@ -27,7 +27,7 @@ public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
-    @Value("${spring.kafka.group-id:metrics11}")
+    @Value("${spring.kafka.group-id:metrics}")
     private String groupId;
 
     @Bean(name = "kafkaListenerContainerFactory")

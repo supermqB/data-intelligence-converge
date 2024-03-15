@@ -55,7 +55,7 @@ public class DateIntelliConsumer {
     @Resource
     private ConvMonitorTask convMonitorTask;
 
-    @KafkaListener(topics = "${spring.kafka.topic.intelligence.tunnel-datasource-change}", autoStartup = "${switch.kafka-listener}")
+    @KafkaListener(topics = "${spring.kafka.topic.intelligence.tunnel-datasource-change}")
     public void getFepTunnelConfig(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive tunnel-config msgBody={}", msgBody);
         try {
@@ -79,7 +79,7 @@ public class DateIntelliConsumer {
     }
 
 
-    @KafkaListener(topics = "${spring.kafka.topic.intelligence.fep-task}", autoStartup = "${switch.kafka-listener}")
+    @KafkaListener(topics = "${spring.kafka.topic.intelligence.fep-task}")
     public void getScheduleTask(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive datax-task msgBody={}", msgBody);
         try {
@@ -99,7 +99,7 @@ public class DateIntelliConsumer {
         }
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.intelligence.original-structure}", autoStartup = "${switch.kafka-listener}")
+    @KafkaListener(topics = "${spring.kafka.topic.intelligence.original-structure}")
     public void getOriginalStructure(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive get-original-structure msgBody={}", msgBody);
         try {
@@ -114,7 +114,7 @@ public class DateIntelliConsumer {
         }
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.converge-link}", autoStartup = "${switch.kafka-listener}")
+    @KafkaListener(topics = "${spring.kafka.topic.fep.converge-link}")
     public void doPlatformLink(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive doPlatformLink msgBody={}", msgBody);
         try {
