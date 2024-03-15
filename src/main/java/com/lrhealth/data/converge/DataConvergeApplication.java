@@ -27,6 +27,7 @@ public class DataConvergeApplication {
 
     public static void main(String[] args) {
         log.info("********** DataConvergeApplication start ! **********");
+
         try {
             //设置jasypt密码
             System.setProperty("jasypt.encryptor.password", "PEB123@321BEP");
