@@ -243,7 +243,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
      * @return
      */
     private Integer fileDataHandle(Xds xds, Integer taskId, DataSourceDto dataSourceDto) {
-        List<OriginalModelColumn> originalModelColumns = odsModelService.getcolumnList(xds.getOdsModelName(), xds.getSysCode());
+        List<OriginalModelColumn> originalModelColumns = odsModelService.getColumnList(xds.getOdsModelName(), xds.getSysCode());
         // 数据写入
         Integer countNumber = dataTableSave(xds, taskId, originalModelColumns, dataSourceDto);
 

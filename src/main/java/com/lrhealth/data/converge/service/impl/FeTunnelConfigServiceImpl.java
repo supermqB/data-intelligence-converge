@@ -229,7 +229,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         if (isHive){
             List<Long> modelIdList = new ArrayList<>();
             for (ConvCollectField collectField : collectFieldList) {
-                List<OriginalModelColumn> modelColumns = odsModelService.getcolumnList(collectField.getTableName(), collectField.getSystemCode());
+                List<OriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(), collectField.getSystemCode());
                 modelColumnMap.put(collectField.getTableName(),modelColumns);
                 modelIdList.add(modelColumns.get(0).getModelId());
             }

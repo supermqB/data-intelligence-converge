@@ -16,7 +16,7 @@ public interface OdsModelService {
 
     Map<String, String> getOdsColumnTypeMap(String odsModelName, String sysCode);
 
-    List<OriginalModelColumn> getcolumnList(String odsModelName, String sysCode);
+    List<OriginalModelColumn> getColumnList(String odsModelName, String sysCode);
 
     List<OriginalModel> getModelList(List<Long> modelIdList);
 }
