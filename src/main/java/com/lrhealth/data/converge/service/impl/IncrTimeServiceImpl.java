@@ -13,6 +13,7 @@ import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.model.dto.IncrSequenceDto;
 import com.lrhealth.data.converge.service.IncrTimeService;
 import com.lrhealth.data.converge.service.KafkaService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ import java.util.Map;
  * @author jinmengyu
  * @date 2024-01-17
  */
+@Slf4j
 @Service
 public class IncrTimeServiceImpl implements IncrTimeService {
 
