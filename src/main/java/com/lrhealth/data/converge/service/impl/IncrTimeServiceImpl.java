@@ -79,7 +79,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             return;
         }
         convOriginalColumns.forEach(column -> {
-            String sql = getTaskLatestTimeSql(xds.getId(), xds.getOdsTableName(), column.getNameEn());
+            String sql = getTaskLatestTimeSql(xds.getXdsId(), xds.getOdsTableName(), column.getNameEn());
             List<Map<String, Object>> mapList = SqlExecUtil.execSql(sql, dto);
             if (CollUtil.isNotEmpty(mapList)){
                 Object latestValue = mapList.get(0).get(column.getNameEn());
