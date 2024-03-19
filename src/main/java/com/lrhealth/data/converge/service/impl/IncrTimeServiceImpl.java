@@ -50,6 +50,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
     @Async
     @Override
     public void updateTableLatestTime(Long xdsId) {
+        log.info("<<<开始更新xds[{}]的最新采集时间！>>>", xdsId);
         Xds xds = xdsService.getById(xdsId);
         ConvTask convTask = taskService.getById(xds.getConvTaskId());
         if (ObjectUtil.isNull(convTask)){
@@ -64,7 +65,8 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 .password(dsConfig.getDsPwd()).build();
         ConvOriginalTable table = originalTableService.getOne(new LambdaQueryWrapper<ConvOriginalTable>()
                 .eq(ConvOriginalTable::getConvDsConfId, tunnel.getReaderDatasourceId())
-                .eq(ConvOriginalTable::getNameEn, xds.getOdsModelName()));
+                .eq(ConvOriginalTable::getNameEn, xds.getOdsModelName())
+                .eq(ConvOriginalTable::getSysCode, xds.getSysCode()));
         if (ObjectUtil.isEmpty(table)){
             return;
         }
