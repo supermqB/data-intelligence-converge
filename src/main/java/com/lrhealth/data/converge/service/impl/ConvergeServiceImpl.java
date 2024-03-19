@@ -8,8 +8,6 @@ import com.lrhealth.data.converge.common.config.ConvergeConfig;
 import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
-import com.lrhealth.data.converge.ds.dao.service.IConvDolpscheRelService;
-import com.lrhealth.data.converge.ds.feign.DsFeignClient;
 import com.lrhealth.data.converge.model.FileTask;
 import com.lrhealth.data.converge.model.TaskFileConfig;
 import com.lrhealth.data.converge.model.dto.*;
@@ -18,8 +16,6 @@ import com.lrhealth.data.converge.service.FeNodeService;
 import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -181,6 +177,7 @@ public class ConvergeServiceImpl implements ConvergeService {
             String tableList = xdsList.stream().map(Xds::getOdsTableName).
                             collect(Collectors.joining(","));
             startParams.put("table_list",tableList);
+            startParams.put("sys_code",convTask.getSysCode());
         }
         return startParams;
     }
