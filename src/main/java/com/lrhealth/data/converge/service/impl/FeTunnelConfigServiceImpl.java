@@ -32,6 +32,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.lrhealth.data.converge.common.enums.TunnelCMEnum.LIBRARY_TABLE;
+
 /**
  * @author jinmengyu
  * @date 2023-11-14
@@ -172,45 +174,71 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     public TunnelMessageDTO getTunnelMessage(ConvTunnel tunnel){
         TunnelMessageDTO tunnelMessageDTO = new TunnelMessageDTO();
         // 管道基本信息
+        // todo: 用普通的convert替换beanutil
         BeanUtil.copyProperties(tunnel, tunnelMessageDTO);
         tunnelMessageDTO.setTimeDif(getCronTimeUnit(tunnel.getTimeDif(), tunnel.getTimeUnit()));
         tunnelMessageDTO.setDependenceTunnelId(CharSequenceUtil.isNotBlank(tunnel.getDependenceTunnelId()) ? Long.valueOf(tunnel.getDependenceTunnelId()) : null);
-        if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())
-                || tunnel.getConvergeMethod().equals(TunnelCMEnum.CDC_LOG.getCode())){
-            // 库表/日志的读库信息
-            JdbcInfoDto jdbcInfoDto = new JdbcInfoDto();
-            ConvOdsDatasourceConfig readerDs = odsDatasourceConfigService.getById(tunnel.getReaderDatasourceId());
-            jdbcInfoDto.setDsId(readerDs.getId());
-            jdbcInfoDto.setJdbcUrl(CharSequenceUtil.isBlank(readerDs.getDsUrlForFront()) ? readerDs.getDsUrl() : readerDs.getDsUrlForFront());
-            jdbcInfoDto.setDbUserName(readerDs.getDsUsername());
-            jdbcInfoDto.setDbPasswd(readerDs.getDsPwd());
-            jdbcInfoDto.setDbSchema(readerDs.getSchema());
-            // 库表采集
-            if (tunnel.getConvergeMethod().equals(TunnelCMEnum.LIBRARY_TABLE.getCode())){
-                // 全量/增量采集
-                jdbcInfoDto.setColType(tunnel.getColType());
-                jdbcInfoDto.setFullColStartTime(String.valueOf(tunnel.getFullColStartTime()));
-                jdbcInfoDto.setFullColEndTime(String.valueOf(tunnel.getFullColEndTime()));
-                // 库到库/库到文件
-                jdbcInfoDto.setCollectModel(tunnel.getCollectModel());
-                // 单表采集还是自定义sql
-                jdbcInfoDto.setColTableType(tunnel.getColTableType());
-                // 库到库
-                String dbType = null;
-                if(LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())){
-                    ConvOdsDatasourceConfig writerDs = odsDatasourceConfigService.getById(tunnel.getWriterDatasourceId());
-                    jdbcInfoDto.setJdbcUrlForIn(writerDs.getDsUrl());
-                    jdbcInfoDto.setDbUserNameForIn(writerDs.getDsUsername());
-                    jdbcInfoDto.setDbPasswdForIn(writerDs.getDsPwd());
-                    jdbcInfoDto.setDsConfigId(tunnel.getWriterDatasourceId());
-                    dbType = writerDs.getDbType();
-                }
-                // 表以及对应的sql信息
-                assembleTableInfoMessage(tunnel, jdbcInfoDto,"HDFS".equals(dbType));
-            }
-            tunnelMessageDTO.setJdbcInfoDto(jdbcInfoDto);
+        TunnelCMEnum tunnelCMEnum = TunnelCMEnum.of(tunnel.getConvergeMethod());
+        switch (Objects.requireNonNull(tunnelCMEnum)){
+            case LIBRARY_TABLE:
+            case CDC_LOG:
+                tunnelJdbcMessage(tunnel, tunnelMessageDTO);
+                break;
+            case FILE_MODE:
+                tunnelFileMessage(tunnel, tunnelMessageDTO);
+                break;
+            case INTERFACE_MODE:
+                break;
+            default:
+                throw new CommonException("不支持的汇聚方式");
         }
         return tunnelMessageDTO;
+    }
+
+    private void tunnelJdbcMessage(ConvTunnel tunnel, TunnelMessageDTO tunnelMessageDTO){
+        // 库表/日志的读库信息
+        JdbcInfoDto jdbcInfoDto = new JdbcInfoDto();
+        ConvOdsDatasourceConfig readerDs = odsDatasourceConfigService.getById(tunnel.getReaderDatasourceId());
+        jdbcInfoDto.setDsId(readerDs.getId());
+        jdbcInfoDto.setJdbcUrl(CharSequenceUtil.isBlank(readerDs.getDsUrlForFront()) ? readerDs.getDsUrl() : readerDs.getDsUrlForFront());
+        jdbcInfoDto.setDbUserName(readerDs.getDsUsername());
+        jdbcInfoDto.setDbPasswd(readerDs.getDsPwd());
+        jdbcInfoDto.setDbSchema(readerDs.getSchema());
+        // 库表采集
+        if (tunnel.getConvergeMethod().equals(LIBRARY_TABLE.getCode())){
+            // 全量/增量采集
+            jdbcInfoDto.setColType(tunnel.getColType());
+            jdbcInfoDto.setFullColStartTime(String.valueOf(tunnel.getFullColStartTime()));
+            jdbcInfoDto.setFullColEndTime(String.valueOf(tunnel.getFullColEndTime()));
+            // 库到库/库到文件
+            jdbcInfoDto.setCollectModel(tunnel.getCollectModel());
+            // 单表采集还是自定义sql
+            jdbcInfoDto.setColTableType(tunnel.getColTableType());
+            // 库到库
+            String dbType = null;
+            if(LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())){
+                ConvOdsDatasourceConfig writerDs = odsDatasourceConfigService.getById(tunnel.getWriterDatasourceId());
+                jdbcInfoDto.setJdbcUrlForIn(writerDs.getDsUrl());
+                jdbcInfoDto.setDbUserNameForIn(writerDs.getDsUsername());
+                jdbcInfoDto.setDbPasswdForIn(writerDs.getDsPwd());
+                jdbcInfoDto.setDsConfigId(tunnel.getWriterDatasourceId());
+                dbType = writerDs.getDbType();
+            }
+            // 表以及对应的sql信息
+            assembleTableInfoMessage(tunnel, jdbcInfoDto,"HDFS".equals(dbType));
+        }
+        tunnelMessageDTO.setJdbcInfoDto(jdbcInfoDto);
+    }
+
+    private void tunnelFileMessage(ConvTunnel tunnel, TunnelMessageDTO tunnelMessageDTO){
+        FileCollectInfoDto fileCollectInfoDto = new FileCollectInfoDto();
+        // 文件采集目录
+        fileCollectInfoDto.setFileModeCollectDir(tunnel.getFileModeCollectDir());
+        // 文件的采集范围
+        fileCollectInfoDto.setCollectRange(tunnel.getCollectRange());
+        fileCollectInfoDto.setStructuredDataFlag(tunnel.getStructuredDataFlag());
+
+        tunnelMessageDTO.setFileCollectInfoDto(fileCollectInfoDto);
     }
 
 

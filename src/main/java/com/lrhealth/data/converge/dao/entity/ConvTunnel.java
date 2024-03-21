@@ -140,7 +140,7 @@ public class ConvTunnel implements Serializable {
 
     /**
      * 文件模式
-     * 扫描目录
+     * 可能是目录，也可能是FTP、SMB等
      */
     private String fileModeCollectDir;
 

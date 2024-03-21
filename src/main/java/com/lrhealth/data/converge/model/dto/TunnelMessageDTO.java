@@ -73,21 +73,20 @@ public class TunnelMessageDTO {
      */
     private Long dataShardSize;
 
+    /**
+     * 管道状态
+     */
     private Integer status;
 
-    /**
-     * 文件地址
-     */
-    private String fileModeCollectDir;
-
-    /**
-     * 文件采集范围
-     */
-    private String collectRange;
 
     /**
      * 管道依赖
      */
     private Long dependenceTunnelId;
+
+    /**
+     * 文件采集
+     */
+    private FileCollectInfoDto fileCollectInfoDto;
 
 }
