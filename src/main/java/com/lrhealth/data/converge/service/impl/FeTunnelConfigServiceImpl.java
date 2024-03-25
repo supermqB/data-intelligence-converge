@@ -119,6 +119,13 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                         .eq(ConvTask::getTunnelId, resultViewInfoDto.getTunnelId()));
                 feNodeService.updateTaskResultView(DownloadFileTask.taskDeque, Lists.newArrayList(resultViewInfoDto), task);
                 break;
+            case "updateTaskResultFile":
+                ResultFileInfoDto resultFileInfoDto = JSON.parseObject(msgBody, ResultFileInfoDto.class);
+                ConvTask fileTask = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
+                        .eq(ConvTask::getFedTaskId, resultFileInfoDto.getTaskId())
+                        .eq(ConvTask::getTunnelId, resultFileInfoDto.getTunnelId()));
+                feNodeService.updateTaskResultFile(DownloadFileTask.taskDeque, Lists.newArrayList(resultFileInfoDto), fileTask);
+                break;
             case "taskLog":
                 TaskLogDto taskLogDto = JSON.parseObject(msgBody, TaskLogDto.class);
                 ConvTask relateTask = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
