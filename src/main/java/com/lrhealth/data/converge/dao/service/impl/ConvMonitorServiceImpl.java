@@ -64,7 +64,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      */
     private synchronized void processDbMonitor(MonitorMsg message) {
         if (StringUtils.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
-            log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()),message.getOrgCode(),message.getDsId());
+            log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()), message.getOrgCode(), message.getDsId());
             return;
         }
         ConvOdsDatasourceConfig dsConfig = convOdsDatasourceConfigMapper.selectOne(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
@@ -73,7 +73,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         if (Objects.isNull(dsConfig)) {
             return;
         }
-        convOdsDatasourceConfigMapper.updateTime(message.getStatus(),dsConfig.getId());
+        convOdsDatasourceConfigMapper.updateTime(message.getStatus(), dsConfig.getId());
     }
 
     /**
@@ -81,7 +81,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      */
     private synchronized void processMirrorDbIncrMonitor(MonitorMsg message, String tableName) {
         if (StringUtils.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
-            log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()),message.getOrgCode(),message.getDsId());
+            log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()), message.getOrgCode(), message.getDsId());
             return;
         }
         LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
@@ -92,17 +92,16 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         List<ConvMonitor> monitors = convMonitorMapper.selectList(queryWrapper);
         if (CollectionUtils.isNotEmpty(monitors)) {
             ConvMonitor convMonitor = monitors.get(0);
-            convMonitor.setState(0);
             convMonitor.setUpdateTime(new Date());
             convMonitorMapper.updateById(convMonitor);
         } else {
             ConvMonitor convMonitor = new ConvMonitor();
             convMonitor.setTableName(tableName);
-            convMonitor.setState(0);
             convMonitor.setOrgCode(message.getOrgCode());
             convMonitor.setDsId(message.getDsId());
             convMonitor.setMonitorType(MonitorMsg.MsgTypeEnum.MIRROR_DB_INCR_CHECK.getMsgTypeCode());
             convMonitor.setUpdateTime(new Date());
+            convMonitor.setCreateTime(new Date());
             convMonitorMapper.insert(convMonitor);
         }
     }
