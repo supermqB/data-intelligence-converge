@@ -220,4 +220,17 @@ public class ConvTunnel implements Serializable {
     private String timeUnit;
 
     private String dependenceTunnelId;
+
+    /**
+     * 文件入库方式
+     * 1-数据库 2-dicom 3-对象存储
+     */
+    private Integer fileStorageMode;
+
+    /**
+     * 非结构化的存储路径（文本）
+     * dicom: ip:port
+     * 对象存储：未知
+     */
+    private Integer unstructuredStoragePath;
 }

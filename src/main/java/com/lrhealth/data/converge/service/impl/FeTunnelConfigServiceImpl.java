@@ -10,10 +10,7 @@ import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.google.common.collect.Lists;
 import com.lrhealth.data.common.exception.CommonException;
-import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
-import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
-import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
-import com.lrhealth.data.converge.common.enums.TunnelColTypeEnum;
+import com.lrhealth.data.converge.common.enums.*;
 import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
@@ -23,6 +20,7 @@ import com.lrhealth.data.converge.service.*;
 import com.lrhealth.data.model.original.model.OriginalModel;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -62,6 +60,9 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private OdsModelService odsModelService;
     @Resource
     private ModelConfigService modelConfigService;
+
+    @Value("${file-collect.structure-type}")
+    private String structureTypeStr;
 
 
     @Override
@@ -235,8 +236,24 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 文件采集目录
         fileCollectInfoDto.setFileModeCollectDir(tunnel.getFileModeCollectDir());
         // 文件的采集范围
-        fileCollectInfoDto.setCollectRange(tunnel.getCollectRange());
-        fileCollectInfoDto.setStructuredDataFlag(tunnel.getStructuredDataFlag());
+        fileCollectInfoDto.setFileCollectRange(tunnel.getCollectRange());
+        fileCollectInfoDto.setFileStorageMode(tunnel.getFileStorageMode());
+        List<String> fileSuffixList = new ArrayList<>();
+        Integer fileStorageMode = tunnel.getFileStorageMode();
+        FileStorageTypeEnum type = FileStorageTypeEnum.of(fileStorageMode);
+        switch (Objects.requireNonNull(type)){
+            case DATABASE:
+                if (CharSequenceUtil.isNotBlank(structureTypeStr)){
+                    fileSuffixList.addAll(Lists.newArrayList(structureTypeStr.split(",")));
+                }
+                break;
+            case DICOM:
+                fileSuffixList.add("dcm");
+                break;
+            case OBJECT_STORAGE:
+                break;
+        }
+        fileCollectInfoDto.setFileSuffix(fileSuffixList);
 
         tunnelMessageDTO.setFileCollectInfoDto(fileCollectInfoDto);
     }
