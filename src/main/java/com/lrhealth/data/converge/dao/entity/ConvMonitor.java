@@ -7,7 +7,9 @@ package com.lrhealth.data.converge.dao.entity;
  * @since 2023-11-30
  */
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -22,35 +24,10 @@ public class ConvMonitor  implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
     /**
-     * 上下线状态， 0-正常，1-异常
-     */
-    private Integer state;
-    /**
-     * 异常描述
-     */
-    @TableField(updateStrategy = FieldStrategy.IGNORED)
-    private String exceptionDes;
-    /**
-     * 异常发生时间
-     */
-    @TableField(updateStrategy = FieldStrategy.IGNORED)
-    private Date exceptionTime;
-    /**
-     * 前置机ID
-     */
-    private Long convFeNodeId;
-    /**
-     * 镜像库表名称
-     */
-    private String tableName;
-    /**
      * 机构编码
      */
     private String orgCode;
-    /**
-     * 系统编码
-     */
-    private String sysCode;
+
     /**
      * 监控类型：1 前置机程序 2 FlinkCDC程序
      */
@@ -59,8 +36,19 @@ public class ConvMonitor  implements Serializable {
      * 数据源ID
      */
     private Integer dsId;
+
+    /**
+     * 镜像库表名称
+     */
+    private String tableName;
+
     /**
      * 更新时间
      */
     private Date updateTime;
+
+    /**
+     * 更新时间
+     */
+    private Date createTime;
 }
