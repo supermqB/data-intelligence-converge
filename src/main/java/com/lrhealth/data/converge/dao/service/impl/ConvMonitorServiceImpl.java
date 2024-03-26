@@ -86,7 +86,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
         }
         LambdaQueryWrapper<ConvMonitor> queryWrapper = new LambdaQueryWrapper<ConvMonitor>()
                 .eq(ConvMonitor::getTableName, tableName)
-                .eq(ConvMonitor::getMonitorType, message.getMsgType())
+                .eq(ConvMonitor::getMonitorType, message.getMsg())
                 .eq(ConvMonitor::getOrgCode, message.getOrgCode())
                 .eq(ConvMonitor::getDsId, message.getDsId());
         List<ConvMonitor> monitors = convMonitorMapper.selectList(queryWrapper);
@@ -99,7 +99,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
             convMonitor.setTableName(tableName);
             convMonitor.setOrgCode(message.getOrgCode());
             convMonitor.setDsId(message.getDsId());
-            convMonitor.setMonitorType(MonitorMsg.MsgTypeEnum.MIRROR_DB_INCR_CHECK.getMsgTypeCode());
+            convMonitor.setMonitorType(Objects.isNull(message.getTunnelId()) ? "custom" : "default");
             convMonitor.setUpdateTime(new Date());
             convMonitor.setCreateTime(new Date());
             convMonitorMapper.insert(convMonitor);
