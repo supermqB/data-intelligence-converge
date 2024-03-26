@@ -38,4 +38,10 @@ public class FileCollectInfoDto {
      * 文件后缀列表
      */
     private List<String> fileSuffix;
+
+    /**
+     * 结构化数据标识
+     * 1-结构化数据，2-非结构化数据
+     */
+    private Integer structuredDataFlag;
 }

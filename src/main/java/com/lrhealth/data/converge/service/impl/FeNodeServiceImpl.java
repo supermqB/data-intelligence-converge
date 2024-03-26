@@ -328,7 +328,7 @@ public class FeNodeServiceImpl implements FeNodeService {
             ConvTaskResultFile taskResultFile = this.saveOrUpdateFile(resultFileInfoDto, convTask);
 
             //添加任务
-            if (convTask.getStatus() == 3 && taskResultFile.getStatus() == 1) {
+            if (taskResultFile.getStatus() == 1) {
                 FileTask fileTask = new FileTask(convTask.getId(), taskResultFile.getFeStoredFilename());
                 if (!taskDeque.contains(fileTask)) {
                     taskDeque.add(fileTask);

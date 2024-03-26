@@ -119,7 +119,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                         .eq(ConvTask::getTunnelId, resultViewInfoDto.getTunnelId()));
                 feNodeService.updateTaskResultView(DownloadFileTask.taskDeque, Lists.newArrayList(resultViewInfoDto), task);
                 break;
-            case "updateTaskResultFile":
+            case "taskResultFile":
                 ResultFileInfoDto resultFileInfoDto = JSON.parseObject(msgBody, ResultFileInfoDto.class);
                 ConvTask fileTask = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
                         .eq(ConvTask::getFedTaskId, resultFileInfoDto.getTaskId())
@@ -245,6 +245,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 文件的采集范围
         fileCollectInfoDto.setFileCollectRange(tunnel.getCollectRange());
         fileCollectInfoDto.setFileStorageMode(tunnel.getFileStorageMode());
+        fileCollectInfoDto.setStructuredDataFlag(tunnel.getStructuredDataFlag());
         List<String> fileSuffixList = new ArrayList<>();
         Integer fileStorageMode = tunnel.getFileStorageMode();
         FileStorageTypeEnum type = FileStorageTypeEnum.of(fileStorageMode);
