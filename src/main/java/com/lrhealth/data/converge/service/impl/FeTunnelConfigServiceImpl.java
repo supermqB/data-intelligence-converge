@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.lrhealth.data.converge.common.enums.TunnelCMEnum.CDC_LOG;
 import static com.lrhealth.data.converge.common.enums.TunnelCMEnum.LIBRARY_TABLE;
 
 /**
@@ -234,6 +235,18 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             }
             // 表以及对应的sql信息
             assembleTableInfoMessage(tunnel, jdbcInfoDto,"HDFS".equals(dbType));
+        }
+
+        if (tunnel.getConvergeMethod().equals(CDC_LOG.getCode())){
+            String collectRange = tunnel.getCollectRange();
+            List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
+            String[] split = collectRange.split(",");
+            for (String table : split){
+                TableInfoDto tableInfoDto = new TableInfoDto();
+                tableInfoDto.setTableName(table);
+                tableInfoDtoList.add(tableInfoDto);
+            }
+            jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
         }
         tunnelMessageDTO.setJdbcInfoDto(jdbcInfoDto);
     }
