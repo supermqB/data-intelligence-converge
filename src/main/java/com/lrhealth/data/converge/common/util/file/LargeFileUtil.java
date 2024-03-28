@@ -146,6 +146,7 @@ public class LargeFileUtil {
                         stmt.setLong(index, Long.parseLong(value));
                         break;
                     case "double":
+                    case "numeric":
                         stmt.setDouble(index, Double.parseDouble(value));
                         break;
                     case "boolean":

@@ -67,7 +67,7 @@ spring:
     topic:
       cdc: cdc-data
       xds: gove-xds-${spring.profiles.active}
-      dolphinScheduler-task: dolphin-schedule-task-${spring.profiles.active}
+      dolphinScheduler-task: dolphin-schedule-task
       intelligence:
         fep-task: frontend-reschedule-test
         tunnel-datasource-change: tunnel-datasource-change-test
@@ -162,3 +162,10 @@ file-collect:
 
 xds:
   switch-on: true
+
+#MinIO对象存储，文件服务器
+minio:
+  endpoint: http://172.16.29.17:9001
+  accessKey: exMYNZIl9mKJZWxN79HZ
+  secretKey: iPrpcnsDn5k0zzd8HepbgMaYtn2H6hqURfPvZDOm
+  bucketName: file-collect

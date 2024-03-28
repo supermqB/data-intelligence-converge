@@ -7,17 +7,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.enums.conv.CollectDataTypeEnum;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
+import com.lrhealth.data.converge.common.util.MinioClientUtils;
 import com.lrhealth.data.converge.common.util.file.LargeFileUtil;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
-import com.lrhealth.data.converge.dao.entity.ConvTask;
-import com.lrhealth.data.converge.dao.entity.ConvTaskResultFile;
-import com.lrhealth.data.converge.dao.entity.ConvTaskResultView;
-import com.lrhealth.data.converge.dao.entity.Xds;
+import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
-import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.model.dto.FileMessageDTO;
-import com.lrhealth.data.converge.service.*;
+import com.lrhealth.data.converge.service.DbSqlService;
+import com.lrhealth.data.converge.service.DiTaskConvergeService;
+import com.lrhealth.data.converge.service.KafkaService;
+import com.lrhealth.data.converge.service.OdsModelService;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.lang.System;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -68,6 +69,8 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     private DbSqlService dbSqlService;
     @Resource
     private ConvTunnelService tunnelService;
+    @Resource
+    private MinioClientUtils minioClientUtils;
 
     @Scheduled(cron = "${lrhealth.converge.dataSaveCron}")
     @Override
@@ -204,6 +207,12 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     private void xdsFileSave(FileMessageDTO fileMessageDTO, ConvTask convTask) {
         // 创建xds
         Xds xds = createXds(fileMessageDTO, convTask);
+        ConvTunnel tunnel = tunnelService.getById(convTask.getTunnelId());
+        if (tunnel.getFileStorageMode() != 1){
+            // 对象存储和dicom, 目前只有dicom
+
+            return;
+        }
 
         DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(convTask.getTunnelId());
         // 数据落库，获得数据条数
@@ -262,14 +271,14 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     private Integer dataTableSave(Xds xds, Integer taskId, List<OriginalModelColumn> originalModelColumns, DataSourceDto dataSourceDto) {
         long startTime = System.currentTimeMillis();
         // 表是否存在的判断
-        synchronized (this) {
-            if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName(), dataSourceDto)) {
-                // 创建表
-                List<ColumnDbBo> collect = originalModelColumns.stream().map(columnInfo -> ColumnDbBo.builder().columnName(columnInfo.getNameEn()).fieldType(columnInfo.getFieldType()).fieldLength(columnInfo.getFieldTypeLength()).build()).collect(Collectors.toList());
-                dbSqlService.createTable(collect, xds.getOdsTableName(), dataSourceDto);
-                AsyncFactory.convTaskLog(taskId, "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
-            }
-        }
+//        synchronized (this) {
+//            if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName(), dataSourceDto)) {
+//                // 创建表
+//                List<ColumnDbBo> collect = originalModelColumns.stream().map(columnInfo -> ColumnDbBo.builder().columnName(columnInfo.getNameEn()).fieldType(columnInfo.getFieldType()).fieldLength(columnInfo.getFieldTypeLength()).build()).collect(Collectors.toList());
+//                dbSqlService.createTable(collect, xds.getOdsTableName(), dataSourceDto);
+//                AsyncFactory.convTaskLog(taskId, "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
+//            }
+//        }
         // 过滤original_model_column里面的name_en重复数据
         List<OriginalModelColumn> filterModelColumns = new ArrayList<>(originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, column -> column, (column1, column2) -> column1))
                 .values());
@@ -301,7 +310,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 .storedFileName(fileMessageDto.getFeStoredFileName())
                 .storedFileType("csv")
                 .storedFileMode(0)
-                .odsTableName(convTask.getSysCode() + "_" + fileMessageDto.getTableName())
+                .odsTableName(fileMessageDto.getTableName())
                 .storedFileSize(BigDecimal.valueOf(fileMessageDto.getDataSize()))
                 .dataCount(fileMessageDto.getDataItemCount())
                 .createTime(LocalDateTime.now())
@@ -320,4 +329,7 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
                 .dataConvergeStatus(1).build();
         xdsService.updateById(updateXds);
     }
+
+
+
 }
