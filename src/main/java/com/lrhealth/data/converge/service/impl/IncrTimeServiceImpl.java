@@ -66,10 +66,10 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 .username(dsConfig.getDsUsername())
                 .password(dsConfig.getDsPwd()).build();
         ConvOriginalTable table = originalTableService.getOne(new LambdaQueryWrapper<ConvOriginalTable>()
-                .eq(ConvOriginalTable::getConvDsConfId, tunnel.getReaderDatasourceId())
-                .eq(ConvOriginalTable::getNameEn, xds.getOdsModelName())
+                .eq(ConvOriginalTable::getModelName, xds.getOdsTableName())
                 .eq(ConvOriginalTable::getSysCode, xds.getSysCode()));
         if (ObjectUtil.isEmpty(table)){
+            log.info("[{}]原始表不存在！", xds.getOdsModelName());
             return;
         }
         List<ConvOriginalColumn> convOriginalColumns = originalColumnService.list(new LambdaQueryWrapper<ConvOriginalColumn>()
@@ -80,7 +80,9 @@ public class IncrTimeServiceImpl implements IncrTimeService {
         }
         convOriginalColumns.forEach(column -> {
             String sql = getTaskLatestTimeSql(xds.getXdsId(), xds.getOdsTableName(), column.getNameEn());
+            log.info("{}获取最新采集时间, sql: [{}]", xds.getOdsTableName(), sql);
             List<Map<String, Object>> mapList = SqlExecUtil.execSql(sql, dto);
+            log.info("{}获取最新采集时间, {}", xds.getOdsTableName(), mapList);
             if (CollUtil.isNotEmpty(mapList)){
                 Object latestValue = mapList.get(0).get(column.getNameEn());
                 updateCollectIncrTime(tunnel, xds, column, latestValue);

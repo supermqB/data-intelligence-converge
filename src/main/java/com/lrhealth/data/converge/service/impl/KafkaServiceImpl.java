@@ -76,7 +76,7 @@ public class KafkaServiceImpl implements KafkaService {
     @Override
     public void updateFepIncrSequence(IncrSequenceDto incrSequenceDto, ConvTunnel tunnel) {
         // topic处理
-        String topic = incrSequenceTopic + topicSuffixIpPort(tunnel.getId(), tunnel.getFrontendId());
+        String topic = incrSequenceTopic + CharPool.DASHED + topicSuffixIpPort(tunnel.getId(), tunnel.getFrontendId());
         kafkaTemplate.send(topic, JSON.toJSONString(incrSequenceDto));
     }
 
