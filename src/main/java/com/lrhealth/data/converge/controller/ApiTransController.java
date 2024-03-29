@@ -1,8 +1,13 @@
 package com.lrhealth.data.converge.controller;
 
+import com.lrhealth.data.converge.common.util.TokenUtil;
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.dao.service.ConvTaskService;
+import com.lrhealth.data.converge.service.ApiTransService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.Map;
 
 /**
@@ -15,18 +20,24 @@ import java.util.Map;
 @RequestMapping("/api/transmission")
 public class ApiTransController {
 
+    @Resource
+    private ApiTransService apiTransService;
+    @Resource
+    private ConvTaskService convTaskService;
+
     @PostMapping("/upload")
-    public void uploadFile(@RequestBody Map<String,Object> paramMap,@RequestParam("token") String token){
-        long start = System.currentTimeMillis();
+    public void upload(@RequestBody Map<String,Object> paramMap,@RequestParam("token") String token){
+        if (!TokenUtil.validateToken(token)){
+            return;
+        }
+        String tunnelId = TokenUtil.parseJwtSubject(token);
         try {
-            for (String s : paramMap.keySet()) {
-                Object o = paramMap.get(s);
-                System.out.println(o);
-                System.out.println(token);
+            ConvTunnel upload = apiTransService.upload(tunnelId, paramMap);
+            if (upload != null){
+                convTaskService.createTask(upload,false);
             }
         } catch (Exception e) {
             log.info("异常信息 {}",e.getMessage());
         }
-        long end = System.currentTimeMillis();
     }
 }
