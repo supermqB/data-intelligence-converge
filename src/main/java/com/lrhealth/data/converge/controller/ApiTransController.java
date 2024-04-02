@@ -5,9 +5,13 @@ import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.service.ConvTaskService;
 import com.lrhealth.data.converge.service.ApiTransService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 /**
@@ -26,7 +30,8 @@ public class ApiTransController {
     private ConvTaskService convTaskService;
 
     @PostMapping("/upload")
-    public void upload(@RequestBody Map<String,Object> paramMap,@RequestParam("token") String token){
+    public void upload(HttpServletRequest request,@RequestBody Map<String,Object> paramMap){
+        String token = request.getHeader("token");
         if (!TokenUtil.validateToken(token)){
             return;
         }
