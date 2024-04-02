@@ -1,8 +1,13 @@
 package com.lrhealth.data.converge.controller;
 
+import com.lrhealth.data.common.result.ResultBase;
+import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
+import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.common.util.TokenUtil;
+import com.lrhealth.data.converge.dao.entity.ConvTask;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.service.ConvTaskService;
+import com.lrhealth.data.converge.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.service.ApiTransService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,21 +33,31 @@ public class ApiTransController {
     private ApiTransService apiTransService;
     @Resource
     private ConvTaskService convTaskService;
+    @Resource
+    private ConvTunnelService convTunnelService;
+
 
     @PostMapping("/upload")
-    public void upload(HttpServletRequest request,@RequestBody Map<String,Object> paramMap){
+    public ResultBase upload(HttpServletRequest request, @RequestBody Map<String,Object> paramMap){
         String token = request.getHeader("token");
         if (!TokenUtil.validateToken(token)){
-            return;
+            return ResultBase.fail("token校验失败");
         }
         String tunnelId = TokenUtil.parseJwtSubject(token);
+        if (StringUtils.isEmpty(tunnelId)){
+            return ResultBase.fail("tunnelId不存在");
+        }
+        ConvTunnel convTunnel = convTunnelService.getTunnelWithoutDelFlag(Long.valueOf(tunnelId));
+        if (convTunnel == null){
+            return ResultBase.fail("汇聚管道任务不存在!");
+        }
         try {
-            ConvTunnel upload = apiTransService.upload(tunnelId, paramMap);
-            if (upload != null){
-                convTaskService.createTask(upload,false);
-            }
+            ConvTask convTask = convTaskService.createTask(convTunnel, false);
+            boolean uploadFlag = apiTransService.upload(convTunnel, paramMap);
+            convTaskService.updateTaskStatus(convTask.getId(),uploadFlag ? TaskStatusEnum.DONE : TaskStatusEnum.FAILED);
         } catch (Exception e) {
             log.info("异常信息 {}",e.getMessage());
         }
+        return ResultBase.success();
     }
 }

@@ -1,13 +1,11 @@
 package com.lrhealth.data.converge.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.entity.StdOriginalModel;
 import com.lrhealth.data.converge.dao.mapper.StdOriginalModelMapper;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
-import com.lrhealth.data.converge.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.service.ApiTransService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -33,24 +31,11 @@ public class ApiTransServiceImpl implements ApiTransService {
     @Resource
     private ConvOdsDatasourceConfigService convOdsDatasourceConfigService;
     @Resource
-    private ConvTunnelService convTunnelService;
-    @Resource
     private StdOriginalModelMapper stdOriginalModelMapper;
 
 
-
     @Override
-    public ConvTunnel upload(String subject, Map<String, Object> paramMap) {
-        if (StringUtils.isEmpty(subject)) {
-            return null;
-        }
-        List<ConvTunnel> tunnels = convTunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
-                .eq(ConvTunnel::getId, Integer.valueOf(subject))
-                .eq(ConvTunnel::getDelFlag, 0));
-        if (CollectionUtils.isEmpty(tunnels)) {
-            return null;
-        }
-        ConvTunnel convTunnel = tunnels.get(0);
+    public boolean upload(ConvTunnel convTunnel, Map<String, Object> paramMap) {
         String collectRange = convTunnel.getCollectRange();
         final List<String> modelNames = Arrays.asList(collectRange.split(","));
         List<StdOriginalModel> modelList = stdOriginalModelMapper.selectList(
@@ -59,7 +44,7 @@ public class ApiTransServiceImpl implements ApiTransService {
                         .in(StdOriginalModel::getNameEn, modelNames)
                         .eq(StdOriginalModel::getDelFlag, 0));
         if (CollectionUtils.isEmpty(modelList)) {
-            return convTunnel;
+            return false;
         }
         for (StdOriginalModel originalModel : modelList) {
             String tableName = originalModel.getNameEn();
@@ -67,15 +52,15 @@ public class ApiTransServiceImpl implements ApiTransService {
             Statement statement = null;
             try {
                 statement = doCreateStatement(tableName, dsId);
-                if (statement == null){
-                    return convTunnel;
+                if (statement == null) {
+                    return false;
                 }
                 processDataMap(statement, paramMap, tableName);
             } catch (RuntimeException runtimeException) {
                 log.error("do create statement fail! ex = {}", runtimeException.getMessage());
             }
         }
-        return convTunnel;
+        return true;
     }
 
     private void processDataMap(Statement statement, Map<String, Object> paramMap, String tableName) {
@@ -128,4 +113,5 @@ public class ApiTransServiceImpl implements ApiTransService {
             return null;
         }
     }
+
 }

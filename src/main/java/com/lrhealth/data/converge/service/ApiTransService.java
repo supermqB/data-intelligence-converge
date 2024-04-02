@@ -10,9 +10,9 @@ import java.util.Map;
 public interface ApiTransService {
     /**
      * 数据写入
-     * @param subject 数据源
+     * @param convTunnel 汇聚管道
      * @param paramMap 参数
      * @return tunnel
      */
-    ConvTunnel upload(String subject, Map<String, Object> paramMap);
+    boolean upload(ConvTunnel convTunnel, Map<String, Object> paramMap);
 }
