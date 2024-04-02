@@ -355,8 +355,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         String transformStr;
        switch (fieldType){
            case "varchar":
+           case "text":
+           case "json":
                transformStr = "VARCHAR";
                break;
+           case "int2":
            case "int4":
                transformStr = "INT";
                break;
@@ -369,7 +372,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
            case "numeric":
                transformStr = "DOUBLE";
                break;
+           case "float8":
+               transformStr = "FLOAT";
+               break;
            case "timestamp":
+           case "timestampz":
                transformStr = "TIMESTAMP";
                break;
            default:
