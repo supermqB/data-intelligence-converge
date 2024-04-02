@@ -53,6 +53,9 @@ public class QueryParserUtil {
 
     //replace
     public static String getDbType(String url) {
+        if (url.startsWith("hdfs://")){
+            return "hdfs";
+        }
         Pattern p = Pattern.compile("jdbc:(?<db>\\w+):.*((//)|@)(?<host>.+):(?<port>\\d+)(/|(;DatabaseName=)|:)(?<dbName>\\w+)\\??.*");
         Matcher m = p.matcher(url);
         String db = null;

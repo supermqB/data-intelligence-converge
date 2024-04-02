@@ -64,6 +64,9 @@ public class ConvMonitorTask implements CommandLineRunner {
         }
         try {
             DatabaseHandler reader = new DatabaseFactory().getReader(dsConfig.getDsUrl(), dsConfig.getDsUsername(), dsConfig.getDsPwd());
+            if (reader == null){
+                return;
+            }
             boolean dbLink = reader.testConnection();
             MonitorMsg monitorMsg = buildMonitorMsg(dsConfig, msgTypeEnum, dbLink);
             convMonitorService.handleMonitorMsg(monitorMsg);
