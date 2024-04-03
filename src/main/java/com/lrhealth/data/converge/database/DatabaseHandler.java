@@ -60,7 +60,7 @@ public abstract class DatabaseHandler {
                 return true;
             }
         } catch (SQLException e) {
-            log.error("test connection error:", e);
+            log.error("test connection error: msg = {}", e.getMessage());
         }
         return false;
     }
