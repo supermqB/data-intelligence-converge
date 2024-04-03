@@ -290,7 +290,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                         .eq(ConvCollectField::getTunnelId, tunnel.getId())
                         .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
         Map<String, List<OriginalModelColumn>> modelColumnMap = new HashMap<>(collectFieldList.size());
-        Map<String, String> hdfsMap = new HashMap<>();
+        Map<String, OriginalModel> hdfsMap = new HashMap<>();
         Map<String, String> hiveConfigMap = new HashMap<>();
         if (isHive){
             List<Long> modelIdList = new ArrayList<>();
@@ -300,21 +300,22 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 modelIdList.add(modelColumns.get(0).getModelId());
             }
             List<OriginalModel> modelList = odsModelService.getModelList(modelIdList);
-            hdfsMap = modelList.stream().filter(e -> StringUtils.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(OriginalModel::getNameEn, OriginalModel::getStoragePath));
+            hdfsMap = modelList.stream().filter(e -> StringUtils.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(OriginalModel::getNameEn, e -> e, (m1, m2) -> m1));
             //查询hive配置
             List<ModelConfig> modelConfigs = modelConfigService.list(new LambdaQueryWrapper<ModelConfig>().in(ModelConfig::getModelId, modelIdList));
             hiveConfigMap = modelConfigs.stream().filter(e -> StringUtils.isNotEmpty(e.getTableType())).collect(Collectors.toMap(ModelConfig::getTableName, ModelConfig::getTableType));
 
         }
-        Map<String, String> finalHdfsMap = hdfsMap;
+        Map<String, OriginalModel> finalHdfsMap = hdfsMap;
         Map<String, String> finalHiveConfigMap = hiveConfigMap;
         collectFieldList.forEach(model -> {
             TableInfoDto tableInfoDto = new TableInfoDto();
             tableInfoDto.setTableName(model.getTableName());
             tableInfoDto.setSqlQuery(model.getQuerySql());
-            tableInfoDto.setHdfsPath(finalHdfsMap.get(model.getTableName()));
+            OriginalModel originalModel = finalHdfsMap.get(model.getTableName());
+            tableInfoDto.setHdfsPath(Objects.isNull(originalModel) ? null : originalModel.getStoragePath());
             tableInfoDto.setHiveFileType(finalHiveConfigMap.get(model.getTableName()));
-            tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(modelColumnMap,model) : model.getColumnField() );
+            tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(modelColumnMap,model,Objects.isNull(originalModel) ? null : originalModel.getDataType()) : model.getColumnField() );
             if (tunnel.getColType().equals(TunnelColTypeEnum.FREQUENCY_INCREMENT.getValue())){
                 // 1-时间 2-序列
                 tableInfoDto.setSeqField(model.getConditionField());
@@ -331,7 +332,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     /**
      * 创建hive库columns映射关系
      */
-    private String doGetHiveColumns(Map<String, List<OriginalModelColumn>> modelColumnMap,ConvCollectField field) {
+    private String doGetHiveColumns(Map<String, List<OriginalModelColumn>> modelColumnMap,ConvCollectField field,String dataType) {
         List<OriginalModelColumn> originalModelColumns = modelColumnMap.get(field.getTableName());
         if (CollectionUtil.isEmpty(originalModelColumns)){
             return null;
@@ -342,9 +343,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                     .sorted(Comparator.comparing(OriginalModelColumn::getSeqNo)).collect(Collectors.toList());
         }
         StringBuilder sb = new StringBuilder();
+        //dataType=1为采集标准数据 write全部转换为varchar
         for (OriginalModelColumn modelColumn : originalModelColumns) {
             sb.append("{\"name\":\"").append(modelColumn.getNameEn())
-                    .append("\",\"type\":\"").append(transformDataType(modelColumn.getFieldType()))
+                    .append("\",\"type\":\"").append(transformDataType("1".equals(dataType) ? "varchar" : modelColumn.getFieldType()))
                     .append("\"}").append(",\n");
         }
         return sb.substring(0, sb.length() - 2);
