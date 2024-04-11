@@ -372,7 +372,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         boolean dataSourceFlag = (dataSource != null && dataSource == 1);
         String substring = sb.substring(0, sb.length() - 2);
         return substring.concat(",\n").concat("{\"name\":\"" + "xds_id").concat("\",\"type\":\"" + (dataSourceFlag ? "VARCHAR" : "BIGINT") + "\"}")
-                .concat(",\n").concat("{\"name\":\"" + "load_time").concat("\",\"type\":\"" + (dataSourceFlag ? "VARCHAR" : "DATE")  + "\"}");
+                .concat(",\n").concat("{\"name\":\"" + "load_time").concat("\",\"type\":\"" + (dataSourceFlag ? "VARCHAR" : "TIMESTAMP")  + "\"}");
     }
 
     private String transformDataType(String fieldType) {
