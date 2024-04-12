@@ -28,7 +28,7 @@ public class FileMessageDTO {
 
     private Long dataSize;
 
-    private Integer dataItemCount;
+    private Long dataItemCount;
 
     private Integer taskId;
 }

@@ -75,7 +75,7 @@ public class FileServiceImpl implements FileService {
         ConvFileInfoDto convFileInfoDto = fileCopy(fileConfig, xds);
         Xds updatedFileXds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
         // 文件解析,数据落库
-        Integer dataCount = fileParseAndSave(updatedFileXds);
+        Long dataCount = fileParseAndSave(updatedFileXds);
         return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
     }
 
@@ -86,7 +86,7 @@ public class FileServiceImpl implements FileService {
         ConvFileInfoDto convFileInfoDto = fileCopy(fileConfig, xds);
         Xds updatedFileXds = xdsInfoService.updateXdsFileInfo(convFileInfoDto);
         // flink采集的json文件处理
-        Integer dataCount = flinkFileParseAndSave(updatedFileXds);
+        Long dataCount = flinkFileParseAndSave(updatedFileXds);
         return xdsInfoService.updateXdsCompleted(setConvFileInfoDto(xds, dataCount));
     }
 
@@ -102,7 +102,7 @@ public class FileServiceImpl implements FileService {
                 .storedFilePath(fileConfig.getStoredFilePath()).build();
     }
 
-    private Integer fileParseAndSave(Xds xds) {
+    private Long fileParseAndSave(Xds xds) {
         checkParam(xds);
         JSONObject parseData = parseFileByFilePath(xds);
         if (isBlank(xds.getOdsTableName()) || isBlank(xds.getOdsModelName())){
@@ -119,12 +119,12 @@ public class FileServiceImpl implements FileService {
         return jsonDataSave(parseData, xds);
     }
 
-    private Integer flinkFileParseAndSave(Xds xds) {
+    private Long flinkFileParseAndSave(Xds xds) {
         JSONObject parseData = parseFlinkFile(xds);
         return jsonDataSave(parseData, xds);
     }
 
-    private ConvFileInfoDto setConvFileInfoDto(Xds xds, Integer dataCount){
+    private ConvFileInfoDto setConvFileInfoDto(Xds xds, Long dataCount){
         ConvFileInfoDto convFileInfoDto = new ConvFileInfoDto();
         convFileInfoDto.setId(xds.getId());
         convFileInfoDto.setDataCount(String.valueOf(dataCount));
@@ -193,9 +193,9 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public Integer jsonDataSave(JSONObject jsonObject, Xds xds){
+    public Long jsonDataSave(JSONObject jsonObject, Xds xds){
         Set<String> odsTableNames = jsonObject.keySet();
-        int countNumber = 0;
+        long countNumber = 0;
         for (String odsTableName : odsTableNames) {
             try {
                 List<Map<String, Object>> odsDataList = (List<Map<String, Object>>) jsonObject.get(odsTableName);

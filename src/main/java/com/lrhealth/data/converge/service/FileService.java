@@ -31,5 +31,5 @@ public interface FileService {
      */
     Xds flinkFileConverge(FileConvergeInfoDTO fileConfig, Long xdsId);
 
-    Integer jsonDataSave(JSONObject jsonObject, Xds xds);
+    Long jsonDataSave(JSONObject jsonObject, Xds xds);
 }

@@ -78,7 +78,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
         xds.setDataConvergeEndTime(taskDto.getEndTime());
         xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName(), xds.getSysCode()));
         if (CharSequenceUtil.isNotBlank(taskDto.getCountNumber())) {
-            xds.setDataCount(Integer.valueOf(taskDto.getCountNumber()));
+            xds.setDataCount(Long.valueOf(taskDto.getCountNumber()));
         }
         return updateXdsStatus(xds, XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
@@ -106,7 +106,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
         Xds xds = getXdsInfoById(dto.getId());
         xds.setBatchNo(IdUtil.randomUUID());
         xds.setDataConvergeEndTime(LocalDateTime.now());
-        xds.setDataCount(Integer.valueOf(dto.getDataCount()));
+        xds.setDataCount(Long.valueOf(dto.getDataCount()));
         xds.setDataType(dataTypeService.getTableDataType(xds.getOdsModelName(), xds.getSysCode()));
         return updateXdsStatus(xds, XdsStatusEnum.COMPLETED.getCode(), EMPTY);
     }
@@ -213,7 +213,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
 
     @Override
     public Boolean fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
-        int dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
+        long dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
         DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
         long avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
         // 文件中的数据写入后消耗的数据库容量
@@ -258,7 +258,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
                 .id(IdUtil.getSnowflakeNextId())
                 .convergeMethod(config.getConvergeMethod())
                 .delFlag(LogicDelFlagIntEnum.NONE.getCode())
-                .dataCount(isNotBlank(taskDto.getCountNumber()) ? Integer.parseInt(taskDto.getCountNumber()) : 0)
+                .dataCount(isNotBlank(taskDto.getCountNumber()) ? Long.parseLong(taskDto.getCountNumber()) : 0)
                 .orgCode(config.getOrgCode())
                 .sysCode(config.getSysCode())
                 .dataConvergeStartTime(taskDto.getStartTime())

@@ -48,7 +48,7 @@ public class ConvTaskResultView implements Serializable {
     /**
      * 记录条数
      */
-    private Integer dataItemCount;
+    private Long dataItemCount;
 
     /**
      * 开始索引

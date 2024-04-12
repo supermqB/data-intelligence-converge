@@ -19,7 +19,7 @@ public class DbXdsMessageDto {
 
     private String odsTableName;
 
-    private Integer dataCount;
+    private Long dataCount;
 
     private Long tunnelId;
 

@@ -33,7 +33,7 @@ public class ConvTaskResultFile implements Serializable {
 
     private String storedPath;
 
-    private Integer dataItemCount;
+    private Long dataItemCount;
 
     private LocalDateTime storedTime;
 

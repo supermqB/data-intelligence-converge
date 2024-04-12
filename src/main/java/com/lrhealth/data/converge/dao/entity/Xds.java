@@ -131,7 +131,7 @@ public class Xds implements Serializable {
     /**
      * ODS数据库落库数据条数
      */
-    private Integer dataCount;
+    private Long dataCount;
     /**
      * 创建人
      */

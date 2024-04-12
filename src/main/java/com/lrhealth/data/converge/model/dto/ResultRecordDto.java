@@ -21,5 +21,5 @@ public class ResultRecordDto {
 
     private String tableName;
 
-    private Integer count;
+    private Long count;
 }

@@ -25,7 +25,7 @@ public class ResultViewInfoDto extends TaskInfoKafkaDto{
 
     private String endIndex;
 
-    private Integer recordCount;
+    private Long recordCount;
 
     private Integer status;
 

@@ -28,8 +28,8 @@ public class LargeFileUtil {
     private static final int BATCH_SIZE = 2000; // 每批数据的大小
 
 
-    public Integer fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> fieldTypeMap, Integer taskId, DataSourceDto sourceDto) {
-        int lineCnt = 0;
+    public Long fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> fieldTypeMap, Integer taskId, DataSourceDto sourceDto) {
+        long lineCnt = 0;
         PreparedStatement pst = null;
         Map<String, String> setErrorMap = new HashMap<>();
         try {

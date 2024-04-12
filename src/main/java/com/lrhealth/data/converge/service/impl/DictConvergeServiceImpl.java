@@ -72,7 +72,7 @@ public class DictConvergeServiceImpl implements DictConvergeService {
             log.error("[EXCEL] {}解析异常:{}", file.getOriginalFilename(), e.getMessage());
         }
         // 数据落库
-        Integer count = fileService.jsonDataSave(jsonObject, xds);
+        Long count = fileService.jsonDataSave(jsonObject, xds);
         // 更新xds
         xdsService.updateById(Xds.builder().id(xds.getId())
                 .dataCount(count).dataConvergeEndTime(LocalDateTime.now())
