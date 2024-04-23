@@ -380,9 +380,14 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         String transformStr;
         switch (fieldType) {
             case "varchar":
-            case "text":
+            case "varchar2":
             case "json":
                 transformStr = "VARCHAR";
+                break;
+            case "text":
+            case "blob":
+            case "clob":
+                transformStr = "STRING";
                 break;
             case "int2":
             case "int4":
@@ -408,7 +413,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 transformStr = fieldType;
                 break;
         }
-        return transformStr;
+        return transformStr.toUpperCase();
     }
 
     private void getIncrFieldMap(ConvTunnel tunnel, ConvCollectField field, Map<String, String> fieldMap) {
@@ -444,11 +449,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             return seconds;
         }
         //小时
-        if (timeUnit.equals("h")) {
+        if ("h".equals(timeUnit)) {
             seconds = timeDif * 3600;
         }
         //分钟
-        if (timeUnit.equals("m")) {
+        if ("m".equals(timeUnit)) {
             seconds = timeDif * 60;
         }
         return seconds * 1000;
