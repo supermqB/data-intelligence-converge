@@ -400,6 +400,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 transformStr = "DATE";
                 break;
             case "numeric":
+            case "number":
                 transformStr = "DOUBLE";
                 break;
             case "float8":
@@ -410,7 +411,12 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 transformStr = "TIMESTAMP";
                 break;
             default:
-                transformStr = fieldType;
+                if (fieldType.startsWith("timestamp")){
+                    transformStr = "TIMESTAMP";
+                }
+                else {
+                    transformStr = fieldType;
+                }
                 break;
         }
         return transformStr.toUpperCase();
