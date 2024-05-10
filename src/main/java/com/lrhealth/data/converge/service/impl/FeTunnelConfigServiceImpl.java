@@ -61,9 +61,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private OdsModelService odsModelService;
     @Resource
     private ModelConfigService modelConfigService;
-
     @Resource
     private ConvOriginalTableService convOriginalTableService;
+    @Resource
+    private ConvFieldTypeService convFieldTypeService;
 
     @Value("${file-collect.structure-type}")
     private String structureTypeStr;
@@ -238,7 +239,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 dbType = writerDs.getDbType();
             }
             // 表以及对应的sql信息
-            assembleTableInfoMessage(tunnel, jdbcInfoDto, "HDFS".equals(dbType));
+            assembleTableInfoMessage(tunnel, jdbcInfoDto, "HDFS".equals(dbType),readerDs.getDbType());
         }
 
         if (tunnel.getConvergeMethod().equals(CDC_LOG.getCode())) {
@@ -284,7 +285,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
 
-    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, Boolean isHive) {
+    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, Boolean isHive,String readerDbType) {
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
         List<String> tableList = Arrays.asList(tunnel.getCollectRange().split(","));
@@ -329,7 +330,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             OriginalModel originalModel = finalHdfsMap.get(model.getTableName());
             tableInfoDto.setHdfsPath(Objects.isNull(originalModel) ? null : originalModel.getStoragePath());
             tableInfoDto.setHiveFileType(finalHiveConfigMap.get(model.getTableName()));
-            tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(modelColumnMap, model, Objects.isNull(originalModel) ? null : (finalOriginalTableMap.get(originalModel.getOriginalId()) == null ? null : finalOriginalTableMap.get(originalModel.getOriginalId()).getDataSource())) : model.getColumnField());
+            tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(readerDbType,modelColumnMap, model, Objects.isNull(originalModel) ? null : (finalOriginalTableMap.get(originalModel.getOriginalId()) == null ? null : finalOriginalTableMap.get(originalModel.getOriginalId()).getDataSource())) : model.getColumnField());
             if (tunnel.getColType().equals(TunnelColTypeEnum.FREQUENCY_INCREMENT.getValue())) {
                 // 1-时间 2-序列
                 tableInfoDto.setSeqField(model.getConditionField());
@@ -346,7 +347,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     /**
      * 创建hive库columns映射关系
      */
-    private String doGetHiveColumns(Map<String, List<OriginalModelColumn>> modelColumnMap, ConvCollectField field, Integer dataSource) {
+    private String doGetHiveColumns(String readerDbType,Map<String, List<OriginalModelColumn>> modelColumnMap, ConvCollectField field, Integer dataSource) {
         List<OriginalModelColumn> originalModelColumns = modelColumnMap.get(field.getTableName());
         if (CollectionUtil.isEmpty(originalModelColumns)) {
             return null;
@@ -361,9 +362,9 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         for (OriginalModelColumn modelColumn : originalModelColumns) {
             String dataType = null;
             if (dataSource == null || dataSource != 1){
-                dataType = transformDataType(modelColumn.getFieldType());
+                dataType = transformDataType(readerDbType,modelColumn.getFieldType());
             }else {
-                dataType = transformDataType("varchar");
+                dataType = transformDataType(readerDbType,"varchar");
             }
             sb.append("{\"name\":\"").append(modelColumn.getNameEn())
                     .append("\",\"type\":\"").append(dataType)
@@ -375,7 +376,12 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 .concat(",\n").concat("{\"name\":\"" + "load_time").concat("\",\"type\":\"" + (dataSourceFlag ? "VARCHAR" : "TIMESTAMP")  + "\"}");
     }
 
-    private String transformDataType(String fieldType) {
+    private String transformDataType(String readerDataType,String fieldType) {
+        Map<String, String> reader2DataXTypeMapping = getReaderDbType2DataXTypeMapping(readerDataType);
+        String configDataType = reader2DataXTypeMapping.get(fieldType);
+        if(StringUtils.isNotEmpty(configDataType)){
+            return configDataType;
+        }
         fieldType = fieldType.toLowerCase();
         String transformStr;
         switch (fieldType) {
@@ -420,6 +426,19 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 break;
         }
         return transformStr.toUpperCase();
+    }
+
+    /**
+     * 获取数据库-dataX数据类型映射关系
+     */
+    public Map<String, String> getReaderDbType2DataXTypeMapping(String readerDbType) {
+        List<ConvFieldType> convFieldTypeList = convFieldTypeService.list(new LambdaQueryWrapper<ConvFieldType>()
+                .eq(ConvFieldType::getClientSource,readerDbType)
+                .eq(ConvFieldType::getPlatformSource, "DataX"));
+        if (CollectionUtil.isEmpty(convFieldTypeList)){
+            return new HashMap<>();
+        }
+        return convFieldTypeList.stream().collect(Collectors.toMap(ConvFieldType::getClientFieldType, ConvFieldType::getPlatformFieldType));
     }
 
     private void getIncrFieldMap(ConvTunnel tunnel, ConvCollectField field, Map<String, String> fieldMap) {
