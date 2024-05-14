@@ -99,6 +99,9 @@ public class IncrTimeServiceImpl implements IncrTimeService {
         if (ObjectUtil.isNotNull(collectIncrTime)) {
             ConvCollectIncrTime update = ConvCollectIncrTime.builder()
                     .id(collectIncrTime.getId())
+                    .tunnelId(collectIncrTime.getTunnelId())
+                    .tableName(collectIncrTime.getTableName())
+                    .incrField(collectIncrTime.getIncrField())
                     .updateTime(LocalDateTime.now())
                     .build();
             if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
@@ -109,7 +112,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             }
             convCollectIncrTimeService.updateById(update);
             // 给前置机更新最新采集时间
-            sendLastedIncrTimeToFep(collectIncrTime,incrType,tunnel);
+            sendLastedIncrTimeToFep(update,incrType,tunnel);
             return;
         }
         ConvCollectIncrTime build = ConvCollectIncrTime.builder()
