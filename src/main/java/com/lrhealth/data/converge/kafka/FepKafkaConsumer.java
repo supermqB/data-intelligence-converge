@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.kafka;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.model.dto.*;
@@ -68,7 +69,7 @@ public class FepKafkaConsumer {
 
     @KafkaListener(topics = "${spring.kafka.topic.fep.xds-update}")
     public Boolean fepUpdateXds(@Payload String msgBody, Acknowledgment acknowledgment){
-        log.info("====================receive xds-update msgBody={}", msgBody);
+        log.info("====================receive xds-update-msgBody = {}", msgBody);
         Boolean updateResult = false;
         try {
             DbXdsMessageDto dbXdsMessageDto = JSON.parseObject(msgBody, DbXdsMessageDto.class);
@@ -97,9 +98,9 @@ public class FepKafkaConsumer {
 
     @KafkaListener(topics = "${spring.kafka.topic.fep.upload-original-structure}")
     public void uploadStructure(@Payload String msgBody, Acknowledgment acknowledgment){
-        log.info("====================receive upload originalStructure msgBody={}", msgBody);
         try {
             OriginalStructureDto structureDto = JSON.parseObject(msgBody, OriginalStructureDto.class);
+            log.info("====================receive upload originalStructure dsId = {},orgCode ={},sysCode = {},tableSize = {}",structureDto.getDsConfId(),structureDto.getOrgCode(),structureDto.getSysCode(), CollectionUtil.isEmpty(structureDto.getOriginalTables()) ? 0 : structureDto.getOriginalTables().size());
             importOriginalService.importConvOriginal(structureDto);
         } catch (Exception e) {
             log.error("upload originalStructure error,{}", ExceptionUtils.getStackTrace(e));

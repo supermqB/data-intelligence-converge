@@ -108,6 +108,8 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 update.setLatestSeq(latestValue.toString());
             }
             convCollectIncrTimeService.updateById(update);
+            // 给前置机更新最新采集时间
+            sendLastedIncrTimeToFep(collectIncrTime,incrType,tunnel);
             return;
         }
         ConvCollectIncrTime build = ConvCollectIncrTime.builder()
@@ -126,8 +128,14 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             build.setLatestSeq(latestValue.toString());
         }
         convCollectIncrTimeService.saveOrUpdate(build);
-
         // 给前置机更新最新采集时间
+        sendLastedIncrTimeToFep(build,incrType,tunnel);
+    }
+
+    /**
+     * 给前置机更新最新采集时间
+     */
+    private void sendLastedIncrTimeToFep(ConvCollectIncrTime build,String incrType,ConvTunnel tunnel){
         IncrSequenceDto incrSequenceDto = IncrSequenceDto.builder()
                 .tunnelId(build.getTunnelId())
                 .tableName(build.getTableName())
