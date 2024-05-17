@@ -7,7 +7,9 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
 import com.lrhealth.data.converge.common.util.SqlExecUtil;
+import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.*;
+import com.lrhealth.data.converge.dao.mapper.StdOriginalModelMapper;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.model.dto.IncrSequenceDto;
@@ -47,6 +49,8 @@ public class IncrTimeServiceImpl implements IncrTimeService {
     @Resource
     private ConvCollectIncrTimeService convCollectIncrTimeService;
     @Resource
+    private StdOriginalModelMapper stdOriginalModelMapper;
+    @Resource
     private KafkaService kafkaService;
 
     @Async
@@ -59,12 +63,6 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             return;
         }
         ConvTunnel tunnel = tunnelService.getById(convTask.getTunnelId());
-        ConvOdsDatasourceConfig dsConfig = datasourceConfigService.getById(xds.getDsConfigId());
-        DataSourceDto dto = DataSourceDto.builder()
-                .driver(dsConfig.getDsDriverName())
-                .jdbcUrl(dsConfig.getDsUrl())
-                .username(dsConfig.getDsUsername())
-                .password(dsConfig.getDsPwd()).build();
         ConvOriginalTable table = originalTableService.getOne(new LambdaQueryWrapper<ConvOriginalTable>()
                 .eq(ConvOriginalTable::getModelName, xds.getOdsTableName())
                 .eq(ConvOriginalTable::getSysCode, xds.getSysCode()));
@@ -72,6 +70,21 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             log.info("[{}]原始表不存在！", xds.getOdsModelName());
             return;
         }
+        ConvOdsDatasourceConfig dsConfig = datasourceConfigService.getById(xds.getDsConfigId());
+        //若使用HDFS存储 通过原始模型 查询对应的hive数据源
+        if (dsConfig != null && "HDFS".equals(dsConfig.getDbType())){
+            StdOriginalModel stdOriginalModel = stdOriginalModelMapper.selectOne(new LambdaQueryWrapper<StdOriginalModel>()
+                    .eq(StdOriginalModel::getId, table.getModelId())
+                    .eq(StdOriginalModel::getDelFlag, 0));
+            if (stdOriginalModel != null && StringUtils.isNotEmpty(stdOriginalModel.getConvDsConfId())){
+                dsConfig = datasourceConfigService.getById(Integer.valueOf(stdOriginalModel.getConvDsConfId()));
+            }
+        }
+        DataSourceDto dto = DataSourceDto.builder()
+                .driver(dsConfig.getDsDriverName())
+                .jdbcUrl(dsConfig.getDsUrl())
+                .username(dsConfig.getDsUsername())
+                .password(dsConfig.getDsPwd()).build();
         List<ConvOriginalColumn> convOriginalColumns = originalColumnService.list(new LambdaQueryWrapper<ConvOriginalColumn>()
                 .eq(ConvOriginalColumn::getTableId, table.getId())
                 .ne(ConvOriginalColumn::getIncrFlag, "0"));
@@ -136,7 +149,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
     }
 
     /**
-     * 给前置机更新最新采集时间
+     * 给前置机更新最新采集时间/最大序列号
      */
     private void sendLastedIncrTimeToFep(ConvCollectIncrTime build,String incrType,ConvTunnel tunnel){
         IncrSequenceDto incrSequenceDto = IncrSequenceDto.builder()
