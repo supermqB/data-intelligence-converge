@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.lang.System;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
@@ -118,8 +119,9 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                     .updateTime(LocalDateTime.now())
                     .build();
             if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
-                DateTime dateTime = DateUtil.date((Date) latestValue);
-                update.setLatestTime(dateTime.toString());
+//                DateTime dateTime = DateUtil.date((Date) latestValue);
+                Timestamp value = Timestamp.valueOf(latestValue.toString());
+                update.setLatestTime(value.toString());
             }else {
                 update.setLatestSeq(latestValue.toString());
             }
