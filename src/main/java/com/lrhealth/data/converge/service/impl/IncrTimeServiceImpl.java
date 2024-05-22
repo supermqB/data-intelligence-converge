@@ -97,7 +97,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             List<Map<String, Object>> mapList = SqlExecUtil.execSql(sql, dto);
             log.info("{}获取最新采集时间, {}", xds.getOdsTableName(), mapList);
             if (CollUtil.isNotEmpty(mapList)){
-                Object latestValue = mapList.get(0).get(column.getNameEn());
+                Object latestValue = mapList.get(0).get(column.getNameEn().toUpperCase());
                 updateCollectIncrTime(tunnel, xds, column, latestValue);
             }
         });
