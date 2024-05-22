@@ -14,6 +14,7 @@ import com.lrhealth.data.converge.common.enums.*;
 import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
+import com.lrhealth.data.converge.model.SysDict;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.scheduled.DownloadFileTask;
 import com.lrhealth.data.converge.service.*;
@@ -65,6 +66,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private ConvOriginalTableService convOriginalTableService;
     @Resource
     private ConvFieldTypeService convFieldTypeService;
+    @Resource
+    private SysDictService sysDictService;
 
     @Value("${file-collect.structure-type}")
     private String structureTypeStr;
@@ -229,17 +232,17 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             // 单表采集还是自定义sql
             jdbcInfoDto.setColTableType(tunnel.getColTableType());
             // 库到库
-            String dbType = null;
+            String writeDbType = null;
             if (LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())) {
                 ConvOdsDatasourceConfig writerDs = odsDatasourceConfigService.getById(tunnel.getWriterDatasourceId());
                 jdbcInfoDto.setJdbcUrlForIn(writerDs.getDsUrl());
                 jdbcInfoDto.setDbUserNameForIn(writerDs.getDsUsername());
                 jdbcInfoDto.setDbPasswdForIn(writerDs.getDsPwd());
                 jdbcInfoDto.setDsConfigId(tunnel.getWriterDatasourceId());
-                dbType = writerDs.getDbType();
+                writeDbType = writerDs.getDbType();
             }
             // 表以及对应的sql信息
-            assembleTableInfoMessage(tunnel, jdbcInfoDto, "HDFS".equals(dbType),readerDs.getDbType());
+            assembleTableInfoMessage(tunnel, jdbcInfoDto, writeDbType,readerDs.getDbType());
         }
 
         if (tunnel.getConvergeMethod().equals(CDC_LOG.getCode())) {
@@ -285,7 +288,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
 
-    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, Boolean isHive,String readerDbType) {
+    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, String writeDbType,String readerDbType) {
+        boolean isHive = "HDFS".equals(writeDbType);
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
         List<String> tableList = Arrays.asList(tunnel.getCollectRange().split(","));
@@ -318,6 +322,30 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                         .in(ConvOriginalTable::getId, originalIdList)
                         .eq(ConvOriginalTable::getDelFlag, 0));
                 originalTableMap = originalTables.stream().collect(Collectors.toMap(ConvOriginalTable::getId, e -> e, (m1, m2) -> m1));
+            }
+        }
+        // 湘潭Dm数据库关键字进行处理逻辑 ‘“keyWord”’ 前置机校验以‘“开头不做拼接处理
+        if ("Dm".equals(writeDbType)){
+            List<SysDict> dmKeyWords = sysDictService.getDbKeyWords("db_key_words");
+            if (CollectionUtil.isEmpty(dmKeyWords)){
+                return;
+            }
+            Set<String> dmKeyWordsSet = dmKeyWords.stream().map(SysDict::getDictItemValue).collect(Collectors.toSet());
+            for (ConvCollectField convCollectField : collectFieldList) {
+                String columnField = convCollectField.getColumnField();
+                if (StringUtils.isEmpty(columnField)){
+                    continue;
+                }
+                StringBuilder sb = new StringBuilder();
+                for (String fieldStr : columnField.split(",")) {
+                    if (dmKeyWordsSet.contains(fieldStr.toUpperCase())){
+                       sb.append("'\"").append(fieldStr).append("\"'").append(",");
+                    }else {
+                        sb.append(fieldStr).append(",");
+                    }
+                }
+                String collectFields = sb.substring(0, sb.length() - 1);
+                convCollectField.setColumnField(collectFields);
             }
         }
         Map<String, String> finalHiveConfigMap = hiveConfigMap;
