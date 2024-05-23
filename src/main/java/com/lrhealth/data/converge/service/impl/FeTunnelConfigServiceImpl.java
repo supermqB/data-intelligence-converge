@@ -327,25 +327,24 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 湘潭Dm数据库关键字进行处理逻辑 ‘“keyWord”’ 前置机校验以‘“开头不做拼接处理
         if ("Dm".equals(writeDbType)){
             List<SysDict> dmKeyWords = sysDictService.getDbKeyWords("db_key_words");
-            if (CollectionUtil.isEmpty(dmKeyWords)){
-                return;
-            }
-            Set<String> dmKeyWordsSet = dmKeyWords.stream().map(SysDict::getDictItemValue).collect(Collectors.toSet());
-            for (ConvCollectField convCollectField : collectFieldList) {
-                String columnField = convCollectField.getColumnField();
-                if (StringUtils.isEmpty(columnField)){
-                    continue;
-                }
-                StringBuilder sb = new StringBuilder();
-                for (String fieldStr : columnField.split(",")) {
-                    if (dmKeyWordsSet.contains(fieldStr.toUpperCase())){
-                       sb.append("'\"").append(fieldStr).append("\"'").append(",");
-                    }else {
-                        sb.append(fieldStr).append(",");
+            if (CollectionUtil.isNotEmpty(dmKeyWords)){
+                Set<String> dmKeyWordsSet = dmKeyWords.stream().map(SysDict::getDictItemValue).collect(Collectors.toSet());
+                for (ConvCollectField convCollectField : collectFieldList) {
+                    String columnField = convCollectField.getColumnField();
+                    if (StringUtils.isEmpty(columnField)){
+                        continue;
                     }
+                    StringBuilder sb = new StringBuilder();
+                    for (String fieldStr : columnField.split(",")) {
+                        if (dmKeyWordsSet.contains(fieldStr.toUpperCase())){
+                            sb.append("'\"").append(fieldStr).append("\"'").append(",");
+                        }else {
+                            sb.append(fieldStr).append(",");
+                        }
+                    }
+                    String collectFields = sb.substring(0, sb.length() - 1);
+                    convCollectField.setColumnField(collectFields);
                 }
-                String collectFields = sb.substring(0, sb.length() - 1);
-                convCollectField.setColumnField(collectFields);
             }
         }
         Map<String, String> finalHiveConfigMap = hiveConfigMap;
