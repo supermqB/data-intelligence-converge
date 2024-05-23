@@ -1,7 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -140,8 +139,9 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 .sysCode(xds.getSysCode())
                 .build();
         if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
-            DateTime dateTime = DateUtil.date((Date) latestValue);
-            build.setLatestTime(dateTime.toString());
+//            DateTime dateTime = DateUtil.date((Date) latestValue);
+            Timestamp value = Timestamp.valueOf(latestValue.toString());
+            build.setLatestTime(value.toString());
         }else {
             build.setLatestSeq(latestValue.toString());
         }
