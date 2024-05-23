@@ -328,7 +328,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         if ("Dm".equals(writeDbType)){
             List<SysDict> dmKeyWords = sysDictService.getDbKeyWords("db_key_words");
             if (CollectionUtil.isNotEmpty(dmKeyWords)){
-                Set<String> dmKeyWordsSet = dmKeyWords.stream().map(SysDict::getDictItemValue).collect(Collectors.toSet());
+                Set<String> dmKeyWordsSet = dmKeyWords.stream().map(sysDict -> sysDict.getDictItemValue().toUpperCase()).collect(Collectors.toSet());
                 for (ConvCollectField convCollectField : collectFieldList) {
                     String columnField = convCollectField.getColumnField();
                     if (StringUtils.isEmpty(columnField)){
