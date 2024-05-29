@@ -25,9 +25,9 @@ import java.util.Map;
 public class DataSourceRepository {
     // 默认数据源的连接池配置
     private static final String DEFAULT_DS_POOL_CONFIG = "{\n" +
-            "    \"minIdle\":5,\n" +
+            "    \"minIdle\":3,\n" +
             "    \"idleTimeout\":120000,\n" +
-            "    \"maxPoolSize\":10,\n" +
+            "    \"maxPoolSize\":5,\n" +
             "    \"isAutoCommit\":true,\n" +
             "    \"maxLifetime\":1800000,\n" +
             "    \"connectionTimeout\":30000,\n" +
@@ -36,7 +36,6 @@ public class DataSourceRepository {
 
     @Resource
     private ConvOdsDatasourceConfigService convOdsDatasourceConfigService;
-
 
     /**
      * 初始化所有的ods数据源
@@ -51,18 +50,19 @@ public class DataSourceRepository {
 
     /**
      * 创建单个数据源
+     * 
      * @param ds
      */
     public void createDataSource(ConvOdsDatasourceConfig ds) {
         Map<String, DataSource> dataSourceMap = BeeFactory.getInstance().getDataSourceMap();
-        if(dataSourceMap.get(ds.getSysCode()) != null){
+        if (dataSourceMap.get(ds.getSysCode()) != null) {
             return;
         }
         try {
             dataSourceMap.put(ds.getSysCode(), new HikariDataSource(buildHikariConfig(ds)));
             // 将新的数据源加入到bee框架，该数据源即时生效
             BeeFactory.getInstance().setDataSourceMap(dataSourceMap);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("datasource set error");
         }
 
@@ -70,11 +70,12 @@ public class DataSourceRepository {
 
     /**
      * 删除单个数据源
+     * 
      * @param dataSourceName
      */
     public void removeDataSource(String dataSourceName) {
         Map<String, DataSource> dataSourceMap = BeeFactory.getInstance().getDataSourceMap();
-        if(dataSourceMap.get(dataSourceName) == null){
+        if (dataSourceMap.get(dataSourceName) == null) {
             return;
         }
         dataSourceMap.remove(dataSourceName);
@@ -84,13 +85,14 @@ public class DataSourceRepository {
 
     /**
      * 构建Hikari数据源配置
+     * 
      * @param ds
      * @return
      */
     private HikariConfig buildHikariConfig(ConvOdsDatasourceConfig ds) {
         HikariConfig config = new HikariConfig();
         JSONObject jsonObject = JSONObject.parseObject(DEFAULT_DS_POOL_CONFIG);
-        if(!StringUtils.isEmpty(ds.getDsPoolConfig())){
+        if (!StringUtils.isEmpty(ds.getDsPoolConfig())) {
             jsonObject = JSONObject.parseObject(ds.getDsPoolConfig());
         }
         Field[] fields = HikariConfig.class.getDeclaredFields();
@@ -100,7 +102,7 @@ public class DataSourceRepository {
         config.setJdbcUrl(ds.getDsUrl());
         config.setUsername(ds.getDsUsername());
         config.setPassword(ds.getDsPwd());
-        config.setPoolName("HikariCP-"+ ds.getSysCode());
+        config.setPoolName("HikariCP-" + ds.getSysCode());
 
         /**
          * 反射设置HikariConfig连接池配置.
@@ -111,10 +113,10 @@ public class DataSourceRepository {
     }
 
     private void reflexSettingsPoolConfig(HikariConfig config, JSONObject jsonObject, Field[] fields) {
-        try{
+        try {
             for (Map.Entry<String, Object> entry : jsonObject.entrySet()) {
                 for (Field field : fields) {
-                    if(entry.getKey().equals(field.getName())){
+                    if (entry.getKey().equals(field.getName())) {
                         // 获取字段的类型
                         Class<?> fieldType = field.getType();
                         // 将 JSON 值转换为对应的属性类型，并设置到 HikariConfig 对象中
@@ -123,12 +125,13 @@ public class DataSourceRepository {
                     }
                 }
             }
-        }catch (Exception e){
-            log.error("DataSourceRepository，反射设置HikariConfig连接池配置异常",e);
+        } catch (Exception e) {
+            log.error("DataSourceRepository，反射设置HikariConfig连接池配置异常", e);
         }
     }
 
-    private static void setFieldValue(HikariConfig config, Field field, Object jsonValue, Class<?> fieldType) throws IllegalAccessException{
+    private static void setFieldValue(HikariConfig config, Field field, Object jsonValue, Class<?> fieldType)
+            throws IllegalAccessException {
         field.setAccessible(true);
         if (fieldType == int.class || fieldType == Integer.class) {
             field.setInt(config, ((Number) jsonValue).intValue());
