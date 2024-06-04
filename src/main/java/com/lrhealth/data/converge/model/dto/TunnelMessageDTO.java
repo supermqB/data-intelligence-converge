@@ -82,7 +82,9 @@ public class TunnelMessageDTO {
     /**
      * 管道依赖
      */
-    private Long dependenceTunnelId;
+    //private Long dependenceTunnelId;
+
+    private String dependenceTunnelIds;
 
     /**
      * 文件采集
