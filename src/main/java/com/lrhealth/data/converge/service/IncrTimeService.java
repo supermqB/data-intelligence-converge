@@ -6,5 +6,5 @@ package com.lrhealth.data.converge.service;
  */
 public interface IncrTimeService {
 
-    void updateTableLatestTime(Long xdsId);
+    void updateTableLatestTime(Long xdsId, String endIndex);
 }

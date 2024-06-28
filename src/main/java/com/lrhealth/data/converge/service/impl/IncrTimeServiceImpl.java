@@ -55,7 +55,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
 
     @Async
     @Override
-    public void updateTableLatestTime(Long xdsId) {
+    public void updateTableLatestTime(Long xdsId, String endIndex) {
         log.info("<<<开始更新xds[{}]的最新采集时间！>>>", xdsId);
         Xds xds = xdsService.getById(xdsId);
         ConvTask convTask = taskService.getById(xds.getConvTaskId());
@@ -80,30 +80,16 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 dsConfig = datasourceConfigService.getById(Integer.valueOf(stdOriginalModel.getConvDsConfId()));
             }
         }
-        DataSourceDto dto = DataSourceDto.builder()
-                .driver(dsConfig.getDsDriverName())
-                .jdbcUrl(dsConfig.getDsUrl())
-                .username(dsConfig.getDsUsername())
-                .password(dsConfig.getDsPwd()).build();
         List<ConvOriginalColumn> convOriginalColumns = originalColumnService.list(new LambdaQueryWrapper<ConvOriginalColumn>()
                 .eq(ConvOriginalColumn::getTableId, table.getId())
                 .ne(ConvOriginalColumn::getIncrFlag, "0"));
         if (CollUtil.isEmpty(convOriginalColumns)){
             return;
         }
-        convOriginalColumns.forEach(column -> {
-            String sql = getTaskLatestTimeSql(xds.getXdsId(), xds.getOdsTableName(), column.getNameEn());
-            log.info("{}获取最新采集时间, sql: [{}]", xds.getOdsTableName(), sql);
-            List<Map<String, Object>> mapList = SqlExecUtil.execSql(sql, dto);
-            log.info("{}获取最新采集时间, {}", xds.getOdsTableName(), mapList);
-            if (CollUtil.isNotEmpty(mapList)){
-                Object latestValue = mapList.get(0).get(column.getNameEn().toUpperCase());
-                updateCollectIncrTime(tunnel, xds, column, latestValue);
-            }
-        });
+        convOriginalColumns.forEach(column -> updateCollectIncrTime(tunnel, xds, column, endIndex));
     }
 
-    private void updateCollectIncrTime(ConvTunnel tunnel, Xds xds, ConvOriginalColumn column, Object latestValue){
+    private void updateCollectIncrTime(ConvTunnel tunnel, Xds xds, ConvOriginalColumn column, String latestValue){
         ConvCollectIncrTime collectIncrTime = convCollectIncrTimeService.getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
                 .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
                 .eq(ConvCollectIncrTime::getTableName, xds.getOdsTableName())
@@ -118,11 +104,10 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                     .updateTime(LocalDateTime.now())
                     .build();
             if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
-//                DateTime dateTime = DateUtil.date((Date) latestValue);
-                Timestamp value = Timestamp.valueOf(latestValue.toString());
+                Timestamp value = Timestamp.valueOf(latestValue);
                 update.setLatestTime(value.toString());
             }else {
-                update.setLatestSeq(latestValue.toString());
+                update.setLatestSeq(latestValue);
             }
             convCollectIncrTimeService.updateById(update);
             // 给前置机更新最新采集时间
@@ -139,11 +124,9 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 .sysCode(xds.getSysCode())
                 .build();
         if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
-//            DateTime dateTime = DateUtil.date((Date) latestValue);
-            Timestamp value = Timestamp.valueOf(latestValue.toString());
-            build.setLatestTime(value.toString());
+            build.setLatestTime(latestValue);
         }else {
-            build.setLatestSeq(latestValue.toString());
+            build.setLatestSeq(latestValue);
         }
         convCollectIncrTimeService.saveOrUpdate(build);
         // 给前置机更新最新采集时间

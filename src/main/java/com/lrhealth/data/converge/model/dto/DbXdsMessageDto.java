@@ -29,4 +29,5 @@ public class DbXdsMessageDto {
 
     private Long xdsId;
 
+    private String endIndex;
 }
