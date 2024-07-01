@@ -69,6 +69,7 @@ public class QueryParserUtil {
     }
 
     public static DbValidVo getDbMessage(String url) {
+        if (CharSequenceUtil.isBlank(url)) return null;
         Pattern p = Pattern.compile("jdbc:(?<db>\\w+):.*((//)|@)(?<host>.+):(?<port>\\d+)(/|(;databaseName=)|:)(?<dbName>\\w+)\\??.*");
         Matcher m = p.matcher(url);
         DbValidVo dbValidVo = new DbValidVo();
