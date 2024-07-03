@@ -194,7 +194,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // todo: 用普通的convert替换beanutil
         BeanUtil.copyProperties(tunnel, tunnelMessageDTO);
         tunnelMessageDTO.setTimeDif(getCronTimeUnit(tunnel.getTimeDif(), tunnel.getTimeUnit()));
-        //tunnelMessageDTO.setDependenceTunnelId(CharSequenceUtil.isNotBlank(tunnel.getDependenceTunnelId()) ? Long.valueOf(tunnel.getDependenceTunnelId()) : null);
         tunnelMessageDTO.setDependenceTunnelIds(tunnel.getDependenceTunnelId());
         TunnelCMEnum tunnelCMEnum = TunnelCMEnum.of(tunnel.getConvergeMethod());
         switch (Objects.requireNonNull(tunnelCMEnum)) {

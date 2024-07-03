@@ -82,8 +82,6 @@ public class TunnelMessageDTO {
     /**
      * 管道依赖
      */
-    //private Long dependenceTunnelId;
-
     private String dependenceTunnelIds;
 
     /**
