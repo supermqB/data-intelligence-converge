@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
@@ -56,6 +57,9 @@ public class IncrTimeServiceImpl implements IncrTimeService {
     @Async
     @Override
     public void updateTableLatestTime(Long xdsId, String endIndex) {
+        if (CharSequenceUtil.isBlank(endIndex)){
+            return;
+        }
         log.info("<<<开始更新xds[{}]的最新采集时间！>>>", xdsId);
         Xds xds = xdsService.getById(xdsId);
         ConvTask convTask = taskService.getById(xds.getConvTaskId());
