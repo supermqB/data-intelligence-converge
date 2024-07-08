@@ -4,6 +4,6 @@
 
 
     <select id="getTunnelWithOutDelFlag" resultType="com.lrhealth.data.converge.dao.entity.ConvTunnel">
-        select * from "conv_tunnel" where id = #{tunnelId}
+        select * from conv_tunnel where id = #{tunnelId}
     </select>
 </mapper>
