@@ -2,7 +2,6 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
@@ -13,6 +12,8 @@ import com.lrhealth.data.converge.model.dto.OriginalStructureDto;
 import com.lrhealth.data.converge.model.dto.OriginalTableCountDto;
 import com.lrhealth.data.converge.model.dto.OriginalTableDto;
 import com.lrhealth.data.converge.service.ImportOriginalService;
+import com.lrhealth.data.model.original.model.OriginalModel;
+import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,8 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     private ConvOriginalTableService originalTableService;
     @Resource
     private ConvOriginalColumnService originalColumnService;
+    @Resource
+    private OriginalModelService stdModelService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -46,7 +49,9 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         }
         Integer dsConfigId = structureDto.getDsConfId();
         LocalDateTime dateTime = LocalDateTime.now();
+        // 原始结构表
         processOriginalTable(originalTableDtoList, orgCode, sysCode, dsConfigId, dateTime);
+        // 原始结构字段
         processOriginalColumn(originalTableDtoList, orgCode, sysCode, dsConfigId, dateTime);
 
     }
@@ -100,16 +105,12 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                         .modelName(tableDto.getTableName())
                         .modelDescription(tableDto.getTableRemarks())
                         .build();
+                // 已存在的模型，重新绑定
+                boundModel(originalTable);
             }
             convOriginalTableList.add(originalTable);
             storedTables.removeAll(tables);
         }
-
-        // 删除之前的库里存在的多余的表
-//        if (CollUtil.isNotEmpty(storedTables)){
-//            originalTableService.removeBatchByIds(storedTables);
-//        }
-
         originalTableService.saveOrUpdateBatch(convOriginalTableList);
     }
 
@@ -177,25 +178,21 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             }
             deleteColumnList.addAll(convOriginalColumns);
         }
-//        if (CollUtil.isNotEmpty(deleteColumnList)){
-//            originalColumnService.removeBatchByIds(deleteColumnList);
-//        }
         originalColumnService.saveOrUpdateBatch(originalColumnList);
     }
 
-    /**
-     * 获取字段类型
-     */
-    private String getFieldType(Map<String, String> fieldTypeMap, String fieldType) {
-        if (StrUtil.isEmpty(fieldType)) {
-            return StrUtil.EMPTY;
+    private void boundModel(ConvOriginalTable originalTable){
+        List<OriginalModel> modelList = stdModelService.list(new LambdaQueryWrapper<OriginalModel>()
+                .eq(OriginalModel::getNameEn, originalTable.getNameEn())
+                .eq(OriginalModel::getSysCode, originalTable.getSysCode())
+                .eq(OriginalModel::getConvDsConfId, originalTable.getConvDsConfId())
+                .orderByDesc(OriginalModel::getCreateTime));
+        if (CollUtil.isEmpty(modelList)){
+            return;
         }
-        fieldType = fieldType.toLowerCase();
-        for (Map.Entry<String, String> entry : fieldTypeMap.entrySet()) {
-            if (fieldType.contains(entry.getKey().toLowerCase())) {
-                return entry.getValue();
-            }
-        }
-        return StrUtil.EMPTY;
+        OriginalModel existModel = modelList.get(0);
+        originalTable.setModelId(existModel.getId());
+        originalTable.setModelName(existModel.getNameEn());
+        originalTable.setModelDescription(existModel.getDescription());
     }
 }

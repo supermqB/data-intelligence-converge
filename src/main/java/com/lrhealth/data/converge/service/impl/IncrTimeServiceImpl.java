@@ -58,6 +58,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
     @Override
     public void updateTableLatestTime(Long xdsId, String endIndex) {
         if (CharSequenceUtil.isBlank(endIndex)){
+            log.error("[{}]没有endIndex!!!!", xdsId);
             return;
         }
         log.info("<<<开始更新xds[{}]的最新采集时间！>>>", xdsId);
