@@ -54,6 +54,8 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         // 原始结构字段
         processOriginalColumn(originalTableDtoList, orgCode, sysCode, dsConfigId, dateTime);
 
+        // 处理原始表和模型的关联, 回填模型
+        backFillModel(orgCode, sysCode, dsConfigId, dateTime);
     }
 
     @Override
@@ -185,7 +187,6 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         List<OriginalModel> modelList = stdModelService.list(new LambdaQueryWrapper<OriginalModel>()
                 .eq(OriginalModel::getNameEn, originalTable.getNameEn())
                 .eq(OriginalModel::getSysCode, originalTable.getSysCode())
-                .eq(OriginalModel::getConvDsConfId, originalTable.getConvDsConfId())
                 .orderByDesc(OriginalModel::getCreateTime));
         if (CollUtil.isEmpty(modelList)){
             return;
@@ -194,5 +195,18 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         originalTable.setModelId(existModel.getId());
         originalTable.setModelName(existModel.getNameEn());
         originalTable.setModelDescription(existModel.getDescription());
+    }
+
+    private void backFillModel(String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime){
+        List<ConvOriginalTable> originalTableList = originalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
+                .eq(CharSequenceUtil.isNotBlank(sysCode), ConvOriginalTable::getSysCode, sysCode)
+                .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
+                .eq(ConvOriginalTable::getCreateTime, saveTime));
+        List<ConvOriginalTable> convOriginalTables = originalTableList.stream().filter(orgTable -> orgTable.getModelId() != null).collect(Collectors.toList());
+        for(ConvOriginalTable convOriginalTable : convOriginalTables){
+            Long modelId =convOriginalTable.getModelId();
+            stdModelService.updateById(OriginalModel.builder().id(modelId).originalId(convOriginalTable.getId())
+                    .updateTime(LocalDateTime.now()).build());
+        }
     }
 }
