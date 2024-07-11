@@ -56,7 +56,7 @@ public class QueryParserUtil {
         if (url.startsWith("hdfs://")){
             return "hdfs";
         }
-        Pattern p = Pattern.compile("jdbc:(?<db>\\w+):.*((//)|@)(?<host>.+):(?<port>\\d+)(/|(;DatabaseName=)|:)(?<dbName>\\w+)\\??.*");
+        Pattern p = Pattern.compile("jdbc:(?<db>\\w+):.*((//)|@)(?<host>.+):(?<port>\\d+)?(?:/(?<dbName>[^?;]*))?.*$");
         Matcher m = p.matcher(url);
         String db = null;
         if(m.find()) {
@@ -66,6 +66,12 @@ public class QueryParserUtil {
             String dbName = m.group("dbName");
         }
         return db;
+    }
+
+    public static void main(String[] args) {
+        String url = "jdbc:oceanbase://172.16.29.68:2883/";
+        String dbType = getDbType(url);
+        System.out.println(dbType);
     }
 
     public static DbValidVo getDbMessage(String url) {
