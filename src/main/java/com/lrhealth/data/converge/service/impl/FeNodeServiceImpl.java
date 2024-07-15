@@ -218,6 +218,9 @@ public class FeNodeServiceImpl implements FeNodeService {
         if (taskResultView != null && taskResultView.getStatus() > 1) {
             return taskResultView;
         }
+        if (taskResultView != null){
+            BeanUtils.copyProperties(taskResultView, convTaskResultView);
+        }
         BeanUtils.copyProperties(resultViewInfoDto, convTaskResultView);
         convTaskResultView.setTaskId(taskId);
         // 过滤条数
@@ -298,7 +301,7 @@ public class FeNodeServiceImpl implements FeNodeService {
             ConvTaskResultView taskResultView = this.saveOrUpdateFile(resultViewInfoDto, convTask.getId());
 
             //添加任务
-            if (convTask.getStatus() == 3 && taskResultView.getStatus() == 1) {
+            if (convTask.getStatus() == 2 && taskResultView.getStatus() == 1) {
                 if ("null".equals(taskResultView.getFeStoredFilename())
                         || null == taskResultView.getDataItemCount() || taskResultView.getDataItemCount() == 0) {
                     continue;

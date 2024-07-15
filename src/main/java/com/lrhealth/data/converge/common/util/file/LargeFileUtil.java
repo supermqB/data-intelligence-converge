@@ -140,6 +140,7 @@ public class LargeFileUtil {
                         stmt.setString(index, value);
                         break;
                     case "int":
+                    case "int4":
                         stmt.setInt(index, Integer.parseInt(value));
                         break;
                     case "bigint":

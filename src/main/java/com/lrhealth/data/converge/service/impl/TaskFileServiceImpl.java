@@ -51,10 +51,11 @@ public class TaskFileServiceImpl implements TaskFileService {
         String token = "lrhealth:" + System.currentTimeMillis();
         String result;
         try {
-            result = HttpRequest.post(taskFileConfig.getUrl() + "/prepareFiles")
+            HttpRequest httpRequest = HttpRequest.post(taskFileConfig.getUrl() + "/prepareFiles")
                     .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
                     .body(JSONObject.toJSONString(taskFileConfig.getFrontNodeTask()))
-                    .timeout(3000).execute().body();
+                    .timeout(3000);
+            result = httpRequest.execute().body();
             if (!"true".equals(result)) {
                 throw new FileSplitException("通知文件拆分异常！\n" + result);
             }

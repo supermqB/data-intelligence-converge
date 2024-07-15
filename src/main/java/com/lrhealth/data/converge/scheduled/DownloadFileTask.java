@@ -11,6 +11,7 @@ import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.model.FileTask;
 import com.lrhealth.data.converge.model.TaskFileConfig;
+import com.lrhealth.data.converge.model.dto.PreFileStatusDto;
 import com.lrhealth.data.converge.service.ConvergeService;
 import com.lrhealth.data.converge.service.TaskFileService;
 import org.slf4j.Logger;
@@ -91,23 +92,57 @@ public class DownloadFileTask {
                 continue;
             }
             String objectStoragePath = null;
+
+            convTaskLog(fileTask.getTaskId(), "开始下载：" + fileTask);
+            long startTime = System.currentTimeMillis();
+
             if (ObjectUtil.isNotNull(taskFileConfig.getTaskResultView())){
-                objectStoragePath = taskFileConfig.getTaskResultView().getFeStoredPath();
+                convTaskLog(fileTask.getTaskId(), "通知前置机文件分片：" + fileTask);
+                if (!taskFileService.splitFile(taskFileConfig)) {
+                    log.error("通知拆分文件异常：" + fileTask);
+                    resetFileTask(fileTask, taskFileConfig);
+                    continue;
+                }
+
+                convTaskLog(fileTask.getTaskId(), "正在压缩、加密文件：" + fileTask);
+                PreFileStatusDto preFileStatusDto = taskFileService.getFileStatus(taskFileConfig);
+                if (preFileStatusDto == null){
+                    log.error("文件拆分异常：" + fileTask);
+                    resetFileTask(fileTask, taskFileConfig);
+                    continue;
+                }
+
+                if (!taskFileService.downloadFile(preFileStatusDto,taskFileConfig)){
+                    log.error("文件下载失败：" + fileTask);
+                    resetFileTask(fileTask, taskFileConfig);
+                    continue;
+                }
+                convTaskLog(fileTask.getTaskId(), "开始合并文件：" + fileTask);
+                if (!taskFileService.mergeFile(taskFileConfig)){
+                    log.error("文件合并失败：" + fileTask);
+                    resetFileTask(fileTask, taskFileConfig);
+                    continue;
+                }
             }
             if (ObjectUtil.isNotNull(taskFileConfig.getTaskResultFile())){
                 objectStoragePath = taskFileConfig.getTaskResultFile().getFeStoredPath();
             }
 
-            convTaskLog(fileTask.getTaskId(), "开始下载：" + fileTask);
-            long startTime = System.currentTimeMillis();
-            if (!minioClientUtils.download(objectStoragePath, fileTask.getFileName(),taskFileConfig.getDestPath())){
+            if (ObjectUtil.isNotNull(taskFileConfig.getTaskResultFile()) && !minioClientUtils.download(objectStoragePath, fileTask.getFileName(),taskFileConfig.getDestPath())){
                 log.error("文件下载失败：" + fileTask);
                 resetFileTask(fileTask, taskFileConfig);
                 continue;
             }
 
+
             long endTime = System.currentTimeMillis();
 
+            //            log.info("开始删除文件：" + fileTask);
+//            if (!taskFileService.deleteFile(taskFileConfig)){
+//                log.error("文件删除失败：" + fileTask);
+//                resetFileTask(fileTask, taskFileConfig);
+//                continue;
+//            }
             //更新文件状态
             if (!convergeService.updateFileStatus(taskFileConfig,endTime - startTime)){
                 log.error("文件状态更新失败：" + fileTask);
