@@ -208,7 +208,6 @@ public class FeNodeServiceImpl implements FeNodeService {
     }
 
     @Override
-    @Transactional
     public ConvTaskResultView saveOrUpdateFile(ResultViewInfoDto resultViewInfoDto, Integer taskId) {
         ConvTaskResultView convTaskResultView = new ConvTaskResultView();
         ConvTaskResultView taskResultView =
@@ -289,6 +288,7 @@ public class FeNodeServiceImpl implements FeNodeService {
     }
 
     @Override
+    @Transactional
     public void updateTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, List<ResultViewInfoDto> resultViewInfoDtoList, ConvTask convTask) {
         if (CollUtil.isEmpty(resultViewInfoDtoList)) {
             return;
