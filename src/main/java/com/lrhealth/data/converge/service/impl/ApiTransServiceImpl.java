@@ -9,6 +9,7 @@ import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.service.ApiTransService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -46,9 +47,9 @@ public class ApiTransServiceImpl implements ApiTransService {
         if (CollectionUtils.isEmpty(modelList)) {
             return false;
         }
+        Integer dsId = convTunnel.getWriterDatasourceId();
         for (StdOriginalModel originalModel : modelList) {
             String tableName = originalModel.getNameEn();
-            String dsId = originalModel.getConvDsConfId();
             Statement statement = null;
             try {
                 statement = doCreateStatement(tableName, dsId);
@@ -89,7 +90,7 @@ public class ApiTransServiceImpl implements ApiTransService {
             try {
                 statement.executeQuery(sql);
             } catch (SQLException sqlException) {
-                continue;
+                log.error("接口采集插入数据库报错!: {}", ExceptionUtils.getStackTrace(sqlException));
             }
         }
     }
@@ -97,9 +98,9 @@ public class ApiTransServiceImpl implements ApiTransService {
     /**
      * 创建数据库操作statement
      */
-    private Statement doCreateStatement(String tableName, String dsId) {
+    private Statement doCreateStatement(String tableName, Integer dsId) {
         List<ConvOdsDatasourceConfig> dataSourceConfigs = convOdsDatasourceConfigService.list(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
-                .eq(ConvOdsDatasourceConfig::getId, Integer.valueOf(dsId))
+                .eq(ConvOdsDatasourceConfig::getId, dsId)
                 .eq(ConvOdsDatasourceConfig::getDelFlag, 0));
         if (CollectionUtils.isEmpty(dataSourceConfigs)) {
             throw new RuntimeException(tableName + "表关联的目标数据源不存在!无法完成写入操作!dsId =" + dsId);
