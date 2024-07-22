@@ -302,7 +302,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         Map<String, OriginalModel> hdfsMap = new HashMap<>();
         Map<String, String> hiveConfigMap = new HashMap<>();
         Map<Long, ConvOriginalTable> originalTableMap = null;
-        if (isHive) {
+        if (isHive && CollUtil.isNotEmpty(collectFieldList)) {
             List<Long> modelIdList = new ArrayList<>();
             for (ConvCollectField collectField : collectFieldList) {
                 List<OriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(), collectField.getSystemCode());
