@@ -93,6 +93,9 @@ public class JdbcInfoDto {
      */
     private Integer colTableType;
 
+    /**
+     * writer 数据源id
+     */
     private Integer dsConfigId;
 
 }

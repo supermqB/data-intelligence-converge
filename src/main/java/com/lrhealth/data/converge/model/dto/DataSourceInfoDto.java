@@ -21,6 +21,8 @@ public class DataSourceInfoDto {
 
     private String sysCode;
 
+    private String dbType;
+
     private String jdbcUrl;
 
     private String username;

@@ -35,6 +35,7 @@ public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatas
                     .dsConfId(datasourceConfig.getId())
                     .orgCode(datasourceConfig.getOrgCode())
                     .sysCode(dto.getSysCode())
+                    .dbType(datasourceConfig.getDbType())
                     .jdbcUrl(datasourceConfig.getDsUrl())
                     .username(datasourceConfig.getDsUsername())
                     .password(datasourceConfig.getDsPwd())
