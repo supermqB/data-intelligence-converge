@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface FileService {
 
-    void uploadFile(MultipartFile file, String projectId);
+    void uploadFile(MultipartFile file, String path);
 
     /**
      * 前置机扫描 -> 文件搬运 -> 文件解析 -> 文件落库

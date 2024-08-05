@@ -1,6 +1,5 @@
 package com.lrhealth.data.converge.service.impl;
 
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -53,17 +52,14 @@ public class FileServiceImpl implements FileService {
     private XdsInfoService xdsInfoService;
 
     @Override
-    public void uploadFile(MultipartFile file, String projectId) {
-        /*String oriFilePath = getConfig(projectId);
-        String filename = file.getOriginalFilename();
-        Path targetUrl = Paths.get( oriFilePath + SLASH + filename);*/
-        Path targetUrl = Paths.get(projectId);
+    public void uploadFile(MultipartFile file, String path) {
+        Path targetUrl = Paths.get(path);
         log.info("源文件名称: {} ---> 上传文件目录: {}", file.getName(), targetUrl);
 
         try (InputStream inputStream = file.getInputStream()) {
             Files.copy(inputStream, targetUrl, StandardCopyOption.REPLACE_EXISTING);
         }catch (Exception e){
-            log.error(ExceptionUtil.stacktraceToString(e));
+            throw new CommonException(e.getMessage());
         }
     }
 

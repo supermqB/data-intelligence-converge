@@ -28,13 +28,9 @@ public class FileController {
 
     @PostMapping("/upload")
     public void uploadFile(@RequestParam(value = "file") MultipartFile file,
-                           @RequestParam(value = "projectId") String projectId){
+                           @RequestParam(value = "path") String path){
         long start = System.currentTimeMillis();
-        try {
-            fileService.uploadFile(file, projectId);
-        } catch (Exception e) {
-            log.info("异常信息 {}",e.getMessage());
-        }
+        fileService.uploadFile(file, path);
         long end = System.currentTimeMillis();
         log.info("文件大小{}, 耗时 = {} ms, 上传速率{}/s",formatSize(file.getSize(),0,true),end - start,formatSize(file.getSize(),end-start,false));
     }
