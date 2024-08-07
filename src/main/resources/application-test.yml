@@ -67,7 +67,7 @@ spring:
     topic:
       cdc: cdc-data
       xds: gove-xds-${spring.profiles.active}
-      dolphinScheduler-task: dolphin-schedule-task
+      dolphinScheduler-task: dolphin-schedule-task-${spring.profiles.active}
       intelligence:
         fep-task: frontend-reschedule-test
         tunnel-datasource-change: tunnel-datasource-change-test
