@@ -69,10 +69,10 @@ public class IncrTimeServiceImpl implements IncrTimeService {
         }
         ConvTunnel tunnel = tunnelService.getById(convTask.getTunnelId());
         ConvOriginalTable table = originalTableService.getOne(new LambdaQueryWrapper<ConvOriginalTable>()
-                .eq(ConvOriginalTable::getModelName, xds.getOdsTableName())
+                .eq(ConvOriginalTable::getNameEn, xds.getOdsTableName())
                 .eq(ConvOriginalTable::getSysCode, xds.getSysCode()));
         if (ObjectUtil.isEmpty(table)){
-            log.info("[{}]原始表不存在！", xds.getOdsModelName());
+            log.error("[{}]原始表不存在！", xds.getOdsTableName());
             return;
         }
         ConvOdsDatasourceConfig dsConfig = datasourceConfigService.getById(xds.getDsConfigId());
@@ -109,8 +109,8 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                     .updateTime(LocalDateTime.now())
                     .build();
             if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
-                Timestamp value = Timestamp.valueOf(latestValue);
-                update.setLatestTime(value.toString());
+//                Timestamp value = Timestamp.valueOf(latestValue);
+                update.setLatestTime(latestValue);
             }else {
                 update.setLatestSeq(latestValue);
             }

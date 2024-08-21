@@ -218,7 +218,8 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
         long avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = avgRowLength * dataCount;
-        List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>().eq(ConvTask::getTunnelId, dbXdsMessageDto.getTunnelId())
+        List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>()
+                .eq(ConvTask::getTunnelId, dbXdsMessageDto.getTunnelId())
                 .eq(ConvTask::getFedTaskId, dbXdsMessageDto.getConvTaskId())
                 .orderByDesc(ConvTask::getCreateTime));
         ConvTunnel tunnel = tunnelService.getById(dbXdsMessageDto.getTunnelId());
