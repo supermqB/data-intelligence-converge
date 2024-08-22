@@ -233,4 +233,10 @@ public class ConvTunnel implements Serializable {
      * 对象存储：未知
      */
     private Integer unstructuredStoragePath;
+
+    /**
+     * 队列采集的配置id
+     * conv_message_queue_config
+     */
+    private Integer messageQueueId;
 }

@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharPool;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
@@ -13,6 +14,7 @@ import com.lrhealth.data.converge.scheduled.ConvMonitorTask;
 import com.lrhealth.data.converge.service.DirectConnectCollectService;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.KafkaService;
+import com.lrhealth.data.converge.service.MessageQueueService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,6 +56,8 @@ public class DateIntelliConsumer {
     private String linkStateTopic;
     @Resource
     private ConvMonitorTask convMonitorTask;
+    @Resource
+    private MessageQueueService queueService;
 
     @KafkaListener(topics = "${spring.kafka.topic.intelligence.tunnel-datasource-change}")
     public void getFepTunnelConfig(@Payload String msgBody, Acknowledgment acknowledgment){
@@ -63,6 +67,12 @@ public class DateIntelliConsumer {
             for (Long tunnelId : tunnelList){
                 ConvTunnel tunnel = tunnelService.getTunnelWithoutDelFlag(tunnelId);
                 if (ObjectUtil.isNull(tunnel)) break;
+                // 消息队列采集
+                if (tunnel.getConvergeMethod().equalsIgnoreCase(TunnelCMEnum.QUEUE_MODE.getCode())){
+                    queueService.queueModeCollect(tunnel);
+                    return;
+                }
+                // 发送给前置机
                 String topicSuffix = kafkaService.topicSuffixIpPort(tunnelId, tunnel.getFrontendId());
                 TunnelMessageDTO tunnelMessage = tunnelConfigService.getTunnelMessage(tunnel);
                 if (tunnel.getDelFlag() == 1){
