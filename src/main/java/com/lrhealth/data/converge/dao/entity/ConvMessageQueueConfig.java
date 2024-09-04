@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 
 /**
@@ -59,4 +60,7 @@ public class ConvMessageQueueConfig {
     private String username;
 
     private String password;
+
+    @TableLogic
+    private Integer delFlag;
 }

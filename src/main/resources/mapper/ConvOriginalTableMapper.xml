@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lrhealth.data.converge.dao.mapper.ConvOriginalTableMapper">
+
+    <select id="getTableModelRel" resultType="com.lrhealth.data.converge.model.dto.OriginalTableModelDto">
+        select ori.id as oriId, ori.name_en as oriName,
+               std.id as modelId, std.name_en as modelName,
+               std.conv_ds_conf_id as modelDsConfigId
+        from conv_original_table ori
+        left join std_original_model std
+        on ori.model_id = std.id
+        where ori.name_en ilike #{oriTableName}
+        and ori.sys_code = #{sysCode};
+    </select>
+</mapper>

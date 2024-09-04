@@ -1,9 +1,12 @@
 package com.lrhealth.data.converge.dao.service.impl;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
 import com.lrhealth.data.converge.dao.mapper.ConvOriginalTableMapper;
 import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;
+import com.lrhealth.data.converge.model.dto.OriginalTableModelDto;
 import org.springframework.stereotype.Service;
 
 /**
@@ -17,4 +20,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class ConvOriginalTableServiceImpl extends ServiceImpl<ConvOriginalTableMapper, ConvOriginalTable> implements ConvOriginalTableService {
 
+    @Override
+    public OriginalTableModelDto getTableModelRel(String oriTableName, String systemCode) {
+        if (CharSequenceUtil.isBlank(oriTableName) || CharSequenceUtil.isBlank(systemCode)){
+            throw new CommonException("oriTableName or systemCode is null!");
+        }
+        return this.baseMapper.getTableModelRel(oriTableName, systemCode);
+    }
 }

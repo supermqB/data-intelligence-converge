@@ -17,5 +17,5 @@ public interface MessageQueueService {
     /**
      * 消息队列采集执行逻辑
      */
-    void messageQueueHandle();
+    void messageQueueHandle(String topicKey, String msgBody);
 }

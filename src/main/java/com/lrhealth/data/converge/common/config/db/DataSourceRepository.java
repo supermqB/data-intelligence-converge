@@ -55,11 +55,12 @@ public class DataSourceRepository {
      */
     public void createDataSource(ConvOdsDatasourceConfig ds) {
         Map<String, DataSource> dataSourceMap = BeeFactory.getInstance().getDataSourceMap();
-        if (dataSourceMap.get(ds.getSysCode()) != null) {
+        String dsId = ds.getId().toString();
+        if (dataSourceMap.get(dsId) != null) {
             return;
         }
         try {
-            dataSourceMap.put(ds.getSysCode(), new HikariDataSource(buildHikariConfig(ds)));
+            dataSourceMap.put(dsId, new HikariDataSource(buildHikariConfig(ds)));
             // 将新的数据源加入到bee框架，该数据源即时生效
             BeeFactory.getInstance().setDataSourceMap(dataSourceMap);
         } catch (Exception e) {
@@ -102,7 +103,7 @@ public class DataSourceRepository {
         config.setJdbcUrl(ds.getDsUrl());
         config.setUsername(ds.getDsUsername());
         config.setPassword(ds.getDsPwd());
-        config.setPoolName("HikariCP-" + ds.getSysCode());
+        config.setPoolName("HikariCP-" + ds.getId());
 
         /**
          * 反射设置HikariConfig连接池配置.

@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.dao.service;
 
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.lrhealth.data.converge.model.dto.OriginalTableModelDto;
 
 /**
  * <p>
@@ -13,4 +14,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ConvOriginalTableService extends IService<ConvOriginalTable> {
 
+    OriginalTableModelDto getTableModelRel(String oriTableName, String systemCode);
 }
