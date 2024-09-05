@@ -57,6 +57,7 @@ public class KafkaConsumerContext {
     public <K, V> void addConsumerTask(String topicKey, KafkaConsumer<K, V> consumer) {
         // 存入消费者列表
         consumerMap.put(topicKey, consumer);
+        log.info("创建定时任务: key={}", topicKey);
         // 创建定时任务，每隔1s拉取消息并处理
         ScheduledFuture<?> future = executor.scheduleAtFixedRate(() -> {
             // 每次执行拉取消息之前，先检查订阅者是否已被取消（如果订阅者不存在于订阅者列表中说明被取消了）
@@ -65,8 +66,10 @@ public class KafkaConsumerContext {
                 // 取消订阅并关闭消费者
                 consumer.unsubscribe();
                 consumer.close();
+                log.info("取消订阅，关闭消费者: key={}", topicKey);
                 // 关闭定时任务
                 scheduleMap.remove(topicKey).cancel(true);
+                log.info("删除定时任务: key={}", topicKey);
                 return;
             }
             // 拉取消息

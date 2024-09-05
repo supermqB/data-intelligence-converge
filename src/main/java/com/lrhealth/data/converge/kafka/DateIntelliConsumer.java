@@ -69,6 +69,7 @@ public class DateIntelliConsumer {
                 if (ObjectUtil.isNull(tunnel)) break;
                 // 消息队列采集
                 if (tunnel.getConvergeMethod().equalsIgnoreCase(TunnelCMEnum.QUEUE_MODE.getCode())){
+                    log.info("消息队列采集, 管道信息：{}", tunnel);
                     queueService.queueModeCollect(tunnel);
                     return;
                 }

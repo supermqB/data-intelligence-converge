@@ -84,6 +84,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
     public void queueModeCollect(ConvTunnel tunnel) {
         // 查询队列配置
         ConvMessageQueueConfig queueConfig = queueConfigService.getById(tunnel.getMessageQueueId());
+        log.info("打印队列配置:{}", queueConfig);
         if (ObjectUtil.isNull(queueConfig) || !"kafka".equalsIgnoreCase(queueConfig.getQueueType())){
             return;
         }
@@ -91,6 +92,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         String broker = queueConfig.getKafkaBroker();
         String topic = queueConfig.getKafkaTopic();
         KafkaConsumer<Object, Object> consumer = dynamicConsumerFactory.createConsumer(topic, KAFKA_GROUP_ID, broker);
+        log.info("kafka消费者创建成功！, consumer={}", consumer);
         String topicKey = tunnel.getId().toString()  + CharPool.DASHED + topic;
         consumerContext.addConsumerTask(topicKey, consumer);
         AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
@@ -106,14 +108,15 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         // 格式化value
         HashMap<String, Object> msgRecord = JSON.parseObject(msgBody, HashMap.class);
         MessageParseDto valueParse = valueParse(msgRecord);
+        log.info("解析后的消息体数据：{}", valueParse);
         // 获取到落库配置
         OriginalTableModelDto tableModelRel = originalTableService.getTableModelRel(valueParse.getReadTable(), tunnel.getSysCode());
-
+        log.info("获取到的表映射:{}", tableModelRel);
         ConvOdsDatasourceConfig datasourceConfig = dsConfigService.getById(tunnel.getWriterDatasourceId());
 
         // sql准备, 按照operation区分
         String sql = prepareSqlForOp(valueParse, tableModelRel);
-
+        log.info("生成的完整sql语句：{}", sql);
         // 获取连接
         DataSource dataSource = BeeFactory.getInstance().getDataSourceMap().get(systemCode);
          if(ObjectUtil.isNull(dataSource)){
@@ -189,6 +192,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
             sqlMap = sqlTemplate(prop, "delete", tableModelRel);
             valueMap = valueParse.getPreValue();
         }
+        log.info("获取到模板配置，sql={}", sqlMap);
         return sqlValueFill(sqlMap, valueMap, tableModelRel.getModelName());
     }
 
