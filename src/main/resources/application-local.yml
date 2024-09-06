@@ -170,3 +170,21 @@ minio:
   accessKey: exMYNZIl9mKJZWxN79HZ
   secretKey: iPrpcnsDn5k0zzd8HepbgMaYtn2H6hqURfPvZDOm
   bucketName: file-collect
+
+## 消息队列可能的各种消息体key,用StrPool.COMMA(,)分割
+message:
+  parse:
+    operation: op
+    prevalue: before
+    postvalue: after
+    collectTable: table
+    ## 执行的操作
+    insertOp: c
+    updateOp: u
+    deleteOp: d
+  sql:
+    path: D:\sql.properties
+    config:
+      insert: insert
+      update: update
+      delete: delete
