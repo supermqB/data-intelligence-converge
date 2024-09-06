@@ -84,19 +84,38 @@ public class MessageQueueServiceImpl implements MessageQueueService {
     public void queueModeCollect(ConvTunnel tunnel) {
         // 查询队列配置
         ConvMessageQueueConfig queueConfig = queueConfigService.getById(tunnel.getMessageQueueId());
+        String topic = queueConfig.getKafkaTopic();
         log.info("打印队列配置:{}", queueConfig);
+        String topicKey = tunnel.getId().toString()  + CharPool.DASHED + topic;
+
         if (ObjectUtil.isNull(queueConfig) || !"kafka".equalsIgnoreCase(queueConfig.getQueueType())){
             return;
         }
+        Integer status = tunnel.getStatus();
+        switch (status){
+            case 1:
+                startConsumer(tunnel, queueConfig.getKafkaBroker(), topic, topicKey);
+                break;
+            case 2:
+                log.info("队列采集[{}]正在执行中，不重复添加创建！", tunnel.getId());
+                break;
+            case 3:
+            case 4:
+                consumerContext.removeConsumerTask(topicKey);
+                break;
+            default:
+                log.error("status={}, 不是正常的管道状态", status);
+        }
+
+
+    }
+
+    private void startConsumer(ConvTunnel tunnel, String broker, String topic, String topicKey){
         ConvTask task = taskService.createTask(tunnel, false);
-        String broker = queueConfig.getKafkaBroker();
-        String topic = queueConfig.getKafkaTopic();
         KafkaConsumer<Object, Object> consumer = dynamicConsumerFactory.createConsumer(topic, KAFKA_GROUP_ID, broker);
         log.info("kafka消费者创建成功！, consumer={}", consumer);
-        String topicKey = tunnel.getId().toString()  + CharPool.DASHED + topic;
         consumerContext.addConsumerTask(topicKey, consumer);
         AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
-
     }
 
     @Override
@@ -168,10 +187,11 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         String operation = valueParse.getOperation();
         // 解析到外置文件的sql模板
         Properties prop = new Properties();
+        log.info("从{}文件获取sql模板", sqlTemplateFile);
         try(InputStream in = new BufferedInputStream(Files.newInputStream(Paths.get(sqlTemplateFile)))) {
             prop.load(new InputStreamReader(in, StandardCharsets.UTF_8));
         }catch (IOException e){
-            log.error("模板文件解析失败，请修正文件!");
+            log.error("模板文件解析失败，请修正文件!, exception={}", ExceptionUtils.getStackTrace(e));
         }
         Map<String, String> sqlMap = null;
         Map<String, Object> valueMap = null;
@@ -193,6 +213,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
             valueMap = valueParse.getPreValue();
         }
         log.info("获取到模板配置，sql={}", sqlMap);
+        // 处理${}的值填充
         return sqlValueFill(sqlMap, valueMap, tableModelRel.getModelName());
     }
 

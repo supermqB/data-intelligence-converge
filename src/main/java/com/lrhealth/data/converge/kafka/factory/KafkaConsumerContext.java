@@ -94,13 +94,21 @@ public class KafkaConsumerContext {
     /**
      * 移除Kafka消费者定时任务并关闭消费者订阅
      *
-     * @param topic 消费者的主题
+     * @param topicKey 消费者的主题
      */
-    public void removeConsumerTask(String topic) {
-        if (!consumerMap.containsKey(topic)) {
+    public void removeConsumerTask(String topicKey) {
+        if (!consumerMap.containsKey(topicKey)) {
             return;
         }
         // 从列表中移除消费者
-        consumerMap.remove(topic);
+        KafkaConsumer<?, ?> consumer = consumerMap.get(topicKey);
+        // 取消订阅并关闭消费者
+        consumer.unsubscribe();
+        consumer.close();
+        consumerMap.remove(topicKey);
+        log.info("取消订阅，关闭消费者: key={}", topicKey);
+        // 关闭定时任务
+        scheduleMap.remove(topicKey).cancel(true);
+        log.info("删除定时任务: key={}", topicKey);
     }
 }
