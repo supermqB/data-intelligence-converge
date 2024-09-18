@@ -54,6 +54,8 @@ public class TableInfoDto {
      */
     private String seqFieldType;
 
+    private String hivePartitionColumn;
+
     /**
      * 增量字段-增量采集最新时间
      */

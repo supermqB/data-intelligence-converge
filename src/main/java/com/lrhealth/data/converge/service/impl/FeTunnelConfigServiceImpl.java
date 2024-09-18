@@ -300,7 +300,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
         Map<String, List<OriginalModelColumn>> modelColumnMap = new HashMap<>(collectFieldList.size());
         Map<String, OriginalModel> hdfsMap = new HashMap<>();
-        Map<String, String> hiveConfigMap = new HashMap<>();
+        Map<String, ModelConfig> hiveConfigMap = new HashMap<>();
         Map<Long, ConvOriginalTable> originalTableMap = null;
         if (isHive && CollUtil.isNotEmpty(collectFieldList)) {
             List<Long> modelIdList = new ArrayList<>();
@@ -314,7 +314,9 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             hdfsMap = modelList.stream().filter(e -> StringUtils.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(OriginalModel::getNameEn, e -> e, (m1, m2) -> m1));
             List<ModelConfig> modelConfigs = modelConfigService.list(new LambdaQueryWrapper<ModelConfig>().in(ModelConfig::getModelId, modelIdList));
             //Hive表配置Map modelNameEn-数据存储类型
-            hiveConfigMap = modelConfigs.stream().filter(e -> StringUtils.isNotEmpty(e.getTableType())).collect(Collectors.toMap(ModelConfig::getTableName, ModelConfig::getTableType));
+            for (ModelConfig modelConfig : modelConfigs){
+                hiveConfigMap.put(modelConfig.getTableName(), modelConfig);
+            }
             List<Long> originalIdList = hdfsMap.values().stream().map(OriginalModel::getOriginalId).collect(Collectors.toList());
             //查询原始结构
             if (CollectionUtil.isNotEmpty(originalIdList)) {
@@ -347,7 +349,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 }
             }
         }
-        Map<String, String> finalHiveConfigMap = hiveConfigMap;
+        Map<String, ModelConfig> finalHiveConfigMap = hiveConfigMap;
         Map<Long, ConvOriginalTable> finalOriginalTableMap = originalTableMap;
         Map<String, OriginalModel> finalHdfsMap = hdfsMap;
         collectFieldList.forEach(model -> {
@@ -356,7 +358,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             tableInfoDto.setSqlQuery(model.getQuerySql());
             OriginalModel originalModel = finalHdfsMap.get(model.getTableName());
             tableInfoDto.setHdfsPath(Objects.isNull(originalModel) ? null : originalModel.getStoragePath());
-            tableInfoDto.setHiveFileType(finalHiveConfigMap.get(model.getTableName()));
+            ModelConfig modelConfig = finalHiveConfigMap.get(model.getTableName());
+            tableInfoDto.setHiveFileType(modelConfig.getTableType());
+            DbConfigColumnDTO dto = JSON.parseObject(modelConfig.getDbConfig(), DbConfigColumnDTO.class);
+            tableInfoDto.setHivePartitionColumn(CollUtil.isEmpty(dto.getPartitionKey()) ? null : dto.getPartitionKey().get(0));
             tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(readerDbType,modelColumnMap, model, Objects.isNull(originalModel) ? null : (finalOriginalTableMap.get(originalModel.getOriginalId()) == null ? null : finalOriginalTableMap.get(originalModel.getOriginalId()).getDataSource())) : model.getColumnField());
             if (tunnel.getColType().equals(TunnelColTypeEnum.FREQUENCY_INCREMENT.getValue())) {
                 // 1-时间 2-序列
