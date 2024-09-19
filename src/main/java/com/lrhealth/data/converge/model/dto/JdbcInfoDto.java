@@ -98,4 +98,9 @@ public class JdbcInfoDto {
      */
     private Integer dsConfigId;
 
+    /**
+     * hdfs集群， dsId列表
+     */
+    private String hdfsCluster;
+
 }

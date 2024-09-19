@@ -239,6 +239,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 jdbcInfoDto.setDbUserNameForIn(writerDs.getDsUsername());
                 jdbcInfoDto.setDbPasswdForIn(writerDs.getDsPwd());
                 jdbcInfoDto.setDsConfigId(tunnel.getWriterDatasourceId());
+                jdbcInfoDto.setHdfsCluster(writerDs.getHdfsCluster());
                 writeDbType = writerDs.getDbType();
             }
             // 表以及对应的sql信息

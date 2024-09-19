@@ -91,4 +91,7 @@ public class ConvOdsDatasourceConfig implements Serializable {
     private LocalDateTime heartBeatTime;
 
     private String dsUrlForFront;
+
+
+    private String hdfsCluster;
 }
