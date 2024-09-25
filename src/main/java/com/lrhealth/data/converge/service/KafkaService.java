@@ -5,6 +5,8 @@ import com.lrhealth.data.converge.dao.entity.Xds;
 import com.lrhealth.data.converge.model.dto.DsKafkaDto;
 import com.lrhealth.data.converge.model.dto.IncrSequenceDto;
 
+import java.util.List;
+
 /**
  * @author jinmengyu
  * @date 2023-10-12
@@ -17,5 +19,13 @@ public interface KafkaService {
 
     void updateFepIncrSequence(IncrSequenceDto incrSequenceDto, ConvTunnel tunnel);
 
-    String topicSuffixIpPort(Long tunnelId, Long frontendId);
+    /**
+     * 发送给前置机的消息后缀
+     * 格式： ip-port
+     * @param frontendId 前置机id
+     * @return 处理过后的格式
+     */
+    String topicSuffixIpPort(Long frontendId);
+
+    void dsConfigSendFep(String sendMsg, List<Long> feNodeList);
 }

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author jinmengyu
@@ -39,6 +40,8 @@ public class KafkaServiceImpl implements KafkaService {
     private String dsTopic;
     @Value("${spring.kafka.topic.fep.increment-sequence}")
     private String incrSequenceTopic;
+    @Value("${spring.kafka.topic.fep.fep-link}")
+    private String fepLinkTopic;
     @Resource
     private XdsInfoService xdsInfoService;
     @Resource
@@ -76,23 +79,35 @@ public class KafkaServiceImpl implements KafkaService {
     @Override
     public void updateFepIncrSequence(IncrSequenceDto incrSequenceDto, ConvTunnel tunnel) {
         // topic处理
-        String topic = incrSequenceTopic + CharPool.DASHED + topicSuffixIpPort(tunnel.getId(), tunnel.getFrontendId());
+        String topic = incrSequenceTopic + CharPool.DASHED + topicSuffixIpPort(tunnel.getFrontendId());
         kafkaTemplate.send(topic, JSON.toJSONString(incrSequenceDto));
     }
 
     @Override
-    public String topicSuffixIpPort(Long tunnelId, Long frontendId) {
+    public String topicSuffixIpPort(Long frontendId) {
         String ip;
         String fepPort;
         if (frontendId == -1){
-            log.info("直连管道{}配置被修改", tunnelId);
             ip = System.getProperty("converge.ip");
             fepPort = port;
         }else {
             ConvFeNode convFeNode = feNodeService.getById(frontendId);
+            if (ObjectUtil.isNull(convFeNode)){
+                log.error("通过frontendId={}无法查询到前置机信息", frontendId);
+            }
             ip = convFeNode.getIp();
             fepPort = String.valueOf(convFeNode.getPort());
         }
         return ip + CharPool.DASHED + fepPort;
+    }
+
+    @Override
+    public void dsConfigSendFep(String sendMsg, List<Long> feNodeList) {
+        for (Long frontendId : feNodeList) {
+            //
+            String topic = fepLinkTopic + CharPool.DASHED + topicSuffixIpPort(frontendId);
+            log.debug("kafka发送数据源信息{}, msg={}", topic, sendMsg);
+            kafkaTemplate.send(topic, sendMsg);
+        }
     }
 }

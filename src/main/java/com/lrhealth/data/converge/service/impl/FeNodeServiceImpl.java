@@ -1,6 +1,5 @@
 package com.lrhealth.data.converge.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -22,7 +21,6 @@ import com.lrhealth.data.converge.service.FeNodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,9 +64,6 @@ public class FeNodeServiceImpl implements FeNodeService {
     private ConvTaskResultViewService convTaskResultViewService;
 
     @Resource
-    private ConvTaskResultCdcService convTaskResultCdcService;
-
-    @Resource
     private ConvTaskResultFileService convTaskResultFileService;
 
     private static ConcurrentMap<String, Boolean> logIdMap = new ConcurrentHashMap<>();
@@ -100,12 +95,6 @@ public class FeNodeServiceImpl implements FeNodeService {
         }
     }
 
-    @Override
-    @Recover
-    public boolean recover(PingException e) {
-        return false;
-    }
-
 
     @Override
     @Retryable(value = {FeNodeStatusException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -126,12 +115,6 @@ public class FeNodeServiceImpl implements FeNodeService {
             throw new FeNodeStatusException("获取前置机：" + node.getIp() + "状态异常！\n" + e.getMessage()
                     + "\n" + Arrays.toString(e.getStackTrace()));
         }
-    }
-
-    @Override
-    @Recover
-    public FrontendStatusDto recover(FeNodeStatusException e) {
-        return null;
     }
 
     @Override
@@ -244,20 +227,6 @@ public class FeNodeServiceImpl implements FeNodeService {
                 .eq(ConvTaskResultView::getTaskId, taskId)
                 .eq(ConvTaskResultView::getTableName, resultViewInfoDto.getTableName()));
         return convTaskResultView;
-    }
-
-    @Override
-    public ConvTaskResultCdc saveOrUpdateFile(ResultCDCInfoDTO cdcInfoDTO, ConvTask convTask) {
-        ConvTaskResultCdc convTaskResultCdc = BeanUtil.copyProperties(cdcInfoDTO, ConvTaskResultCdc.class);
-        convTaskResultCdc.setTaskId(Long.valueOf(convTask.getId()));
-        convTaskResultCdc.setDelFlag(0);
-
-        // @formatter:off
-        convTaskResultCdcService.saveOrUpdate(convTaskResultCdc, new LambdaQueryWrapper<ConvTaskResultCdc>()
-                .eq(ConvTaskResultCdc::getFlinkJobId, cdcInfoDTO.getFlinkJobId())
-                .eq(ConvTaskResultCdc::getTableName, cdcInfoDTO.getTableName()));
-        // @formatter:on
-        return convTaskResultCdc;
     }
 
     @Override

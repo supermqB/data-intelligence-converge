@@ -74,7 +74,7 @@ public class DateIntelliConsumer {
                     return;
                 }
                 // 发送给前置机
-                String topicSuffix = kafkaService.topicSuffixIpPort(tunnelId, tunnel.getFrontendId());
+                String topicSuffix = kafkaService.topicSuffixIpPort(tunnel.getFrontendId());
                 TunnelMessageDTO tunnelMessage = tunnelConfigService.getTunnelMessage(tunnel);
                 if (tunnel.getDelFlag() == 1){
                     tunnelMessage.setStatus(TunnelStatusEnum.ABANDON.getValue());
@@ -101,7 +101,7 @@ public class DateIntelliConsumer {
                 directConnectCollectService.tunnelExec(null, tunnel.getId());
                 return;
             }
-            String topic = tunnelScheduleTopic + CharPool.DASHED + kafkaService.topicSuffixIpPort(tunnel.getId(), tunnel.getFrontendId());
+            String topic = tunnelScheduleTopic + CharPool.DASHED + kafkaService.topicSuffixIpPort(tunnel.getFrontendId());
             kafkaTemplate.send(topic, JSON.toJSONString(dto));
         } catch (Exception e) {
             log.error("task scheduled collect error, {}", ExceptionUtils.getStackTrace(e));
