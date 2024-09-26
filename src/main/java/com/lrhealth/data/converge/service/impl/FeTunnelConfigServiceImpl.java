@@ -360,9 +360,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             OriginalModel originalModel = finalHdfsMap.get(model.getTableName());
             tableInfoDto.setHdfsPath(Objects.isNull(originalModel) ? null : originalModel.getStoragePath());
             ModelConfig modelConfig = finalHiveConfigMap.get(model.getTableName());
-            tableInfoDto.setHiveFileType(modelConfig.getTableType());
-            DbConfigColumnDTO dto = JSON.parseObject(modelConfig.getDbConfig(), DbConfigColumnDTO.class);
-            tableInfoDto.setHivePartitionColumn(CollUtil.isEmpty(dto.getPartitionKey()) ? null : dto.getPartitionKey().get(0));
+            if(ObjectUtil.isNotNull(modelConfig)){
+                tableInfoDto.setHiveFileType(modelConfig.getTableType());
+                DbConfigColumnDTO dto = JSON.parseObject(modelConfig.getDbConfig(), DbConfigColumnDTO.class);
+                tableInfoDto.setHivePartitionColumn(CollUtil.isEmpty(dto.getPartitionKey()) ? null : dto.getPartitionKey().get(0));
+            }
             tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(readerDbType,modelColumnMap, model, Objects.isNull(originalModel) ? null : (finalOriginalTableMap.get(originalModel.getOriginalId()) == null ? null : finalOriginalTableMap.get(originalModel.getOriginalId()).getDataSource())) : model.getColumnField());
             if (tunnel.getColType().equals(TunnelColTypeEnum.FREQUENCY_INCREMENT.getValue())) {
                 // 1-时间 2-序列

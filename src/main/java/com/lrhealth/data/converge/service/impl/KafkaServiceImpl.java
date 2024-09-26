@@ -104,10 +104,10 @@ public class KafkaServiceImpl implements KafkaService {
     @Override
     public void dsConfigSendFep(String sendMsg, List<Long> feNodeList) {
         for (Long frontendId : feNodeList) {
-            //
+            // fep-link-{ip}-{port} fep主题格式
             String topic = fepLinkTopic + CharPool.DASHED + topicSuffixIpPort(frontendId);
             log.debug("kafka发送数据源信息{}, msg={}", topic, sendMsg);
-            kafkaTemplate.send(topic, sendMsg);
+            kafkaTemplate.send(topic, "DS_CONFIG", sendMsg);
         }
     }
 }
