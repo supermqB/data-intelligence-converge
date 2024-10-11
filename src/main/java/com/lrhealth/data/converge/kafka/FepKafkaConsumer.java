@@ -2,6 +2,7 @@ package com.lrhealth.data.converge.kafka;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.fastjson.JSON;
+import com.lrhealth.data.converge.dao.service.ConvFepErrorLogService;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
@@ -36,6 +37,8 @@ public class FepKafkaConsumer {
     private ImportOriginalService importOriginalService;
     @Resource
     private ConvMonitorService convMonitorService;
+    @Resource
+    private ConvFepErrorLogService fepErrorLogService;
 
 
     @KafkaListener(topics = "${spring.kafka.topic.fep.update-collect-message}")
@@ -124,11 +127,20 @@ public class FepKafkaConsumer {
     }
 
     @KafkaListener(topics = "${spring.kafka.topic.fep.monitor-msg}")
-    public void uploadMonitorMsg(@Payload String msgBody, Acknowledgment acknowledgment){
+    public void uploadMonitorMsg(ConsumerRecord<String, String> monitorRecord, Acknowledgment acknowledgment){
+        String msgBody = monitorRecord.value();
         log.info("====================receive upload monitor message msgBody={}", msgBody);
         try {
-            MonitorMsg monitorMsg = JSON.parseObject(msgBody, MonitorMsg.class);
-            convMonitorService.handleMonitorMsg(monitorMsg);
+            String key = monitorRecord.key();
+            switch (key){
+                case "FEP_ERROR":
+                    FepErrorDto errorDto = JSON.parseObject(msgBody, FepErrorDto.class);
+                    fepErrorLogService.saveErrorLog(errorDto);
+                    break;
+                default:
+                    MonitorMsg monitorMsg = JSON.parseObject(msgBody, MonitorMsg.class);
+                    convMonitorService.handleMonitorMsg(monitorMsg);
+            }
         } catch (Exception e) {
             log.error("upload originalTable count error,{}", ExceptionUtils.getStackTrace(e));
         } finally {

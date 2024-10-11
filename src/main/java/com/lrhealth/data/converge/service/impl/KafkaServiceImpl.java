@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharPool;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
@@ -103,6 +104,7 @@ public class KafkaServiceImpl implements KafkaService {
 
     @Override
     public void dsConfigSendFep(String sendMsg, List<Long> feNodeList) {
+        if (CollUtil.isEmpty(feNodeList)) return;
         for (Long frontendId : feNodeList) {
             // fep-link-{ip}-{port} fep主题格式
             String topic = fepLinkTopic + CharPool.DASHED + topicSuffixIpPort(frontendId);
