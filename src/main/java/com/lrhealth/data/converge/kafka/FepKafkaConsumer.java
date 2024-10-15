@@ -132,15 +132,13 @@ public class FepKafkaConsumer {
         log.info("====================receive upload monitor message msgBody={}", msgBody);
         try {
             String key = monitorRecord.key();
-            switch (key){
-                case "FEP_ERROR":
-                    FepErrorDto errorDto = JSON.parseObject(msgBody, FepErrorDto.class);
-                    fepErrorLogService.saveErrorLog(errorDto);
-                    break;
-                default:
-                    MonitorMsg monitorMsg = JSON.parseObject(msgBody, MonitorMsg.class);
-                    convMonitorService.handleMonitorMsg(monitorMsg);
+            if ("FEP_ERROR".equals(key)) {
+                FepErrorDto errorDto = JSON.parseObject(msgBody, FepErrorDto.class);
+                fepErrorLogService.saveErrorLog(errorDto);
+                return;
             }
+            MonitorMsg monitorMsg = JSON.parseObject(msgBody, MonitorMsg.class);
+            convMonitorService.handleMonitorMsg(monitorMsg);
         } catch (Exception e) {
             log.error("upload originalTable count error,{}", ExceptionUtils.getStackTrace(e));
         } finally {
