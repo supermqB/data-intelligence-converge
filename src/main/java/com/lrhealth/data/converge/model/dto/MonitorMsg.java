@@ -19,6 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MonitorMsg implements Serializable {
+    private static final long serialVersionUID = -8822047333325218237L;
     /**
      * 状态
      */

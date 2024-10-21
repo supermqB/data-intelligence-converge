@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
+import com.lrhealth.data.converge.dao.entity.ConvMonitorLog;
 import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
 import com.lrhealth.data.converge.dao.mapper.ConvFeNodeMapper;
 import com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper;
 import com.lrhealth.data.converge.dao.mapper.ConvOdsDatasourceConfigMapper;
 import com.lrhealth.data.converge.dao.service.ConvFeNodeService;
+import com.lrhealth.data.converge.dao.service.ConvMonitorLogService;
 import com.lrhealth.data.converge.dao.service.ConvMonitorService;
 import com.lrhealth.data.converge.model.dto.MonitorMsg;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,8 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
     private ConvFeNodeService convFeNodeService;
     @Resource
     private ConvMonitorMapper convMonitorMapper;
+    @Resource
+    private ConvMonitorLogService monitorLogService;
 
     @Async
     @Override
@@ -56,6 +60,18 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
                 processMirrorDbIncrMonitor(message, tableName);
             }
         }
+        // 保存上传的日志
+        // 信息组装
+        ConvMonitorLog monitorLog = ConvMonitorLog.builder()
+                .monitorType(MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()))
+                .monitorMsg(message.getMsg())
+                .orgCode(message.getOrgCode())
+                .createTime(LocalDateTime.now())
+                .sourceIp(message.getSourceIp())
+                .sourcePort(Integer.valueOf(message.getSourcePort()))
+                .status(Boolean.TRUE.equals(message.getStatus()) ? 0 : 1)
+                .build();
+        monitorLogService.save(monitorLog);
     }
 
 

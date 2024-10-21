@@ -18,6 +18,9 @@ import java.util.Date;
 @Data
 @TableName("conv_monitor")
 public class ConvMonitor  implements Serializable {
+
+
+    private static final long serialVersionUID = 4237454223514096038L;
     /**
      * 主键id
      */
