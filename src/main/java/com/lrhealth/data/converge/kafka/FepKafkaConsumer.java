@@ -126,7 +126,7 @@ public class FepKafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.monitor-msg}")
+//    @KafkaListener(topics = "${spring.kafka.topic.fep.monitor-msg}")
     public void uploadMonitorMsg(ConsumerRecord<String, String> monitorRecord, Acknowledgment acknowledgment){
         String msgBody = monitorRecord.value();
         log.info("====================receive upload monitor message msgBody={}", msgBody);

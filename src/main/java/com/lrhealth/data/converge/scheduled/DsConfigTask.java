@@ -42,7 +42,7 @@ public class DsConfigTask implements CommandLineRunner {
         timingDsConfigSync();
     }
 
-    @Scheduled(cron = "0 0/5 * * * ?")
+    @Scheduled(cron = "0 0/30 * * * ?")
     public void timingDsConfigSync(){
         List<ConvOdsDatasourceConfig> list = dsConfigService.list(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
                 .eq(ConvOdsDatasourceConfig::getDelFlag, 0));
