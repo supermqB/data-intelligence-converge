@@ -125,7 +125,7 @@ public class DateIntelliConsumer {
         }
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.fep.converge-link}")
+//    @KafkaListener(topics = "${spring.kafka.topic.fep.converge-link}")
     public void doPlatformLink(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive doPlatformLink msgBody={}", msgBody);
         try {
