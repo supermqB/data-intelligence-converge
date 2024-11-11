@@ -18,4 +18,9 @@ public interface MessageQueueService {
      * 消息队列采集执行逻辑
      */
     void messageQueueHandle(String topicKey, String msgBody);
+
+    /**
+     * CDC 同步的队列落库
+     */
+    void cdcDbSaveQueue(ConvTunnel tunnel);
 }

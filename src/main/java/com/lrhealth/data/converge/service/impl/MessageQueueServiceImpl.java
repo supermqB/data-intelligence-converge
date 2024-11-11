@@ -6,7 +6,8 @@ import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.common.config.db.DataSourceRepository;
+import com.lrhealth.data.converge.common.db.DbConnection;
+import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.common.util.TemplateMakerUtil;
@@ -27,11 +28,9 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.teasoft.honey.osql.core.BeeFactory;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import javax.sql.DataSource;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,7 +75,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
     @Resource
     private ConvOdsDatasourceConfigService dsConfigService;
     @Resource
-    private DataSourceRepository dataSourceRepository;
+    private DbConnectionManager dbConnectionManager;
 
     private static Map<String,Integer> maxIdMap = new HashMap<>();
 
@@ -94,7 +93,9 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         Integer status = tunnel.getStatus();
         switch (status){
             case 1:
-                startConsumer(tunnel, queueConfig.getKafkaBroker(), topic, topicKey);
+                ConvTask task = taskService.createTask(tunnel, false);
+                startConsumer(queueConfig.getKafkaBroker(), topic, topicKey);
+                AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
                 break;
             case 2:
                 log.info("队列采集[{}]正在执行中，不重复添加创建！", tunnel.getId());
@@ -110,19 +111,16 @@ public class MessageQueueServiceImpl implements MessageQueueService {
 
     }
 
-    private void startConsumer(ConvTunnel tunnel, String broker, String topic, String topicKey){
-        ConvTask task = taskService.createTask(tunnel, false);
+    private void startConsumer(String broker, String topic, String topicKey){
         KafkaConsumer<Object, Object> consumer = dynamicConsumerFactory.createConsumer(topic, KAFKA_GROUP_ID, broker);
         log.info("kafka消费者创建成功！, consumer={}", consumer);
         consumerContext.addConsumerTask(topicKey, consumer);
-        AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
     }
 
     @Override
     public void messageQueueHandle(String topicKey, String msgBody) {
         long tunnelId = Long.parseLong(topicKey.substring(0, topicKey.indexOf(StrPool.DASHED)));
         ConvTunnel tunnel = tunnelService.getById(tunnelId);
-        String systemCode = tunnel.getSysCode();
 
         // 格式化value
         HashMap<String, Object> msgRecord = JSON.parseObject(msgBody, HashMap.class);
@@ -137,16 +135,28 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         String sql = prepareSqlForOp(valueParse, tableModelRel);
         log.info("生成的完整sql语句：{}", sql);
         // 获取连接
-        DataSource dataSource = BeeFactory.getInstance().getDataSourceMap().get(systemCode);
-         if(ObjectUtil.isNull(dataSource)){
-            dataSourceRepository.createDataSource(datasourceConfig);
-            dataSource = BeeFactory.getInstance().getDataSourceMap().get(datasourceConfig.getId().toString());
-        }
-         // 执行sql
-        executeSql(dataSource, sql);
+        DbConnection connection = DbConnection.builder()
+                .dbUrl(datasourceConfig.getDsUrl())
+                .dbUserName(datasourceConfig.getDsUsername())
+                .dbPassword(datasourceConfig.getDsPwd())
+                .dbDriver(datasourceConfig.getDsDriverName())
+                .build();
+        Connection conn = dbConnectionManager.getConnection(connection);
+        // 执行sql
+        executeSql(conn, sql);
     }
 
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
 
+    @Override
+    public void cdcDbSaveQueue(ConvTunnel tunnel) {
+        // cdc同步启动落库线程
+        // topic格式：cdc-data-sysCode-db
+        String sysCode = tunnel.getSysCode();
+//        startConsumer(bootstrapServers, );
+
+    }
 
 
     @PostConstruct
@@ -283,9 +293,8 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         return res;
     }
 
-    private void executeSql(DataSource dataSource, String sql){
-        try(Connection conn = dataSource.getConnection();
-        Statement stat = conn.createStatement()) {
+    private void executeSql(Connection conn, String sql){
+        try(Statement stat = conn.createStatement()) {
             stat.execute(sql);
         }catch (Exception e){
             log.error("sql execute failed, [sql]={}", sql);
