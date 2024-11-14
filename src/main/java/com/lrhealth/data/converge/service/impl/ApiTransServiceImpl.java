@@ -1,6 +1,8 @@
 package com.lrhealth.data.converge.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.common.db.DbConnection;
+import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.entity.StdOriginalModel;
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
@@ -33,6 +34,8 @@ public class ApiTransServiceImpl implements ApiTransService {
     private ConvOdsDatasourceConfigService convOdsDatasourceConfigService;
     @Resource
     private StdOriginalModelMapper stdOriginalModelMapper;
+    @Resource
+    private DbConnectionManager connectionManager;
 
 
     @Override
@@ -107,7 +110,11 @@ public class ApiTransServiceImpl implements ApiTransService {
         }
         ConvOdsDatasourceConfig dsConf = dataSourceConfigs.get(0);
         try {
-            Connection connection = DriverManager.getConnection(dsConf.getDsUrl(), dsConf.getDsUsername(), dsConf.getDsPwd());
+            DbConnection dbConnection = DbConnection.builder().dbUrl(dsConf.getDsUrl())
+                    .dbUserName(dsConf.getDsUsername())
+                    .dbPassword(dsConf.getDsPwd())
+                    .dbDriver(dsConf.getDsDriverName()).build();
+            Connection connection = connectionManager.getConnection(dbConnection);
             return connection.createStatement();
         } catch (SQLException sqlException) {
             log.error("doCreateStatement fail! ex = {}", sqlException.getMessage());

@@ -112,26 +112,6 @@ public abstract class AbstractReader {
         return null;
     }
 
-    public boolean databaseCheck(ConvTunnel tunnel){
-        Connection con = null;
-        try {
-            Class.forName(getDataBase());
-            con = DriverManager.getConnection(tunnel.getJdbcUrl(), tunnel.getDbUserName(), tunnel.getDbPasswd());
-            return con.isValid(10);
-        }catch (Exception e){
-            log.error("log error,{}", ExceptionUtils.getStackTrace(e));
-        }finally {
-            if(con!=null) {
-                try {
-                    con.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return false;
-    }
-
     private void createDataXJson(String table, String sqlQuery, ConvTunnel tunnel, String dataXJsonPath, String frontendFilePath, List<String> columnList){
         try {
             TemplateMakerUtil makerUtil = new TemplateMakerUtil();
