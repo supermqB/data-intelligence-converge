@@ -10,10 +10,12 @@ import java.util.Date;
  */
 @Slf4j
 public class TokenUtil {
+
+    private TokenUtil(){}
     /**
      * 密钥
      */
-    private static String SECRET_KEY = "secretKey";
+    private static final String secretKey = "secretKey";
 
     /**
      * 生成token
@@ -22,23 +24,18 @@ public class TokenUtil {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + 3600000);
 
-        String token = Jwts.builder()
+        return Jwts.builder()
                 .setSubject(subject)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .signWith(SignatureAlgorithm.HS256, secretKey)
                 .compact();
-
-        return token;
     }
 
     public static boolean validateToken(String token) {
         try {
-            Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
-            if (claims.getExpiration().before(new Date())){
-                return false;
-            }
-            return true;
+            Claims claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
+            return !claims.getExpiration().before(new Date());
         } catch (JwtException e) {
             log.error("token解析失败 e = {}",e.getMessage());
             return false;
@@ -49,8 +46,7 @@ public class TokenUtil {
         String subject = null;
 
         try {
-            //Jws<Claims> claimsJws = Jwts.parser().parseClaimsJws(jwtToken);
-            Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(jwtToken).getBody();
+            Claims claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(jwtToken).getBody();
             return claims.getSubject();
         } catch (Exception e) {
             log.error("subject解析失败 e = {}",e.getMessage());

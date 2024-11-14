@@ -55,7 +55,6 @@ public class TaskDto {
      */
     private boolean taskStatus;
     /**
-     * TODO: 是否使用convergeConfig的converge_method来控制任务的类型？但是dataX生成csv过程的模式？
      * 任务模式: 0db、1file
      */
     private int taskModel;

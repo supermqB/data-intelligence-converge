@@ -27,12 +27,6 @@ public class DsResult<T> {
      */
     private T data;
 
-    private boolean failed;
-    private boolean success;
-
-    public DsResult() {
-    }
-
     public DsResult(Integer code, String msg) {
         this.code = code;
         this.msg = msg;

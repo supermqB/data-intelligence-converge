@@ -6,6 +6,8 @@ package com.lrhealth.data.converge.common.constants;
  */
 public final class FepConstant {
 
+    private FepConstant(){}
+
     public static final String DEFAULT_SQL = "select 1";
 
 }

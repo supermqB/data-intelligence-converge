@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.common.enums;
 
 import com.lrhealth.data.common.exception.CommonException;
+import java.util.Objects;
 
 /**
  * @author jinmengyu
@@ -30,7 +31,7 @@ public enum TunnelConnectStatusEnum {
             throw new CommonException("状态参数为空");
         }
         for (TunnelConnectStatusEnum statusEnum : TunnelConnectStatusEnum.values()){
-            if (code == statusEnum.code){
+            if (Objects.equals(code, statusEnum.code)){
                 return statusEnum.value;
             }
         }

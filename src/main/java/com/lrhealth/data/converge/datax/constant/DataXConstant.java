@@ -6,6 +6,8 @@ package com.lrhealth.data.converge.datax.constant;
  */
 public final class DataXConstant {
 
+    private DataXConstant(){}
+
     public static final String JDBC_HOST = "host";
     public static final String JDBC_POST = "port";
 

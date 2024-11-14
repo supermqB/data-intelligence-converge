@@ -26,7 +26,7 @@ public class CallbackController {
      * @return
      */
     @PostMapping(value = "/flow/callback")
-    public ResultBase flowCallback(@RequestBody FlowInstanceDto dto) {
+    public ResultBase<String> flowCallback(@RequestBody FlowInstanceDto dto) {
         log.info("flowCallback,request={}", JSON.toJSONString(dto));
         dsFlowBiz.flowCallback(dto);
         return ResultBase.success("工作流实例回调完成");

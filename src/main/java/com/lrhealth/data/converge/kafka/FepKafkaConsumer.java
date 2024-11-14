@@ -1,6 +1,6 @@
 package com.lrhealth.data.converge.kafka;
 
-import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
 import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
 import com.lrhealth.data.converge.model.dto.OriginalStructureDto;
@@ -39,11 +39,11 @@ public class FepKafkaConsumer {
 
 
     @KafkaListener(topics = "${spring.kafka.topic.fep.update-collect-message}")
-    public void updateCollectInfo(ConsumerRecord<String, String> record, Acknowledgment acknowledgment){
-        log.info("====================receive update-fepStatus msgBody={}", record);
+    public void updateCollectInfo(ConsumerRecord<String, String> collectRecord, Acknowledgment acknowledgment){
+        log.info("====================receive update-fepStatus msgBody={}", collectRecord);
         try {
-            String key = record.key();
-            String msgBody = record.value();
+            String key = collectRecord.key();
+            String msgBody = collectRecord.value();
             feTunnelConfigService.kafkaUpdateFepStatus(key, msgBody);
         } catch (Exception e) {
             log.error("fepStatus update error,{}", ExceptionUtils.getStackTrace(e));
@@ -100,7 +100,7 @@ public class FepKafkaConsumer {
     public void uploadStructure(@Payload String msgBody, Acknowledgment acknowledgment){
         try {
             OriginalStructureDto structureDto = JSON.parseObject(msgBody, OriginalStructureDto.class);
-            log.info("====================receive upload originalStructure dsId = {},orgCode ={},sysCode = {},tableSize = {}",structureDto.getDsConfId(),structureDto.getOrgCode(),structureDto.getSysCode(), CollectionUtil.isEmpty(structureDto.getOriginalTables()) ? 0 : structureDto.getOriginalTables().size());
+            log.info("====================receive upload originalStructure dsId = {},orgCode ={},sysCode = {},tableSize = {}",structureDto.getDsConfId(),structureDto.getOrgCode(),structureDto.getSysCode(), CollUtil.isEmpty(structureDto.getOriginalTables()) ? 0 : structureDto.getOriginalTables().size());
             importOriginalService.importConvOriginal(structureDto);
         } catch (Exception e) {
             log.error("upload originalStructure error,{}", ExceptionUtils.getStackTrace(e));

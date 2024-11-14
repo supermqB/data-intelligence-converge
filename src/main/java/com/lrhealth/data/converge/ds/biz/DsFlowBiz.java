@@ -68,7 +68,6 @@ public class DsFlowBiz {
      */
     private ConvDolpscheFlowRunDetail buildConvDolpscheFlowRunDetail(FlowInstanceDto dto,DsResult dsResult){
         try {
-            //        long projectCode =  Long.valueOf(String.valueOf(dsMap.get("projectCode")));
             LambdaQueryWrapper<ConvDolpscheRel> relWrapper = new LambdaQueryWrapper<>();
             relWrapper.eq(ConvDolpscheRel::getDsProjectCode,String.valueOf(dto.getProjectCode())).eq(ConvDolpscheRel::getDelFlag,0);
             List<ConvDolpscheRel> convDolpscheRelList = iConvDolpscheRelService.list(relWrapper);

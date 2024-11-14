@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -33,7 +34,7 @@ public class ConvRedisCache implements Cache {
     public List<String> getAllByPrefix(String prefix) {
         Set<String> keys = redisTemplate.keys(prefix+"*");
         if (CollectionUtils.isEmpty(keys)){
-            return null;
+            return Collections.emptyList();
         }
         return new ArrayList<>(keys);
     }

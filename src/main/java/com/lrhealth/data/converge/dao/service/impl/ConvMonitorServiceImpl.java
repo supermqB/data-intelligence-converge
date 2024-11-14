@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.dao.service.impl;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
 import com.lrhealth.data.converge.dao.entity.ConvMonitorLog;
@@ -79,7 +79,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      * 处理目标库监测消息
      */
     private synchronized void processDbMonitor(MonitorMsg message) {
-        if (StringUtils.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
+        if (CharSequenceUtil.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
             log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()), message.getOrgCode(), message.getDsId());
             return;
         }
@@ -96,7 +96,7 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      * 处理镜像库增量数据
      */
     private synchronized void processMirrorDbIncrMonitor(MonitorMsg message, String tableName) {
-        if (StringUtils.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
+        if (CharSequenceUtil.isEmpty(message.getOrgCode()) || message.getDsId() == null) {
             log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()), message.getOrgCode(), message.getDsId());
             return;
         }
@@ -146,9 +146,9 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
      */
     private List<ConvFeNode> getFeNodeByMsg(MonitorMsg message) {
         LambdaQueryWrapper<ConvFeNode> queryWrapper = new LambdaQueryWrapper<ConvFeNode>()
-                .eq(StringUtils.isNotEmpty(message.getSourceIp()), ConvFeNode::getIp, message.getSourceIp())
-                .eq(StringUtils.isNotEmpty(message.getSourcePort()), ConvFeNode::getPort, Integer.parseInt(message.getSourcePort()))
-                .eq(StringUtils.isNotEmpty(message.getOrgCode()), ConvFeNode::getOrgCode, message.getOrgCode())
+                .eq(CharSequenceUtil.isNotEmpty(message.getSourceIp()), ConvFeNode::getIp, message.getSourceIp())
+                .eq(CharSequenceUtil.isNotEmpty(message.getSourcePort()), ConvFeNode::getPort, Integer.parseInt(message.getSourcePort()))
+                .eq(CharSequenceUtil.isNotEmpty(message.getOrgCode()), ConvFeNode::getOrgCode, message.getOrgCode())
                 .eq(ConvFeNode::getDelFlag, 0);
         queryWrapper.eq(ConvFeNode::getOrgCode, message.getOrgCode());
         return convFeNodeMapper.selectList(queryWrapper);

@@ -146,11 +146,6 @@ public class ConvergeServiceImpl implements ConvergeService {
             if (CollUtil.isEmpty(resultViews)){
                 return;
             }
-//            for (ConvTaskResultView resultView : resultViews){
-//                String tableName = resultView.getTableName();
-//                paramMap.put(tableName + "_start_position", resultView.getStartIndex());
-//                paramMap.put(tableName + "_end_position", resultView.getEndIndex());
-//            }
             DsKafkaDto kafkaDto = DsKafkaDto.builder()
                     .startParams(buildStartParams(convTask))
                     .taskId(convTask.getId())
@@ -181,39 +176,6 @@ public class ConvergeServiceImpl implements ConvergeService {
         }
         return startParams;
     }
-
-
-    /**
-     * 启动ds工作流
-     */
-//    private void startDsFlow(String orgCode,long tunnelId){
-//        if(!dsSwitch){
-//            return;
-//        }
-//        LambdaQueryWrapper<ConvTask> queryWrapper = new LambdaQueryWrapper<>();
-//        queryWrapper.ne(ConvTask::getStatus,5).eq(ConvTask::getOrgCode, orgCode).
-//                eq(ConvTask::getDelFlag,0).eq(ConvTask::getConvergeMethod,"1");
-//        List<ConvTask> list = convTaskService.list(queryWrapper);
-//        if(!CollectionUtils.isEmpty(list)){
-//            log.info("startDsFlow，【{}】管道还有任务未执行完，不触发【{}】机构对应的ds工作流启动========",tunnelId,orgCode);
-//            return;
-//        }
-//
-//        LambdaQueryWrapper<ConvDolpscheRel> relWrapper = new LambdaQueryWrapper<>();
-//        relWrapper.eq(ConvDolpscheRel::getConvOrgCode,orgCode).eq(ConvDolpscheRel::getDelFlag,0);
-//        List<ConvDolpscheRel> convDolpscheRelList = iConvDolpscheRelService.list(relWrapper);
-//        if(CollectionUtils.isEmpty(convDolpscheRelList)){
-//           log.error("startDsFlow error,汇聚和ds关系表无记录，请检查！");
-//           return;
-//        }
-//        DsResult dsResult = dsFeignClient.startFlow(Long.valueOf(convDolpscheRelList.get(0).getDsProjectCode()).longValue(),
-//                Long.valueOf(convDolpscheRelList.get(0).getDsFlowCode()).longValue());
-//        if(dsResult.isSuccess()){
-//            log.info("startDsFlow，ds工作流启动成功========");
-//        }else {
-//            log.error("startDsFlow，ds工作流启动失败，dsResult={}", JSON.toJSONString(dsResult));
-//        }
-//    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)

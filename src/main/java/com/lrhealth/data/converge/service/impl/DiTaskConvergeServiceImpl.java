@@ -7,11 +7,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.common.enums.conv.CollectDataTypeEnum;
 import com.lrhealth.data.common.enums.conv.XdsStatusEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
-import com.lrhealth.data.converge.common.util.MinioClientUtils;
 import com.lrhealth.data.converge.common.util.file.LargeFileUtil;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
+import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.model.dto.FileMessageDTO;
 import com.lrhealth.data.converge.service.DbSqlService;
@@ -69,8 +69,6 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     private DbSqlService dbSqlService;
     @Resource
     private ConvTunnelService tunnelService;
-    @Resource
-    private MinioClientUtils minioClientUtils;
 
     @Scheduled(cron = "${lrhealth.converge.dataSaveCron}")
     @Override
@@ -255,8 +253,6 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
         List<OriginalModelColumn> originalModelColumns = odsModelService.getColumnList(xds.getOdsModelName(), xds.getSysCode());
         // 数据写入
         Long countNumber = dataTableSave(xds, taskId, originalModelColumns, dataSourceDto);
-
-        // todo: 配置化
         try {
             // 删除汇聚端的文件
             Files.delete(Paths.get(xds.getStoredFilePath()));
@@ -271,14 +267,14 @@ public class DiTaskConvergeServiceImpl implements DiTaskConvergeService {
     private Long dataTableSave(Xds xds, Integer taskId, List<OriginalModelColumn> originalModelColumns, DataSourceDto dataSourceDto) {
         long startTime = System.currentTimeMillis();
         // 表是否存在的判断
-//        synchronized (this) {
-//            if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName(), dataSourceDto)) {
-//                // 创建表
-//                List<ColumnDbBo> collect = originalModelColumns.stream().map(columnInfo -> ColumnDbBo.builder().columnName(columnInfo.getNameEn()).fieldType(columnInfo.getFieldType()).fieldLength(columnInfo.getFieldTypeLength()).build()).collect(Collectors.toList());
-//                dbSqlService.createTable(collect, xds.getOdsTableName(), dataSourceDto);
-//                AsyncFactory.convTaskLog(taskId, "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
-//            }
-//        }
+        synchronized (this) {
+            if (!dbSqlService.checkOdsTableExist(xds.getOdsTableName(), dataSourceDto)) {
+                // 创建表
+                List<ColumnDbBo> collect = originalModelColumns.stream().map(columnInfo -> ColumnDbBo.builder().columnName(columnInfo.getNameEn()).fieldType(columnInfo.getFieldType()).fieldLength(columnInfo.getFieldTypeLength()).build()).collect(Collectors.toList());
+                dbSqlService.createTable(collect, xds.getOdsTableName(), dataSourceDto);
+                AsyncFactory.convTaskLog(taskId, "[" + xds.getOdsTableName() + "]表不存在，创建一个新表");
+            }
+        }
         // 过滤original_model_column里面的name_en重复数据
         List<OriginalModelColumn> filterModelColumns = new ArrayList<>(originalModelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, column -> column, (column1, column2) -> column1))
                 .values());

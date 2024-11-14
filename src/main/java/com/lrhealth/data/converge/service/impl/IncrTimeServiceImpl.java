@@ -5,7 +5,6 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
-import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.mapper.StdOriginalModelMapper;
 import com.lrhealth.data.converge.dao.service.*;
@@ -74,7 +73,7 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             StdOriginalModel stdOriginalModel = stdOriginalModelMapper.selectOne(new LambdaQueryWrapper<StdOriginalModel>()
                     .eq(StdOriginalModel::getId, table.getModelId())
                     .eq(StdOriginalModel::getDelFlag, 0));
-            if (stdOriginalModel != null && StringUtils.isNotEmpty(stdOriginalModel.getConvDsConfId())){
+            if (stdOriginalModel != null && CharSequenceUtil.isNotEmpty(stdOriginalModel.getConvDsConfId())){
                 dsConfig = datasourceConfigService.getById(Integer.valueOf(stdOriginalModel.getConvDsConfId()));
             }
         }

@@ -31,7 +31,6 @@ public class TunnelTaskController {
     @PostMapping("/tunnel/upsert")
     public ResultBase<String> upsertTunnel(@RequestBody TunnelMessageDTO tunnelMessageDTO){
         try {
-//            tunnelExecService.tunnelConfig(tunnelMessageDTO);
             directConnectCollectService.tunnelConfig(tunnelMessageDTO);
             return ResultBase.success("管道更新成功");
         }catch (Exception e){
@@ -50,7 +49,6 @@ public class TunnelTaskController {
     public ResultBase<String> tunnelExec(@RequestParam("tunnelId") Long tunnelId,
                                         @RequestParam("taskId") Integer taskId){
         try {
-//            tunnelExecService.tunnelExec(taskId, tunnelId);
             directConnectCollectService.tunnelExec(taskId, tunnelId);
             return ResultBase.success("执行成功");
         }catch (Exception e){

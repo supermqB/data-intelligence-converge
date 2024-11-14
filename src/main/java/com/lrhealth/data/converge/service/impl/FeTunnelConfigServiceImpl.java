@@ -11,7 +11,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.google.common.collect.Lists;
 import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.*;
-import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.SysDict;
@@ -312,7 +311,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             }
             List<OriginalModel> modelList = odsModelService.getModelList(modelIdList);
             //原始模型Map modelNameEn-model
-            hdfsMap = modelList.stream().filter(e -> StringUtils.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(OriginalModel::getNameEn, e -> e, (m1, m2) -> m1));
+            hdfsMap = modelList.stream().filter(e -> CharSequenceUtil.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(OriginalModel::getNameEn, e -> e, (m1, m2) -> m1));
             List<ModelConfig> modelConfigs = modelConfigService.list(new LambdaQueryWrapper<ModelConfig>().in(ModelConfig::getModelId, modelIdList));
             //Hive表配置Map modelNameEn-数据存储类型
             for (ModelConfig modelConfig : modelConfigs){
@@ -320,7 +319,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             }
             List<Long> originalIdList = hdfsMap.values().stream().map(OriginalModel::getOriginalId).collect(Collectors.toList());
             //查询原始结构
-            if (CollectionUtil.isNotEmpty(originalIdList)) {
+            if (CollUtil.isNotEmpty(originalIdList)) {
                 List<ConvOriginalTable> originalTables = convOriginalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>()
                         .in(ConvOriginalTable::getId, originalIdList)
                         .eq(ConvOriginalTable::getDelFlag, 0));
@@ -330,11 +329,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 湘潭Dm数据库关键字进行处理逻辑 ‘“keyWord”’ 前置机校验以‘“开头不做拼接处理
         if ("Dm".equals(writeDbType)){
             List<SysDict> dmKeyWords = sysDictService.getDbKeyWords("db_key_words");
-            if (CollectionUtil.isNotEmpty(dmKeyWords)){
+            if (CollUtil.isNotEmpty(dmKeyWords)){
                 Set<String> dmKeyWordsSet = dmKeyWords.stream().map(sysDict -> sysDict.getDictItemValue().toUpperCase()).collect(Collectors.toSet());
                 for (ConvCollectField convCollectField : collectFieldList) {
                     String columnField = convCollectField.getColumnField();
-                    if (StringUtils.isEmpty(columnField)){
+                    if (CharSequenceUtil.isEmpty(columnField)){
                         continue;
                     }
                     StringBuilder sb = new StringBuilder();
@@ -384,10 +383,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
      */
     private String doGetHiveColumns(String readerDbType,Map<String, List<OriginalModelColumn>> modelColumnMap, ConvCollectField field, Integer dataSource) {
         List<OriginalModelColumn> originalModelColumns = modelColumnMap.get(field.getTableName());
-        if (CollectionUtil.isEmpty(originalModelColumns)) {
+        if (CollUtil.isEmpty(originalModelColumns)) {
             return null;
         }
-        if (StringUtils.isNotEmpty(field.getColumnField())) {
+        if (CharSequenceUtil.isNotEmpty(field.getColumnField())) {
             List<String> existNames = Arrays.asList(field.getColumnField().split(","));
             originalModelColumns = originalModelColumns.stream().filter(column -> existNames.contains(column.getNameEn()))
                     .sorted(Comparator.comparing(OriginalModelColumn::getSeqNo)).collect(Collectors.toList());
@@ -414,7 +413,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private String transformDataType(String readerDataType,String fieldType) {
         Map<String, String> reader2DataXTypeMapping = getReaderDbType2DataXTypeMapping(readerDataType);
         String configDataType = reader2DataXTypeMapping.get(fieldType);
-        if(StringUtils.isNotEmpty(configDataType)){
+        if(CharSequenceUtil.isNotEmpty(configDataType)){
             return configDataType;
         }
         fieldType = fieldType.toLowerCase();

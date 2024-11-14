@@ -1,8 +1,8 @@
 package com.lrhealth.data.converge.controller;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
-import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.common.util.TokenUtil;
 import com.lrhealth.data.converge.dao.entity.ConvTask;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
@@ -44,7 +44,7 @@ public class ApiTransController {
             return ResultBase.fail("token校验失败");
         }
         String tunnelId = TokenUtil.parseJwtSubject(token);
-        if (StringUtils.isEmpty(tunnelId)){
+        if (CharSequenceUtil.isEmpty(tunnelId)){
             return ResultBase.fail("tunnelId不存在");
         }
         ConvTunnel convTunnel = convTunnelService.getTunnelWithoutDelFlag(Long.valueOf(tunnelId));

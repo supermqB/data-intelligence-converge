@@ -80,7 +80,6 @@ public class DbSqlServiceImpl implements DbSqlService {
     @Override
     public Long getAvgRowLength(String odsTableName, DataSourceDto dataSourceDto, String odsModelName){
         // 刷新配置,只需要执行一次
-        // todo: ALTER SYSTEM SET ENABLE_SQL_EXTENSION = TRUE;
         String result = null;
         // 获取每行的平均大小
         String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
@@ -127,8 +126,8 @@ public class DbSqlServiceImpl implements DbSqlService {
     }
 
     private String deleteLastSemicolon(String sql) {
-        String new_sql = sql.trim();
-        if (new_sql.endsWith(";")) return new_sql.substring(0, new_sql.length() - 1); //fix oracle ORA-00911 bug.oracle用jdbc不能有分号
+        String newSql = sql.trim();
+        if (newSql.endsWith(";")) return newSql.substring(0, newSql.length() - 1); //fix oracle ORA-00911 bug.oracle用jdbc不能有分号
         return sql;
     }
 
