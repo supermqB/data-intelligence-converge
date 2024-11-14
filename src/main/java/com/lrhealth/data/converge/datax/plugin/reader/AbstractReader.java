@@ -1,7 +1,10 @@
 package com.lrhealth.data.converge.datax.plugin.reader;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.common.db.DbConnection;
+import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.util.QueryParserUtil;
 import com.lrhealth.data.converge.common.util.TemplateMakerUtil;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
@@ -9,7 +12,9 @@ import com.lrhealth.data.converge.model.vo.JdbcUrlMatchVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,14 +27,16 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public abstract class AbstractReader {
+
+    private final DbConnectionManager dbConnectionManager;
+
     protected AbstractReader(){
+        this.dbConnectionManager = SpringUtil.getBean("com.lrhealth.data.converge.common.db.DbConnectionManager");
     }
 
     public void generateDatabaseReader(ConvTunnel tunnel, String tableName, String sqlQuery, String dataXJsonPath, String frontendFilePath){
-        Connection con = null;
+        Connection con = getConnection(tunnel);
         try {
-            Class.forName(getDataBase());
-            con= DriverManager.getConnection(tunnel.getJdbcUrl(), tunnel.getDbUserName(), tunnel.getDbPasswd());
             boolean connectStatus = con.isValid(10);
             if (!connectStatus){
                 log.error("数据库连接异常, 连接信息: {}, 用户名: {}, 密码: {}", tunnel.getJdbcUrl(), tunnel.getDbUserName(), tunnel.getDbPasswd());
@@ -61,24 +68,22 @@ public abstract class AbstractReader {
             createDataXJson(tableName, sqlQuery, tunnel, dataXJsonPath, frontendFilePath, columnList);
         } catch (Exception e) {
             log.error("log error,{}", ExceptionUtils.getStackTrace(e));
-        } finally {
-            if(con!=null) {
-                try {
-                    con.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
+    private Connection getConnection(ConvTunnel tunnel){
+        DbConnection dbConnection = DbConnection.builder().dbUrl(tunnel.getJdbcUrl())
+                .dbUserName(tunnel.getDbUserName())
+                .dbPassword(tunnel.getDbPasswd())
+                .dbDriver(getDataBase())
+                .build();
+        return dbConnectionManager.getConnection(dbConnection);
+    }
+
+
     public String readerTableSeqFieldIndex(ConvTunnel tunnel, String tableName, String seqField, String index){
-        Connection con = null;
-        Statement statement = null;
-        try {
-            Class.forName(getDataBase());
-            con = DriverManager.getConnection(tunnel.getJdbcUrl(), tunnel.getDbUserName(), tunnel.getDbPasswd());
-            statement = con.createStatement();
+        Connection con = getConnection(tunnel);
+        try (Statement statement = con.createStatement()){
             String queryIndex;
             if (index.equals("startIndex")){
                 queryIndex = getStartIndex(tableName, seqField);
@@ -93,21 +98,6 @@ public abstract class AbstractReader {
             return endIndex;
         }catch (Exception e){
             log.error("log error,{}", ExceptionUtils.getStackTrace(e));
-        }finally {
-            if(statement!=null) {
-                try {
-                    con.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if(con!=null) {
-                try {
-                    con.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
         return null;
     }

@@ -20,6 +20,10 @@ public class SqlserverReader extends AbstractReader {
 
     private static final String SQLSERVER_URL_SAMPLE = "jdbc:sqlserver://{host}[:{port}][;databaseName={database}][;{params}]";
 
+    public SqlserverReader() {
+        super();
+    }
+
 
     @Override
     protected String getDataBase() {

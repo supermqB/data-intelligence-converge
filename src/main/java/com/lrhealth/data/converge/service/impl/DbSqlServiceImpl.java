@@ -1,17 +1,23 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.lrhealth.data.converge.common.db.DbConnection;
+import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.enums.OdsDataSizeEnum;
 import com.lrhealth.data.converge.common.util.QueryParserUtil;
-import com.lrhealth.data.converge.dao.adpter.JDBCRepository;
 import com.lrhealth.data.converge.model.bo.ColumnDbBo;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.service.DbSqlService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
+import org.teasoft.honey.osql.core.ExceptionHelper;
 
 import javax.annotation.Resource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -22,7 +28,7 @@ import java.util.List;
 @Service
 public class DbSqlServiceImpl implements DbSqlService {
     @Resource
-    private JDBCRepository jdbcRepository;
+    private DbConnectionManager dbConnectionManager;
 
     @Override
     public void createTable(List<ColumnDbBo> header, String odsTableName, DataSourceDto dataSourceDto) {
@@ -43,11 +49,6 @@ public class DbSqlServiceImpl implements DbSqlService {
             }else {
                 columnSql.append("varchar(255)").append(" ");
             }
-//            if (CharSequenceUtil.isNotBlank(modelColumn.getRequiredFlag()) && modelColumn.getRequiredFlag().equals("1")){
-//                columnSql.append("NOT NULL,").append("\n");
-//            }else {
-//                columnSql.append("DEFAULT NULL,").append("\n");
-//            }
             columnSql.append("DEFAULT NULL,").append("\n");
         }
         //xds_id和row_id
@@ -60,7 +61,7 @@ public class DbSqlServiceImpl implements DbSqlService {
 
 
         log.info("table [{}]  sql:[{}]", odsTableName, createSql);
-        jdbcRepository.execSql(String.valueOf(createSql), dataSourceDto);
+        execSql(String.valueOf(createSql), dataSourceDto);
     }
 
     @Override
@@ -72,7 +73,7 @@ public class DbSqlServiceImpl implements DbSqlService {
         }else {
             checkSql = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '" + odsTableName + "';";
         }
-        String result = jdbcRepository.execSql(checkSql, dataSourceDto);
+        String result = execSql(checkSql, dataSourceDto);
         return (result != null);
     }
 
@@ -84,7 +85,7 @@ public class DbSqlServiceImpl implements DbSqlService {
         // 获取每行的平均大小
         String selectSql = "select AVG_ROW_LENGTH from information_schema.TABLES where TABLE_NAME = '" + odsTableName + "';";
         try {
-            result = JDBCRepository.execSql(selectSql, dataSourceDto);
+            result = execSql(selectSql, dataSourceDto);
         }catch (Exception e){
             log.error("获取数据库表[{}]容量失败：{}", odsModelName, ExceptionUtils.getStackTrace(e));
         }
@@ -94,6 +95,41 @@ public class DbSqlServiceImpl implements DbSqlService {
             return OdsDataSizeEnum.getValue(odsModelName);
         }
         return Long.parseLong(result);
+    }
+
+    @Override
+    public String execSql(String sql, DataSourceDto dataSourceDto) {
+        ResultSet rs = null;
+        String execSql = deleteLastSemicolon(sql);
+        DbConnection dbConnection = DbConnection.builder().dbUrl(dataSourceDto.getJdbcUrl())
+                .dbUserName(dataSourceDto.getUsername())
+                .dbPassword(dataSourceDto.getPassword())
+                .dbDriver(dataSourceDto.getDriver())
+                .build();
+        Connection conn = dbConnectionManager.getConnection(dbConnection);
+        try (PreparedStatement pst = conn.prepareStatement(execSql)){
+            rs = pst.executeQuery();
+            if (rs.next()) {
+                return rs.getString(1);
+            }
+        } catch (SQLException e) {
+            throw ExceptionHelper.convert(e);
+        }finally {
+            if(rs!=null) {
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+    }
+
+    private String deleteLastSemicolon(String sql) {
+        String new_sql = sql.trim();
+        if (new_sql.endsWith(";")) return new_sql.substring(0, new_sql.length() - 1); //fix oracle ORA-00911 bug.oracle用jdbc不能有分号
+        return sql;
     }
 
 

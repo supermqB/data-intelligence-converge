@@ -35,7 +35,7 @@ public class ApiTransServiceImpl implements ApiTransService {
     @Resource
     private StdOriginalModelMapper stdOriginalModelMapper;
     @Resource
-    private DbConnectionManager connectionManager;
+    private DbConnectionManager dbConnectionManager;
 
 
     @Override
@@ -53,7 +53,7 @@ public class ApiTransServiceImpl implements ApiTransService {
         Integer dsId = convTunnel.getWriterDatasourceId();
         for (StdOriginalModel originalModel : modelList) {
             String tableName = originalModel.getNameEn();
-            Statement statement = null;
+            Statement statement;
             try {
                 statement = doCreateStatement(tableName, dsId);
                 if (statement == null) {
@@ -89,7 +89,7 @@ public class ApiTransServiceImpl implements ApiTransService {
                 columns.append(column);
                 values.append("'").append(value).append("'");
             }
-            String sql = "INSERT INTO " + tableName + " (" + columns.toString() + ") VALUES (" + values.toString() + ")";
+            String sql = "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
             try {
                 statement.executeQuery(sql);
             } catch (SQLException sqlException) {
@@ -114,7 +114,7 @@ public class ApiTransServiceImpl implements ApiTransService {
                     .dbUserName(dsConf.getDsUsername())
                     .dbPassword(dsConf.getDsPwd())
                     .dbDriver(dsConf.getDsDriverName()).build();
-            Connection connection = connectionManager.getConnection(dbConnection);
+            Connection connection = dbConnectionManager.getConnection(dbConnection);
             return connection.createStatement();
         } catch (SQLException sqlException) {
             log.error("doCreateStatement fail! ex = {}", sqlException.getMessage());

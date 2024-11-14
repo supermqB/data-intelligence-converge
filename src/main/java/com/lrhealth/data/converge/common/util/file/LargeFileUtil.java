@@ -2,6 +2,8 @@ package com.lrhealth.data.converge.common.util.file;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.common.db.DbConnection;
+import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
 import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.opencsv.CSVReader;
@@ -10,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.io.FileReader;
 import java.math.BigDecimal;
 import java.sql.*;
@@ -27,24 +30,27 @@ public class LargeFileUtil {
     private LargeFileUtil(){}
     private static final int BATCH_SIZE = 2000; // 每批数据的大小
 
+    @Resource
+    private DbConnectionManager dbConnectionManager;
+
 
     public Long fileParseAndSave(String filePath, Long xdsId, String odsTableName, Map<String, String> fieldTypeMap, Integer taskId, DataSourceDto sourceDto) {
         long lineCnt = 0;
         PreparedStatement pst = null;
         Map<String, String> setErrorMap = new HashMap<>();
-        try {
-            Class.forName(sourceDto.getDriver());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-        try (CSVReader reader = new CSVReader(new FileReader(filePath));
-             Connection connection = DriverManager.getConnection(sourceDto.getJdbcUrl(), sourceDto.getUsername(), sourceDto.getPassword())) {
+        DbConnection dbConnection = DbConnection.builder().dbUrl(sourceDto.getJdbcUrl())
+                .dbUserName(sourceDto.getUsername())
+                .dbPassword(sourceDto.getPassword())
+                .dbDriver(sourceDto.getDriver())
+                .build();
+        Connection conn = dbConnectionManager.getConnection(dbConnection);
+        try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
             // csv表头
             String[] headerList = reader.readNext();
             // 过滤出来的原始字段对应的csv表头索引
             Map<String, DataFieldInfo> odsHeaderMap = getFieldInfoMap(headerList, fieldTypeMap);
 
-            pst = connection.prepareStatement(assembleSql(odsHeaderMap, odsTableName));
+            pst = conn.prepareStatement(assembleSql(odsHeaderMap, odsTableName));
 
             String[] dataLine;
             while ((dataLine = reader.readNext()) != null) {

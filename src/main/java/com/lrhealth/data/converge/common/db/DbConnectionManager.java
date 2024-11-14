@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.common.db;
 
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import javax.sql.DataSource;
@@ -12,6 +13,7 @@ import java.util.concurrent.*;
  * @author jinmengyu
  * @date 2024-11-11
  */
+@Component
 public class DbConnectionManager {
     private final ConcurrentMap<String, ConnectionWrapper> connectionMap = new ConcurrentHashMap<>();
 

@@ -19,6 +19,10 @@ public class OracleReader extends AbstractReader {
 
     private static final String ORACLE_SID_URL_SAMPLE = "jdbc:oracle:thin:@{host}[:{port}]:{sid}";
 
+    public OracleReader() {
+        super();
+    }
+
     @Override
     protected String getDataBase() {
         return "oracle.jdbc.OracleDriver";

@@ -20,6 +20,10 @@ public class PostgresqlReader extends AbstractReader {
 
     private static final String POSTGRESQL_URL_SAMPLE = "jdbc:postgresql://{host}[:{port}]/[{database}][\\?{params}]";
 
+    public PostgresqlReader() {
+        super();
+    }
+
     @Override
     protected String getDataBase() {
         return "org.postgresql.Driver";

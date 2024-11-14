@@ -21,6 +21,10 @@ public class MysqlReader extends AbstractReader {
 
     private static final String MYSQL_URL_SAMPLE = "jdbc:mysql://{host}[:{port}]/[{database}][\\?{params}]";
 
+    public MysqlReader() {
+        super();
+    }
+
 
     @Override
     protected String getDataBase() {

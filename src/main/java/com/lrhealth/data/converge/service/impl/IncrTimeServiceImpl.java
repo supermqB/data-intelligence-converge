@@ -1,17 +1,14 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
-import com.lrhealth.data.converge.common.util.SqlExecUtil;
 import com.lrhealth.data.converge.common.util.StringUtils;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.mapper.StdOriginalModelMapper;
 import com.lrhealth.data.converge.dao.service.*;
-import com.lrhealth.data.converge.model.dto.DataSourceDto;
 import com.lrhealth.data.converge.model.dto.IncrSequenceDto;
 import com.lrhealth.data.converge.service.IncrTimeService;
 import com.lrhealth.data.converge.service.KafkaService;
@@ -20,12 +17,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.lang.System;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author jinmengyu
@@ -149,27 +142,5 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 .incrSequence(SeqFieldTypeEnum.TIME.getValue().equals(incrType) ? build.getLatestTime() : build.getLatestSeq())
                 .build();
         kafkaService.updateFepIncrSequence(incrSequenceDto, tunnel);
-    }
-
-
-
-
-    private String getTaskLatestTimeSql(Long xdsId, String tableName, String businessField){
-        return "SELECT " + businessField + " FROM " + tableName +
-                " WHERE xds_id = '" + xdsId + "' ORDER BY " + businessField + " DESC LIMIT 1";
-    }
-
-    public static void main(String[] args) {
-        String sql = "SELECT " + "FILL_DATE" + " FROM " + "DI_RSG_BEDS_INFO" +
-                " WHERE xds_id = '" + "1747433178191933440" + "' ORDER BY " + "FILL_DATE" + " LIMIT 1";
-        DataSourceDto dto = DataSourceDto.builder()
-                .driver("com.oceanbase.jdbc.Driver")
-                .jdbcUrl("jdbc:oceanbase://172.16.29.68:2883/ods_test_gy")
-                .username("root@rdcp_std")
-                .password("LR_rdcp@2023").build();
-        List<Map<String, Object>> mapList = SqlExecUtil.execSql(sql, dto);
-        Object fillDate = mapList.get(0).get("FILL_DATE");
-        String dateTime = DateUtil.formatDateTime((Date) fillDate);
-        System.out.println(dateTime);
     }
 }

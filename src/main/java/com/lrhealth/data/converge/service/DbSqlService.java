@@ -27,4 +27,7 @@ public interface DbSqlService {
     boolean checkOdsTableExist(String odsTableName, DataSourceDto dataSourceDto);
 
     Long getAvgRowLength(String odsTableName, DataSourceDto dataSourceDto, String odsModelName);
+
+    String execSql(String sql, DataSourceDto dataSourceDto);
+
 }
