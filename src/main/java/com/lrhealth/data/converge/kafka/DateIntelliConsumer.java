@@ -119,7 +119,14 @@ public class DateIntelliConsumer {
         try {
             DataSourceParamDto dataSourceParam = JSON.parseObject(msgBody, DataSourceParamDto.class);
             List<DataSourceInfoDto> orgReaderSource = odsDatasourceConfigService.getOrgReaderSource(dataSourceParam);
-            String topic = originalStructureTopic + CharPool.DASHED + dataSourceParam.getOrgCode();
+            String topic;
+            if (dataSourceParam.getFeNodeId() != null){
+                // 新的topic，original-structure-config-ip-port
+                topic = originalStructureTopic + CharPool.DASHED + kafkaService.topicSuffixIpPort(Long.valueOf(dataSourceParam.getFeNodeId()));
+                kafkaTemplate.send(topic, JSON.toJSONString(orgReaderSource));
+            }
+            // 旧的topic，original-structure-config-orgCode 为了向前兼容，目前会重复发送一次旧的topic
+            topic = originalStructureTopic + CharPool.DASHED + dataSourceParam.getOrgCode();
             kafkaTemplate.send(topic, JSON.toJSONString(orgReaderSource));
         } catch (Exception e) {
             log.error("get original structure error, {}", ExceptionUtils.getStackTrace(e));

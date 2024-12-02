@@ -25,4 +25,10 @@ public class DataSourceParamDto {
      *  structure 1-库表 2-视图
      */
     private Integer structure;
+
+    /**
+     * 前置机id
+     */
+    private Integer feNodeId;
+
 }
