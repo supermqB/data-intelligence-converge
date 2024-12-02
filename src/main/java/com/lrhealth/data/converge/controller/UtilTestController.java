@@ -5,6 +5,8 @@ import com.lrhealth.data.converge.kafka.factory.KafkaConsumerContext;
 import com.lrhealth.data.converge.kafka.factory.KafkaDynamicConsumerFactory;
 import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
 import com.lrhealth.data.converge.model.dto.FepScheduledDto;
+import com.lrhealth.data.converge.model.dto.OriginalTableCountDto;
+import com.lrhealth.data.converge.service.ImportOriginalService;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,5 +79,15 @@ public class UtilTestController {
     public String remove(@PathVariable String groupId) {
         consumerContext.removeConsumerTask(groupId);
         return "移除成功！";
+    }
+
+    @Resource
+    private ImportOriginalService importOriginalService;
+
+    @GetMapping("/table/count")
+    public void testTableCount(){
+        String msgBody = "{\"dsConfId\":10234,\"sysCode\":\"H37020200022005\",\"tableCountMap\":{\"test_10102\":32,\"ttttttt1011\":2,\"lsh02\":100,\"lsh01\":100,\"index_test23\":28,\"mzghb_copy\":36621,\"je01\":9,\"mzghb\":3260,\"renci_count\":10,\"ttt\":163,\"mzghb_copy1\":326,\"yyyyy\":100,\"rjje02\":100,\"rjje01\":100,\"feiyong_sum\":0}}";
+        OriginalTableCountDto tableCountDto = JSON.parseObject(msgBody, OriginalTableCountDto.class);
+        importOriginalService.updateOriginalTableCount(tableCountDto);
     }
 }

@@ -72,10 +72,10 @@ public class DateIntelliConsumer {
                     return;
                 }
                 // cdc采集， 汇聚启动落库线程
-//                if (TunnelCMEnum.CDC_LOG.equals(tunnel.getConvergeMethod())){
-//                    log.info("cdc 实时采集，启动汇聚落库消费者");
-//
-//                }
+                if (TunnelCMEnum.CDC_LOG.getCode().equals(tunnel.getConvergeMethod())){
+                    log.info("cdc 实时采集，启动汇聚落库消费者");
+                    queueService.cdcDbSaveQueue(tunnel);
+                }
                 // 发送给前置机
                 String topicSuffix = kafkaService.topicSuffixIpPort(tunnel.getFrontendId());
                 TunnelMessageDTO tunnelMessage = tunnelConfigService.getTunnelMessage(tunnel);

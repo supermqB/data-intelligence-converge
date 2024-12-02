@@ -16,7 +16,6 @@ import com.lrhealth.data.model.original.model.OriginalModel;
 import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
@@ -38,7 +37,6 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     @Resource
     private OriginalModelService stdModelService;
 
-    @Transactional(rollbackFor = Exception.class)
     @Override
     public void importConvOriginal(OriginalStructureDto structureDto) {
         String orgCode = structureDto.getOrgCode();
@@ -78,7 +76,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         originalTableService.updateBatchById(tableList);
     }
 
-    private void processOriginalTable(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
+    public void processOriginalTable(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
         List<ConvOriginalTable> convOriginalTableList = CollUtil.newArrayList();
         List<ConvOriginalTable> storedTables = originalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>()
                 .eq(ConvOriginalTable::getSysCode, sysCode)

@@ -6,6 +6,7 @@ import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.db.DbConnection;
 import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
@@ -23,6 +24,7 @@ import com.lrhealth.data.converge.model.MessageParseFormat;
 import com.lrhealth.data.converge.model.dto.MessageParseDto;
 import com.lrhealth.data.converge.model.dto.OriginalTableModelDto;
 import com.lrhealth.data.converge.service.MessageQueueService;
+import freemarker.template.TemplateException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -39,7 +41,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
@@ -60,7 +61,13 @@ public class MessageQueueServiceImpl implements MessageQueueService {
     @Resource
     private ConvMessageQueueConfigService queueConfigService;
 
-    private static final String KAFKA_GROUP_ID = "queue_collect";
+    private static final String QUEUE_GROUP_ID = "queue_collect";
+
+    private static final String CDC_GROUP_ID = "metrics";
+
+
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String kafkaBootStrap;
 
     @Resource
     private KafkaDynamicConsumerFactory dynamicConsumerFactory;
@@ -77,8 +84,6 @@ public class MessageQueueServiceImpl implements MessageQueueService {
     @Resource
     private DbConnectionManager dbConnectionManager;
 
-    private static Map<String,Integer> maxIdMap = new HashMap<>();
-
     @Override
     public void queueModeCollect(ConvTunnel tunnel) {
         // 查询队列配置
@@ -94,7 +99,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         switch (status){
             case 1:
                 ConvTask task = taskService.createTask(tunnel, false);
-                startConsumer(queueConfig.getKafkaBroker(), topic, topicKey);
+                startConsumer(queueConfig.getKafkaBroker(), topic, topicKey, QUEUE_GROUP_ID);
                 AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
                 break;
             case 2:
@@ -111,8 +116,8 @@ public class MessageQueueServiceImpl implements MessageQueueService {
 
     }
 
-    private void startConsumer(String broker, String topic, String topicKey){
-        KafkaConsumer<Object, Object> consumer = dynamicConsumerFactory.createConsumer(topic, KAFKA_GROUP_ID, broker);
+    private void startConsumer(String broker, String topic, String topicKey, String groupId){
+        KafkaConsumer<Object, Object> consumer = dynamicConsumerFactory.createConsumer(topic, groupId, broker);
         log.info("kafka消费者创建成功！, consumer={}", consumer);
         consumerContext.addConsumerTask(topicKey, consumer);
     }
@@ -146,27 +151,46 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         executeSql(conn, sql);
     }
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-
     @Override
     public void cdcDbSaveQueue(ConvTunnel tunnel) {
         // cdc同步启动落库线程
-        // topic格式：cdc-data-sysCode-db
-        String sysCode = tunnel.getSysCode();
-//        startConsumer(bootstrapServers, );
+        // topic格式：cdc-data-sysCode-tunnelId
+        // 表达式填充
+        Map<String, Object> propMap = new HashMap<>();
+        propMap.put("sysCode", tunnel.getSysCode());
+        propMap.put("tunnelId", tunnel.getId());
+        String topic;
+        String cdcMessageTopicExpression = "CDC-DATA-${sysCode}-${tunnelId}";
+        try {
+            topic = TemplateMakerUtil.process(cdcMessageTopicExpression, propMap, null);
+        }catch (TemplateException | IOException e){
+            throw new CommonException("cdc 消费者启动失败，根据表达式生成消费者topic失败，exp: " + cdcMessageTopicExpression);
+        }
+
+        String topicKey = tunnel.getId().toString()  + CharPool.DASHED + topic;
+        // 消费者启动
+        startConsumer(kafkaBootStrap, topic, topicKey, CDC_GROUP_ID);
 
     }
 
 
     @PostConstruct
     private void initialRegistry(){
-        List<ConvTunnel> convTunnels = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
+        // 队列采集
+        List<ConvTunnel> queueTunnels = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
                 .eq(ConvTunnel::getConvergeMethod, TunnelCMEnum.QUEUE_MODE.getCode())
                 .notIn(ConvTunnel::getStatus, TunnelStatusEnum.PAUSE.getValue(), TunnelStatusEnum.ABANDON.getValue())
                 .ne(ConvTunnel::getDelFlag, 1));
-        for (ConvTunnel convTunnel : convTunnels){
+        for (ConvTunnel convTunnel : queueTunnels){
             queueModeCollect(convTunnel);
+        }
+        // cdc采集
+        List<ConvTunnel> cdcTunnels = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
+                .eq(ConvTunnel::getConvergeMethod, TunnelCMEnum.CDC_LOG.getCode())
+                .notIn(ConvTunnel::getStatus, TunnelStatusEnum.PAUSE.getValue(), TunnelStatusEnum.ABANDON.getValue())
+                .ne(ConvTunnel::getDelFlag, 1));
+        for (ConvTunnel convTunnel : cdcTunnels){
+            cdcDbSaveQueue(convTunnel);
         }
     }
 
@@ -271,10 +295,6 @@ public class MessageQueueServiceImpl implements MessageQueueService {
      * 查询对应的sql模板
      * base. 基本的通用sql
      * sp.dsId-odstablename.insert 数据源id+ods表名确定的sql语句
-     * @param prop
-     * @param opKey
-     * @param tableModelRel
-     * @return
      */
     private Map<String, String> sqlTemplate(Properties prop, String opKey, OriginalTableModelDto tableModelRel){
         Map<String, String> res = new HashMap<>();
@@ -299,31 +319,6 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         }catch (Exception e){
             log.error("sql execute failed, [sql]={}", sql);
         }
-    }
-
-    private static int getMaxId(String db, String tableName, Statement stmt){
-        int maxId = Integer.MIN_VALUE;
-        try{
-            String target = db + "." + tableName;
-            if (maxIdMap.containsKey(target)){
-                maxId = maxIdMap.get(target) + 1;
-            }else{
-                String sql = String.format("select max(id) from %s.%s;", db, tableName);
-                ResultSet rs = stmt.executeQuery(sql);
-                while (rs.next()) {
-                    String max_num = rs.getString(1);
-                    if (max_num != null) {
-                        maxId = rs.getInt(1) + 1;
-                    }else{
-                        maxId = 0;
-                    }
-                }
-            }
-            maxIdMap.put(target,maxId);
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        return maxId;
     }
 
 

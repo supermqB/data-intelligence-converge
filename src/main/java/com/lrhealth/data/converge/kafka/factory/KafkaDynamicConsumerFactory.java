@@ -19,7 +19,7 @@ public class KafkaDynamicConsumerFactory {
 
 
     /**
-     *
+     * 创建消费者
      * @param topic    订阅主题
      * @param groupId  消费者组
      * @param broker   kafka-broker地址

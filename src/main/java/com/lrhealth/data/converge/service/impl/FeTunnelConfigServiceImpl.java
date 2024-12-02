@@ -455,7 +455,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                     transformStr = "TIMESTAMP";
                 }
                 else {
-                    transformStr = fieldType;
+                    transformStr = "STRING";
                 }
                 break;
         }
