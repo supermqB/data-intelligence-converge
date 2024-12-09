@@ -142,17 +142,21 @@ public class MessageQueueServiceImpl implements MessageQueueService {
 
     @Override
     public void messageQueueHandle(String topicKey, List<String> msgBody) {
-        long tunnelId = Long.parseLong(topicKey.substring(0, topicKey.indexOf(StrPool.DASHED)));
-        ConvTunnel tunnel = tunnelService.getById(tunnelId);
+        try {
+            long tunnelId = Long.parseLong(topicKey.substring(0, topicKey.indexOf(StrPool.DASHED)));
+            ConvTunnel tunnel = tunnelService.getById(tunnelId);
 
-        // 同一个管道内采集的表，进行拆分
-        Map<String, List<MessageParseDto>> tidyTableBodyMap = getTidyTableBodyMap(msgBody);
+            // 同一个管道内采集的表，进行拆分
+            Map<String, List<MessageParseDto>> tidyTableBodyMap = getTidyTableBodyMap(msgBody);
 
-        for (Map.Entry<String, List<MessageParseDto>> tableBody : tidyTableBodyMap.entrySet()){
-            String table = tableBody.getKey();
-            List<MessageParseDto> bodyList = tableBody.getValue();
-            // 同一张表
-            tableSqlSave(table, tunnel.getSysCode(), tunnel.getWriterDatasourceId(), bodyList);
+            for (Map.Entry<String, List<MessageParseDto>> tableBody : tidyTableBodyMap.entrySet()) {
+                String table = tableBody.getKey();
+                List<MessageParseDto> bodyList = tableBody.getValue();
+                // 同一张表
+                tableSqlSave(table, tunnel.getSysCode(), tunnel.getWriterDatasourceId(), bodyList);
+            }
+        }catch (Exception e){
+            log.error("message queue exec error, {}", ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -218,11 +222,9 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         }catch (TemplateException | IOException e){
             throw new CommonException("cdc 消费者启动失败，根据表达式生成消费者topic失败，exp: " + cdcMessageTopicExpression);
         }
-
         String topicKey = tunnel.getId().toString()  + CharPool.DASHED + topic;
         // 消费者启动
         startConsumer(kafkaBootStrap, topic, topicKey, CDC_GROUP_ID);
-
     }
 
 
@@ -379,32 +381,6 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         }
     }
 
-    private List<Map<String, Object>> sortListByFirstMap(String operation, List<Map<String, Object>> list){
-        if (list == null || list.isEmpty()) {
-            return Collections.emptyList();
-        }
-        // 获取第一个 Map 的键顺序
-        Map<String, Object> firstMap = list.get(0);
-        List<String> keyOrder = new ArrayList<>(firstMap.keySet());
-
-        // 遍历 List 中的所有 Map
-        for (int i = 0; i < list.size(); i++) {
-            Map<String, Object> currentMap = list.get(i);
-            Map<String, Object> sortedMap = new LinkedHashMap<>();
-
-            // 按照第一个 Map 的键顺序重新排序
-            for (String key : keyOrder) {
-                if (currentMap.containsKey(key)) {
-                    sortedMap.put(key, currentMap.get(key));
-                }
-            }
-
-            // 用排序后的 Map 替换当前 Map
-            list.set(i, sortedMap);
-        }
-        return list;
-    }
-
     /**
      * 查询对应的sql模板
      * dsId-odstablename.insert 数据源id+ods表名确定的sql语句
@@ -477,8 +453,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
                         execSql.append(",");
                     }
                     execSql.append("('")
-                            .append(CharSequenceUtil.join("','", valueMap.values()))
-                            .append("', '" + operation)
+                            .append(CharSequenceUtil.join("','", valueMap.values())).append("', '").append(operation)
                             .append("')");
                 }
                 log.info("准备执行落库语句，sql={}", execSql);

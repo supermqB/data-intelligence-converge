@@ -2,7 +2,6 @@ package com.lrhealth.data.converge.kafka.factory;
 
 import com.lrhealth.data.converge.service.MessageQueueService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -61,7 +60,7 @@ public class KafkaConsumerContext {
         // 存入消费者列表
         consumerMap.put(topicKey, consumer);
         log.info("创建定时任务: key={}", topicKey);
-        // 创建定时任务，每隔1s拉取消息并处理
+        // 创建定时任务，每隔30s拉取消息并处理
         ScheduledFuture<?> future = executor.scheduleAtFixedRate(() -> {
             // 每次执行拉取消息之前，先检查订阅者是否已被取消（如果订阅者不存在于订阅者列表中说明被取消了）
             // 因为Kafka消费者对象是非线程安全的，因此在这里把取消订阅的逻辑和拉取并处理消息的逻辑写在一起并放入定时器中，判断列表中是否存在消费者对象来确定是否取消任务
@@ -76,7 +75,7 @@ public class KafkaConsumerContext {
                 return;
             }
             // 拉取消息
-            ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(100));
+            ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
             Map<String, List<String>> topicBodyMap = new HashMap<>();
             for (ConsumerRecord<K, V> record : records) {
                 // 自定义处理每次拉取的消息逻辑
@@ -85,14 +84,16 @@ public class KafkaConsumerContext {
                 log.info("receive kafka data, topic=[{}], value=[{}]", topicName,  msgBody);
                 topicBodyMap.computeIfAbsent(topicName, k -> new ArrayList<>()).add(msgBody);
             }
-            for (Map.Entry<String, List<String>> map : topicBodyMap.entrySet()) {
-                try {
-                    queueService.messageQueueHandle(topicKey, map.getValue());
-                } catch (Exception e) {
-                    log.error(ExceptionUtils.getStackTrace(e));
-                }
-            }
-        }, 0, 1, TimeUnit.SECONDS);
+//            for (Map.Entry<String, List<String>> map : topicBodyMap.entrySet()) {
+//                try {
+//                    queueService.messageQueueHandle(topicKey, map.getValue());
+//                } catch (Exception e) {
+//                    log.error(ExceptionUtils.getStackTrace(e));
+//                }
+//            }
+            // 使用多线程处理整理后的表
+            topicBodyMap.entrySet().stream().parallel().forEach(map -> queueService.messageQueueHandle(topicKey, map.getValue()));
+        }, 0, 30, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理
         scheduleMap.put(topicKey, future);
     }
