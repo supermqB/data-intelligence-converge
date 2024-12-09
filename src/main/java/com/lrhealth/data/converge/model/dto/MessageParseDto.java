@@ -17,12 +17,25 @@ import java.util.Map;
 @AllArgsConstructor
 public class MessageParseDto {
 
+    /**
+     * 表名称
+     */
     private String readTable;
 
+    /**
+     * 动作
+     * c-create; u-update;d-delete
+     */
     private String operation;
 
+    /**
+     * 修改前数据
+     */
     private Map<String, Object> preValue;
 
+    /**
+     * 修改后数据
+     */
     private Map<String, Object> postValue;
 
 

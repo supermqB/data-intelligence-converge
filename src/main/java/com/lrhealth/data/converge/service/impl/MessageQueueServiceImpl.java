@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharPool;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
@@ -21,7 +22,9 @@ import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.kafka.factory.KafkaConsumerContext;
 import com.lrhealth.data.converge.kafka.factory.KafkaDynamicConsumerFactory;
 import com.lrhealth.data.converge.model.MessageParseFormat;
+import com.lrhealth.data.converge.model.MessageSqlFormat;
 import com.lrhealth.data.converge.model.dto.MessageParseDto;
+import com.lrhealth.data.converge.model.dto.OpSqlDto;
 import com.lrhealth.data.converge.model.dto.OriginalTableModelDto;
 import com.lrhealth.data.converge.service.MessageQueueService;
 import freemarker.template.TemplateException;
@@ -41,11 +44,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author jinmengyu
@@ -54,8 +55,8 @@ import java.util.Properties;
 @Service
 @Slf4j
 public class MessageQueueServiceImpl implements MessageQueueService {
-    @Value("${message.sql.path}")
-    private String sqlTemplateFile;
+    @Resource
+    private MessageSqlFormat sqlTemplateFile;
     @Resource
     private MessageParseFormat parseFormat;
     @Resource
@@ -83,6 +84,23 @@ public class MessageQueueServiceImpl implements MessageQueueService {
     private ConvOdsDatasourceConfigService dsConfigService;
     @Resource
     private DbConnectionManager dbConnectionManager;
+
+    private Properties sqlTemplateProp;
+
+    /**
+     * 启动时加载-sql的执行模板
+     */
+    @PostConstruct
+    public void initParseSqlTemplate() {
+        // 解析到外置文件的sql模板
+        sqlTemplateProp = new Properties();
+        log.info("从{}文件获取sql模板", sqlTemplateFile.getPath());
+        try(InputStream in = new BufferedInputStream(Files.newInputStream(Paths.get(sqlTemplateFile.getPath())))) {
+            sqlTemplateProp.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+        }catch (IOException e){
+            log.error("模板文件解析失败，请修正文件!, exception={}", ExceptionUtils.getStackTrace(e));
+        }
+    }
 
     @Override
     public void queueModeCollect(ConvTunnel tunnel) {
@@ -123,22 +141,44 @@ public class MessageQueueServiceImpl implements MessageQueueService {
     }
 
     @Override
-    public void messageQueueHandle(String topicKey, String msgBody) {
+    public void messageQueueHandle(String topicKey, List<String> msgBody) {
         long tunnelId = Long.parseLong(topicKey.substring(0, topicKey.indexOf(StrPool.DASHED)));
         ConvTunnel tunnel = tunnelService.getById(tunnelId);
 
-        // 格式化value
-        HashMap<String, Object> msgRecord = JSON.parseObject(msgBody, HashMap.class);
-        MessageParseDto valueParse = valueParse(msgRecord);
-        log.info("解析后的消息体数据：{}", valueParse);
+        // 同一个管道内采集的表，进行拆分
+        Map<String, List<MessageParseDto>> tidyTableBodyMap = getTidyTableBodyMap(msgBody);
+
+        for (Map.Entry<String, List<MessageParseDto>> tableBody : tidyTableBodyMap.entrySet()){
+            String table = tableBody.getKey();
+            List<MessageParseDto> bodyList = tableBody.getValue();
+            // 同一张表
+            tableSqlSave(table, tunnel.getSysCode(), tunnel.getWriterDatasourceId(), bodyList);
+        }
+    }
+
+    private Map<String, List<MessageParseDto>> getTidyTableBodyMap(List<String> msgBodyList){
+        Map<String, List<MessageParseDto>> result = new HashMap<>();
+
+        for (String body : msgBodyList) {
+            // 格式化value
+            HashMap<String, Object> msgRecord = JSON.parseObject(body, HashMap.class);
+            MessageParseDto valueParse = valueParse(msgRecord);
+            log.info("解析后的消息体数据：{}", valueParse);
+            String tableName = valueParse.getReadTable();
+            result.computeIfAbsent(tableName, k -> new ArrayList<>()).add(valueParse);
+        }
+        return result;
+    }
+
+    private void tableSqlSave(String table, String sysCode, Integer writerDsId, List<MessageParseDto> parseDtoList){
         // 获取到落库配置
-        OriginalTableModelDto tableModelRel = originalTableService.getTableModelRel(valueParse.getReadTable(), tunnel.getSysCode());
+        OriginalTableModelDto tableModelRel = originalTableService.getTableModelRel(table, sysCode);
         log.info("获取到的表映射:{}", tableModelRel);
-        ConvOdsDatasourceConfig datasourceConfig = dsConfigService.getById(tunnel.getWriterDatasourceId());
+        ConvOdsDatasourceConfig datasourceConfig = dsConfigService.getById(writerDsId);
 
         // sql准备, 按照operation区分
-        String sql = prepareSqlForOp(valueParse, tableModelRel);
-        log.info("生成的完整sql语句：{}", sql);
+        // Map<operation, actual-(sqlTemplate and valueList)>
+        Map<String, OpSqlDto> sqlValueMap = prepareSqlForOp(parseDtoList, tableModelRel);
         // 获取连接
         DbConnection connection = DbConnection.builder()
                 .dbUrl(datasourceConfig.getDsUrl())
@@ -148,8 +188,20 @@ public class MessageQueueServiceImpl implements MessageQueueService {
                 .build();
         Connection conn = dbConnectionManager.getConnection(connection);
         // 执行sql
-        executeSql(conn, sql);
+        doBatchInsert(datasourceConfig.getDsUrl().contains("hive2"), conn, sqlValueMap);
     }
+
+    private void doBatchInsert(boolean isHive, Connection conn, Map<String, OpSqlDto> sqlValueMap){
+        // 由于需要区分执行方式，所以具体值的填充在执行sql前进行，使得流程能够统一
+        if (isHive){
+            // hive-jdbc不支持addBatch，使用拼接sql: insert into table (columns) values (?, ?, ?), (?, ?, ?)
+            batchByJoinSql(conn, sqlValueMap);
+        }else {
+            // 正常的addBatch, insert into table (columns) values (?, ?, ?)
+            batchByPreparedStatement(conn, sqlValueMap);
+        }
+    }
+
 
     @Override
     public void cdcDbSaveQueue(ConvTunnel tunnel) {
@@ -205,7 +257,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         String postKey = parseFormat.matchPostValueKey(recordValue);
         Map<String, Object> postValue = CharSequenceUtil.isBlank(postKey) ? null : (Map<String, Object>) recordValue.get(postKey);
 
-        //
+        // 操作的表
         String tableKey = parseFormat.matchCollectTableKey(recordValue);
         String tableTopic = CharSequenceUtil.isBlank(tableKey) ? null : (String) recordValue.get(tableKey);
 
@@ -217,109 +269,224 @@ public class MessageQueueServiceImpl implements MessageQueueService {
                 build();
     }
 
-    private String prepareSqlForOp(MessageParseDto valueParse, OriginalTableModelDto tableModelRel) {
-        String operation = valueParse.getOperation();
-        // 解析到外置文件的sql模板
-        Properties prop = new Properties();
-        log.info("从{}文件获取sql模板", sqlTemplateFile);
-        try(InputStream in = new BufferedInputStream(Files.newInputStream(Paths.get(sqlTemplateFile)))) {
-            prop.load(new InputStreamReader(in, StandardCharsets.UTF_8));
-        }catch (IOException e){
-            log.error("模板文件解析失败，请修正文件!, exception={}", ExceptionUtils.getStackTrace(e));
+    /**
+     * 查询具体的sql模板，
+     * @param parseDtoList
+     * @param tableModelRel
+     * @return Map<String, String> basic-batch sql、 management-sp sql
+     */
+    private Map<String, OpSqlDto> prepareSqlForOp(List<MessageParseDto> parseDtoList, OriginalTableModelDto tableModelRel) {
+        Map<String, OpSqlDto> resultMap = new HashMap<>();
+        for (MessageParseDto valueParse : parseDtoList){
+            // insert, update, delete
+            String operation = valueParse.getOperation();
+            OpSqlDto opSqlDto = resultMap.containsKey(operation) ?
+                    resultMap.get(operation) :
+                    OpSqlDto.builder()
+                            .operation(operation)
+                            .sqlTemplate(getExecSql(operation, tableModelRel))
+                            .valueMapList(new ArrayList<>())
+                            .build();
+            opSqlDto.getValueMapList().add(getValueMap(operation, valueParse));
+            resultMap.put(operation, opSqlDto);
         }
-        Map<String, String> sqlMap = null;
+        // 填充对应sql模板
+        // 处理${}的值填充
+        sqlValueFill(resultMap, tableModelRel.getModelName());
+        return resultMap;
+    }
+
+    private Map<String, Object> getValueMap(String operation, MessageParseDto valueParse){
         Map<String, Object> valueMap = null;
-        // 插入操作
         if (parseFormat.isInsertOp(operation)){
             // sql模板
-            sqlMap = sqlTemplate(prop, "insert", tableModelRel);
-            // 获取到字段键值
-            valueMap = valueParse.getPostValue();
+            valueMap =  valueParse.getPostValue();
         }
         // 删除操作
         if (parseFormat.isDeleteOp(operation)){
-            sqlMap = sqlTemplate(prop, "update", tableModelRel);
-            valueMap = valueParse.getPostValue();
+            valueMap =  valueParse.getPreValue();
         }
         // 更新操作
         if (parseFormat.isUpdateOp(operation)){
-            sqlMap = sqlTemplate(prop, "delete", tableModelRel);
-            valueMap = valueParse.getPreValue();
+            valueMap = valueParse.getPostValue();
         }
-        log.info("获取到模板配置，sql={}", sqlMap);
-        // 处理${}的值填充
-        return sqlValueFill(sqlMap, valueMap, tableModelRel.getModelName());
+        if (parseFormat.isManageOp(operation)){
+            return null;
+        }
+
+        return valueMap;
     }
 
-    private String sqlValueFill(Map<String, String> sqlMap, Map<String, Object> valueMap, String tableName){
-        Map<String, Object> columnMap = new HashMap<>();
-        String sqlTemplate;
-        if (sqlMap.containsKey("basic")){
-            sqlTemplate = sqlMap.get("basic");
-            StringBuilder columns = new StringBuilder();
-            StringBuilder values = new StringBuilder();
-            for (Map.Entry<String, Object> entry : valueMap.entrySet()){
-                String key = entry.getKey();
-                Object value = entry.getValue();
-                if (value instanceof String){
-                    value = "'" + value + "'";
-                }
-                columns.append(key).append(StrPool.COMMA);
-                values.append(value).append(StrPool.COMMA);
-            }
-            String columnResult = columns.substring(0, columns.length() - 1);
-            String valueResult = values.substring(0, values.length() - 1);
-            columnMap.put("columns", columnResult);
-            columnMap.put("value", valueResult);
-        }else{
-            sqlTemplate = sqlMap.get("sp");
-            for (Map.Entry<String, Object> entry : valueMap.entrySet()){
-                String key = entry.getKey();
-                Object value = entry.getValue();
-                if (value instanceof String){
-                    value = "'" + value + "'";
-                }
-                columnMap.put(key, value);
-            }
+    private String getExecSql(String operation, OriginalTableModelDto tableModelRel){
+        return getSqlTemplate(operation, tableModelRel);
+    }
+
+
+    private String getSqlTemplate(String operation, OriginalTableModelDto tableModelRel){
+        String template = null;
+        if (parseFormat.isInsertOp(operation)){
+            // sql模板
+            template = spTemplate(sqlTemplateProp, "insert", tableModelRel);
         }
-        columnMap.put("table", tableName);
-        try {
-            return TemplateMakerUtil.process(sqlTemplate, columnMap, null);
-        }catch (Exception e){
-            log.error("log error,{}", ExceptionUtils.getStackTrace(e));
+        // 删除操作
+        if (parseFormat.isDeleteOp(operation)){
+            template = spTemplate(sqlTemplateProp, "update", tableModelRel);
         }
-        return sqlTemplate;
+        // 更新操作
+        if (parseFormat.isUpdateOp(operation)){
+            template = spTemplate(sqlTemplateProp, "delete", tableModelRel);
+        }
+        if (parseFormat.isManageOp(operation)){
+            template = spTemplate(sqlTemplateProp, "management", tableModelRel);
+        }
+        // 没有自定义sql，统一使用basic-insert
+        return CharSequenceUtil.isBlank(template) ? basicTemplate(sqlTemplateProp) : template;
+    }
+
+
+
+    private void sqlValueFill(Map<String, OpSqlDto> opSqlDtoMap, String tableName){
+        for (Map.Entry<String, OpSqlDto> sqlEntry : opSqlDtoMap.entrySet()){
+            Map<String, String> columnMap = new HashMap<>();
+            OpSqlDto sqlDto = sqlEntry.getValue();
+            // 模板
+            String sqlTemplate = sqlDto.getSqlTemplate();
+            List<Map<String, Object>> valueList = sqlDto.getValueMapList();
+            if (CollUtil.isEmpty(valueList)) continue;
+            // 第一条数据
+            Map<String, Object> firstValueMap = valueList.get(0);
+            List<String> columns = new LinkedList<>();
+            List<String> values = new LinkedList<>();
+            for (Map.Entry<String, Object> entry : firstValueMap.entrySet()){
+                String key = entry.getKey();
+                columns.add(key);
+                values.add("?");
+            }
+            // operation的值
+            values.add("?");
+            columnMap.put("columns", CharSequenceUtil.join(",", columns));
+            columnMap.put("value", CharSequenceUtil.join(",", values));
+            columnMap.put("table", tableName);
+            // freemarker 填充
+            String process = null;
+            try {
+                process = TemplateMakerUtil.process(sqlTemplate, columnMap, null);
+            }catch (Exception e){
+                log.error("log error,{}", ExceptionUtils.getStackTrace(e));
+            }
+            sqlDto.setSqlTemplate(process);
+            opSqlDtoMap.put(sqlEntry.getKey(), sqlDto);
+        }
+    }
+
+    private List<Map<String, Object>> sortListByFirstMap(String operation, List<Map<String, Object>> list){
+        if (list == null || list.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 获取第一个 Map 的键顺序
+        Map<String, Object> firstMap = list.get(0);
+        List<String> keyOrder = new ArrayList<>(firstMap.keySet());
+
+        // 遍历 List 中的所有 Map
+        for (int i = 0; i < list.size(); i++) {
+            Map<String, Object> currentMap = list.get(i);
+            Map<String, Object> sortedMap = new LinkedHashMap<>();
+
+            // 按照第一个 Map 的键顺序重新排序
+            for (String key : keyOrder) {
+                if (currentMap.containsKey(key)) {
+                    sortedMap.put(key, currentMap.get(key));
+                }
+            }
+
+            // 用排序后的 Map 替换当前 Map
+            list.set(i, sortedMap);
+        }
+        return list;
     }
 
     /**
      * 查询对应的sql模板
-     * base. 基本的通用sql
-     * sp.dsId-odstablename.insert 数据源id+ods表名确定的sql语句
+     * dsId-odstablename.insert 数据源id+ods表名确定的sql语句
      */
-    private Map<String, String> sqlTemplate(Properties prop, String opKey, OriginalTableModelDto tableModelRel){
-        Map<String, String> res = new HashMap<>();
-        //sp
+    private String spTemplate(Properties prop, String opKey, OriginalTableModelDto tableModelRel){
         // 12-t_ds_co
         String code = tableModelRel.getModelDsConfigId().toString() + CharPool.DASHED + tableModelRel.getModelName();
-        // sp.12-t_ds_co.insert
-        String prefix = "sp" + CharPool.DOT + code + CharPool.DOT + opKey;
+        // 12-t_ds_co.insert
+        String prefix = code + CharPool.DOT + opKey;
         if (prop.containsKey(prefix)){
-            res.put("sp", (String) prop.get(prefix));
-            return res;
+            return (String) prop.get(prefix);
         }
-        // basic
-        prefix = "basic" + CharPool.DOT + opKey;
-        res.put("basic", (String) prop.get(prefix));
-        return res;
+        return null;
     }
 
-    private void executeSql(Connection conn, String sql){
-        try(Statement stat = conn.createStatement()) {
-            stat.execute(sql);
-        }catch (Exception e){
-            log.error("sql execute failed, [sql]={}", sql);
+    private String basicTemplate(Properties prop){
+        String prefix = "basic";
+        if (prop.containsKey(prefix)){
+            return (String) prop.get(prefix);
+        }
+        return CharSequenceUtil.NULL;
+    }
+
+    private void batchByPreparedStatement(Connection conn, Map<String, OpSqlDto> sqlValueMap){
+        for (Map.Entry<String, OpSqlDto> sqlValue : sqlValueMap.entrySet()) {
+            String operation = sqlValue.getKey();
+            OpSqlDto sqlDto = sqlValue.getValue();
+            String sql = sqlDto.getSqlTemplate();
+            List<Map<String, Object>> valueMapList = sqlDto.getValueMapList();
+            if (CollUtil.isEmpty(valueMapList)) continue;
+            try (PreparedStatement stat = conn.prepareStatement(sql)) {
+                for (Map<String, Object> valueMap : valueMapList) {
+                    int i = 1;
+                    for (Map.Entry<String, Object> value : valueMap.entrySet()){
+                        stat.setObject(i++, value.getValue());
+                    }
+                    stat.setObject(i, operation);
+                    stat.addBatch();
+                }
+                stat.executeBatch();
+            } catch (Exception e) {
+                log.error("sql execute failed, [sql]={}", sql);
+            }
         }
     }
 
+    private void batchByJoinSql(Connection conn, Map<String, OpSqlDto> sqlValueMap){
+        for (Map.Entry<String, OpSqlDto> sqlValue : sqlValueMap.entrySet()) {
+            String operation = sqlValue.getKey();
+
+            OpSqlDto sqlDto = sqlValue.getValue();
+            String sql = sqlDto.getSqlTemplate();
+            List<Map<String, Object>> valueMapList = sqlDto.getValueMapList();
+            if (CollUtil.isEmpty(valueMapList)) continue;
+            Map<String, Object> firstValueMap = valueMapList.get(0);
+            // 比较模板中的？与实际的值能否对应
+            long questionMask = sql.chars().filter(ch -> ch == '?').count();
+            // ?数量应该等于map count -1,因为operation还没有加上去
+            if (questionMask != firstValueMap.size() + 1){
+                log.error("sql模板与实际值的数量无法对应上， sql模板={}， 实际的值={}", sql, firstValueMap);
+            }
+            StringBuilder execSql = new StringBuilder();
+            try (Statement stat = conn.createStatement()) {
+                boolean isFirst = true;
+                for (Map<String, Object> valueMap : valueMapList){
+                    if (isFirst){
+                        execSql.append(sql, 0, sql.indexOf("?") - 1);
+                        isFirst = false;
+                    }else {
+                        execSql.append(",");
+                    }
+                    execSql.append("('")
+                            .append(CharSequenceUtil.join("','", valueMap.values()))
+                            .append("', '" + operation)
+                            .append("')");
+                }
+                log.info("准备执行落库语句，sql={}", execSql);
+                stat.execute(execSql.toString());
+            } catch (Exception e) {
+                log.error("sql execute failed, [sql]={}", sql);
+            }
+        }
+    }
 
 }

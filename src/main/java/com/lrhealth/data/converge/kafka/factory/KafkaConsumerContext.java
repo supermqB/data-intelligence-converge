@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -74,17 +77,20 @@ public class KafkaConsumerContext {
             }
             // 拉取消息
             ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(100));
+            Map<String, List<String>> topicBodyMap = new HashMap<>();
             for (ConsumerRecord<K, V> record : records) {
                 // 自定义处理每次拉取的消息逻辑
                 String topicName = record.topic();
                 String msgBody = (String) record.value();
                 log.info("receive kafka data, topic=[{}], value=[{}]", topicName,  msgBody);
+                topicBodyMap.computeIfAbsent(topicName, k -> new ArrayList<>()).add(msgBody);
+            }
+            for (Map.Entry<String, List<String>> map : topicBodyMap.entrySet()) {
                 try {
-                    queueService.messageQueueHandle(topicKey, msgBody);
-                }catch (Exception e){
+                    queueService.messageQueueHandle(topicKey, map.getValue());
+                } catch (Exception e) {
                     log.error(ExceptionUtils.getStackTrace(e));
                 }
-
             }
         }, 0, 1, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理

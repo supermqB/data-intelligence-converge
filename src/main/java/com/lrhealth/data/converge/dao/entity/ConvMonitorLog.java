@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("conv_monitor_log")
+@TableName("convMessageQueueConfigServiceg")
 public class ConvMonitorLog {
 
     @TableId(type = IdType.ASSIGN_ID)

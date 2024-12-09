@@ -17,3 +17,38 @@ ds:
   token: 727504e58dc2b3f61002fdde0116c064
   switch: true
 
+#MinIO对象存储，文件服务器
+minio:
+  endpoint: http://172.16.29.17:9001
+  accessKey: exMYNZIl9mKJZWxN79HZ
+  secretKey: iPrpcnsDn5k0zzd8HepbgMaYtn2H6hqURfPvZDOm
+  bucketName: file-collect
+
+## 消息队列可能的各种消息体key,用StrPool.COMMA(,)分割
+message:
+  body:
+    ## 修改前的值
+    prevalue: before
+    ## 修改后的值
+    postvalue: after
+    ## 采集的表
+    collectTable: table
+    ## 动作
+    operation: op
+    ## 动作的代码
+    insertOp: c
+    updateOp: u
+    deleteOp: d
+    manageOp: management
+  sql:
+    ## sql模板的路径
+    path: D:\sql.properties
+    ## sql插入的后缀
+    insertSuf: insert
+    ## sql更新的后缀
+    updateSuf: update
+    ## sql删除的后缀
+    deleteSuf: delete
+    ## sql治理的后缀
+    manageSuf: management
+

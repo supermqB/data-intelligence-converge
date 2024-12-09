@@ -13,17 +13,18 @@ import java.util.Map;
  */
 @Data
 @Component
-@ConfigurationProperties(prefix = "message.parse")
+@ConfigurationProperties(prefix = "message.body")
 public class MessageParseFormat {
 
     private String operation;
     private String preValue;
     private String postValue;
-
     private String collectTable;
+
     private String insertOp;
     private String updateOp;
     private String deleteOp;
+    private String manageOp;
 
     public String matchOperationKey(Map<String, Object> valueMap){
         String[] opList = operation.split(StrPool.COMMA);
@@ -89,6 +90,16 @@ public class MessageParseFormat {
         String[] deleteList = deleteOp.split(StrPool.COMMA);
         for(String delete : deleteList){
             if (delete.equalsIgnoreCase(op)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isManageOp(String op){
+        String[] manageList = manageOp.split(StrPool.COMMA);
+        for(String management : manageList){
+            if (management.equalsIgnoreCase(op)){
                 return true;
             }
         }
