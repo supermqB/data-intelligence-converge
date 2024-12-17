@@ -153,4 +153,9 @@ public class ConvOriginalColumn implements Serializable {
      * 映射规则
      */
     private String mappingRule;
+
+    /**
+     * 字段数据类型编号
+     */
+    private String dataType;
 }

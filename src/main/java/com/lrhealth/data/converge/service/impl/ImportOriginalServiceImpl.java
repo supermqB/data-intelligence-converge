@@ -154,6 +154,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                             .createTime(saveTime)
                             .columnDescription(columnInfoDTO.getRemark())
                             .columnFieldLength(columnInfoDTO.getColumnLength())
+                            .dataType(columnInfoDTO.getDataType())
                             .build();
                 }else {
                      convOriginalColumn = ConvOriginalColumn.builder()
@@ -170,6 +171,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                             .columnName(columnInfoDTO.getColumnName())
                             .columnDescription(columnInfoDTO.getRemark())
                             .columnFieldLength(columnInfoDTO.getColumnLength())
+                             .dataType(columnInfoDTO.getDataType())
                             .build();
                 }
                 i++;

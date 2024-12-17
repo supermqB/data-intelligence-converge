@@ -57,4 +57,8 @@ public class ColumnInfoDTO {
      */
     private Integer primaryKeySeq;
 
+    /**
+     * 数据类型的编号
+     */
+    private String dataType;
 }
