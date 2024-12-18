@@ -3,7 +3,10 @@ package com.lrhealth.data.converge.dao.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,6 +20,9 @@ import java.time.LocalDateTime;
  * @since 2024-01-23
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @TableName("conv_field_type")
 public class ConvFieldType implements Serializable {
 
@@ -51,4 +57,8 @@ public class ConvFieldType implements Serializable {
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;
+
+    private String clientDataType;
+
+    private String platformDataType;
 }

@@ -5,6 +5,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
+import com.lrhealth.data.converge.dao.service.ConvFieldTypeService;
 import com.lrhealth.data.converge.dao.service.ConvOriginalColumnService;
 import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;
 import com.lrhealth.data.converge.model.dto.ColumnInfoDTO;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +38,8 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     private ConvOriginalColumnService originalColumnService;
     @Resource
     private OriginalModelService stdModelService;
+    @Resource
+    private ConvFieldTypeService fieldTypeService;
 
     @Override
     public void importConvOriginal(OriginalStructureDto structureDto) {
@@ -124,6 +128,9 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         List<ConvOriginalColumn> originalColumnList = CollUtil.newArrayList();
 
         List<ConvOriginalColumn> deleteColumnList = CollUtil.newArrayList();
+
+        Map<String, String> fieldMap = new HashMap<>();
+
         for (OriginalTableDto tableDto : tableList) {
             Long tableId = tableNameIdMapping.get(tableDto.getTableName());
             if (tableId == null) {
@@ -177,10 +184,17 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 i++;
                 originalColumnList.add(convOriginalColumn);
                 convOriginalColumns.removeAll(storedSameNameList);
+
+                if (!fieldMap.containsKey(columnInfoDTO.getDataType())){
+                    fieldMap.put(columnInfoDTO.getDataType(), columnInfoDTO.getColumnTypeName());
+                }
             }
             deleteColumnList.addAll(convOriginalColumns);
         }
         originalColumnService.saveOrUpdateBatch(originalColumnList);
+
+        // 对于此次库表结构的数据类型进行处理
+        fieldTypeService.saveFieldType(fieldMap, dsConfigId);
     }
 
     private void boundModel(ConvOriginalTable originalTable){
