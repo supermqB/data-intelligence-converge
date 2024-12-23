@@ -3,26 +3,28 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.common.db.DbConnection;
+import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
 import com.lrhealth.data.converge.dao.service.ConvFieldTypeService;
 import com.lrhealth.data.converge.dao.service.ConvOriginalColumnService;
 import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;
-import com.lrhealth.data.converge.model.dto.ColumnInfoDTO;
-import com.lrhealth.data.converge.model.dto.OriginalStructureDto;
-import com.lrhealth.data.converge.model.dto.OriginalTableCountDto;
-import com.lrhealth.data.converge.model.dto.OriginalTableDto;
+import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.ImportOriginalService;
 import com.lrhealth.data.model.original.model.OriginalModel;
 import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +42,35 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     private OriginalModelService stdModelService;
     @Resource
     private ConvFieldTypeService fieldTypeService;
+    @Resource
+    private DbConnectionManager dbConnectionManager;
+    @Override
+    public void importPlatformDataType(DataSourceInfoDto dto) {
+        List<DbTypeDto> fieldList = new ArrayList<>();
+        DbConnection dbConnection = DbConnection.builder()
+                .dbUrl(dto.getJdbcUrl())
+                .dbUserName(dto.getUsername())
+                .dbPassword(dto.getPassword())
+                .dbDriver(dto.getDriver())
+                .build();
+        try (Connection connection = dbConnectionManager.getConnection(dbConnection)){
+            DatabaseMetaData metaData = connection.getMetaData();
+            ResultSet typeInfo = metaData.getTypeInfo();
+            while (typeInfo.next()){
+                String typeName = typeInfo.getString("TYPE_NAME");
+                String dataType = typeInfo.getString("DATA_TYPE");
+                String precision = typeInfo.getString("PRECISION");
+                log.info("获取到数据类型={}，编号={}，精度={}", typeName, dataType, precision);
+                fieldList.add(DbTypeDto.builder()
+                        .dataType(dataType)
+                        .typeName(typeName)
+                        .precision(precision).build());
+            }
+        }catch (SQLException e){
+            log.error("get data type error, {}", ExceptionUtils.getStackTrace(e));
+        }
+        fieldTypeService.saveFieldType(fieldList, dto.getDbType());
+    }
 
     @Override
     public void importConvOriginal(OriginalStructureDto structureDto) {
@@ -129,7 +160,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
 
         List<ConvOriginalColumn> deleteColumnList = CollUtil.newArrayList();
 
-        Map<String, String> fieldMap = new HashMap<>();
+        List<DbTypeDto> fieldList = new ArrayList<>();
 
         for (OriginalTableDto tableDto : tableList) {
             Long tableId = tableNameIdMapping.get(tableDto.getTableName());
@@ -185,8 +216,13 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 originalColumnList.add(convOriginalColumn);
                 convOriginalColumns.removeAll(storedSameNameList);
 
-                if (!fieldMap.containsKey(columnInfoDTO.getDataType())){
-                    fieldMap.put(columnInfoDTO.getDataType(), columnInfoDTO.getColumnTypeName());
+                if (fieldList.stream()
+                        .noneMatch(field -> field.getDataType().equals(columnInfoDTO.getDataType())
+                        && field.getTypeName().equals(columnInfoDTO.getColumnTypeName()))){
+                    fieldList.add(DbTypeDto.builder()
+                            .dataType(columnInfoDTO.getDataType())
+                            .typeName(columnInfoDTO.getColumnTypeName())
+                            .build());
                 }
             }
             deleteColumnList.addAll(convOriginalColumns);
@@ -194,7 +230,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         originalColumnService.saveOrUpdateBatch(originalColumnList);
 
         // 对于此次库表结构的数据类型进行处理
-        fieldTypeService.saveFieldType(fieldMap, dsConfigId);
+        fieldTypeService.saveFieldType(fieldList, dsConfigId);
     }
 
     private void boundModel(ConvOriginalTable originalTable){

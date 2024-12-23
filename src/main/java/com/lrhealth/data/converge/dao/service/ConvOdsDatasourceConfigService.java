@@ -18,4 +18,6 @@ import java.util.List;
 public interface ConvOdsDatasourceConfigService extends IService<ConvOdsDatasourceConfig> {
 
     List<DataSourceInfoDto> getOrgReaderSource(DataSourceParamDto dto);
+
+    String getDbType(Integer convDsConfigId);
 }

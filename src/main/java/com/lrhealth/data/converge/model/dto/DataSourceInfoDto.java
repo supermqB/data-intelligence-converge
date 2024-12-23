@@ -32,4 +32,6 @@ public class DataSourceInfoDto {
     private String schema;
 
     private Integer structure;
+
+    private String driver;
 }

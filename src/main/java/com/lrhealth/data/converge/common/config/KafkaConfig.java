@@ -47,7 +47,7 @@ public class KafkaConfig {
         propsMap.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         propsMap.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         propsMap.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        propsMap.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        propsMap.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         propsMap.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1);
         propsMap.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000);
         return propsMap;

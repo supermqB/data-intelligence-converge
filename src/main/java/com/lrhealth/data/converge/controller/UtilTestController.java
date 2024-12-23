@@ -1,93 +1,37 @@
 package com.lrhealth.data.converge.controller;
 
-import com.alibaba.fastjson.JSON;
-import com.lrhealth.data.converge.kafka.factory.KafkaConsumerContext;
-import com.lrhealth.data.converge.kafka.factory.KafkaDynamicConsumerFactory;
-import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
-import com.lrhealth.data.converge.model.dto.FepScheduledDto;
-import com.lrhealth.data.converge.model.dto.OriginalTableCountDto;
+import com.lrhealth.data.common.result.ResultBase;
+import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
 import com.lrhealth.data.converge.service.ImportOriginalService;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author jinmengyu
  * @date 2024-01-17
  */
+@Slf4j
 @RestController()
-@RequestMapping("/test")
+@RequestMapping("/config")
 public class UtilTestController {
 
-    @Resource(name = "kafkaTemplate")
-    private KafkaTemplate<String, Object> kafkaTemplate;
-
-    @Value("${spring.kafka.topic.intelligence.tunnel-datasource-change}")
-    private String tunnelChangeTopic;
-    @Value("${spring.kafka.topic.intelligence.original-structure}")
-    private String originalStructureTopic;
-    @Value("${spring.kafka.topic.intelligence.fep-task}")
-    private String fepTaskTopic;
-
-    @GetMapping("/tunnel")
-    public void sendTunnelChange(@RequestParam("tunnelId") Long tunnelId){
-        List<Long> tunnelList = new ArrayList<>();
-        tunnelList.add(tunnelId);
-        kafkaTemplate.send(tunnelChangeTopic, JSON.toJSONString(tunnelList));
-    }
-
-    @GetMapping("/task")
-    public void sendFepTask(@RequestParam("tunnelId") Long tunnelId,
-                                      @RequestParam("taskId") Integer taskId){
-        FepScheduledDto dto = FepScheduledDto.builder().tunnelId(tunnelId)
-                .taskId(taskId).build();
-        kafkaTemplate.send(fepTaskTopic, JSON.toJSONString(dto));
-    }
-
-    @GetMapping("/original")
-    public void sendOriginalStructure(@RequestBody DataSourceParamDto dto){
-        kafkaTemplate.send(originalStructureTopic, JSON.toJSONString(dto));
-    }
-
-
-    @Autowired
-    private KafkaDynamicConsumerFactory factory;
     @Resource
-    private KafkaConsumerContext consumerContext;
+    private ImportOriginalService originalService;
 
-    @PostMapping("/send")
-    public String send(@RequestParam("topic") String topic) {
-        kafkaTemplate.send(topic, "hello!");
-        return "发送完成！";
-    }
-
-    @GetMapping("/create/{groupId}")
-    public String create(@PathVariable String groupId, @RequestParam("topic") String topic) {
-        // 这里统一使用一个topic
-        KafkaConsumer<String, String> consumer = factory.createConsumer(topic, groupId, "172.16.29.48:9092");
-        consumerContext.addConsumerTask(topic, consumer);
-        return "创建成功！";
-    }
-
-    @GetMapping("/remove/{groupId}")
-    public String remove(@PathVariable String groupId) {
-        consumerContext.removeConsumerTask(groupId);
-        return "移除成功！";
-    }
-
-    @Resource
-    private ImportOriginalService importOriginalService;
-
-    @GetMapping("/table/count")
-    public void testTableCount(){
-        String msgBody = "{\"dsConfId\":10234,\"sysCode\":\"H37020200022005\",\"tableCountMap\":{\"test_10102\":32,\"ttttttt1011\":2,\"lsh02\":100,\"lsh01\":100,\"index_test23\":28,\"mzghb_copy\":36621,\"je01\":9,\"mzghb\":3260,\"renci_count\":10,\"ttt\":163,\"mzghb_copy1\":326,\"yyyyy\":100,\"rjje02\":100,\"rjje01\":100,\"feiyong_sum\":0}}";
-        OriginalTableCountDto tableCountDto = JSON.parseObject(msgBody, OriginalTableCountDto.class);
-        importOriginalService.updateOriginalTableCount(tableCountDto);
+    @GetMapping(value = "/test")
+    public ResultBase<Void> testStructure(@RequestBody DataSourceInfoDto dto){
+        try {
+            originalService.importPlatformDataType(dto);
+            return ResultBase.success();
+        }catch (Exception e){
+            log.error("platform database dataType error: {}", ExceptionUtils.getStackTrace(e));
+            return ResultBase.fail();
+        }
     }
 }

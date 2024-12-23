@@ -2,8 +2,9 @@ package com.lrhealth.data.converge.dao.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lrhealth.data.converge.dao.entity.ConvFieldType;
+import com.lrhealth.data.converge.model.dto.DbTypeDto;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * <p>
@@ -15,5 +16,8 @@ import java.util.Map;
  */
 public interface ConvFieldTypeService extends IService<ConvFieldType> {
 
-    void saveFieldType(Map<String, String> fieldMap, Integer convDsConfigId);
+    void saveFieldType(List<DbTypeDto> fieldList, Integer convDsConfigId);
+
+    void saveFieldType(List<DbTypeDto> fieldList, String dbType);
+
 }
