@@ -61,10 +61,12 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 String dataType = typeInfo.getString("DATA_TYPE");
                 String precision = typeInfo.getString("PRECISION");
                 log.info("获取到数据类型={}，编号={}，精度={}", typeName, dataType, precision);
-                fieldList.add(DbTypeDto.builder()
-                        .dataType(dataType)
-                        .typeName(typeName)
-                        .precision(precision).build());
+                if (fieldList.stream().noneMatch(field -> field.getTypeName().equals(typeName) && field.getDataType().equals(dataType))) {
+                    fieldList.add(DbTypeDto.builder()
+                            .dataType(dataType)
+                            .typeName(typeName)
+                            .precision(precision).build());
+                }
             }
         }catch (SQLException e){
             log.error("get data type error, {}", ExceptionUtils.getStackTrace(e));
@@ -216,7 +218,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 originalColumnList.add(convOriginalColumn);
                 convOriginalColumns.removeAll(storedSameNameList);
 
-                if (fieldList.stream()
+                if (CharSequenceUtil.isNotBlank(columnInfoDTO.getDataType()) && fieldList.stream()
                         .noneMatch(field -> field.getDataType().equals(columnInfoDTO.getDataType())
                         && field.getTypeName().equals(columnInfoDTO.getColumnTypeName()))){
                     fieldList.add(DbTypeDto.builder()
@@ -227,7 +229,8 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             }
             deleteColumnList.addAll(convOriginalColumns);
         }
-        originalColumnService.saveOrUpdateBatch(originalColumnList);
+        boolean saved = originalColumnService.saveOrUpdateBatch(originalColumnList);
+
 
         // 对于此次库表结构的数据类型进行处理
         fieldTypeService.saveFieldType(fieldList, dsConfigId);
