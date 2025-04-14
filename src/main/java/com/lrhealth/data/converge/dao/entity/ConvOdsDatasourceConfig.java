@@ -84,14 +84,19 @@ public class ConvOdsDatasourceConfig implements Serializable {
     private String dbIp;
     private Integer dbPort;
 
+    private String dbName;
+
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;
 
     private LocalDateTime heartBeatTime;
 
+    private Integer defaultFlag;
+
     private String dsUrlForFront;
 
+    private String domain;
 
     private String hdfsCluster;
 }

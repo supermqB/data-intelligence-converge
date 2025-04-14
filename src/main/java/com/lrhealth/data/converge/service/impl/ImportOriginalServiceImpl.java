@@ -51,7 +51,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 .dbUrl(dto.getJdbcUrl())
                 .dbUserName(dto.getUsername())
                 .dbPassword(dto.getPassword())
-                .dbDriver(dto.getDriver())
+                .dbDriver(dto.getDriverName())
                 .build();
         try (Connection connection = dbConnectionManager.getConnection(dbConnection)){
             DatabaseMetaData metaData = connection.getMetaData();
@@ -85,7 +85,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         Integer dsConfigId = structureDto.getDsConfId();
         LocalDateTime dateTime = LocalDateTime.now();
         // 原始结构表
-        processOriginalTable(originalTableDtoList, orgCode, sysCode, dsConfigId, dateTime);
+        processOriginalTable(structureDto, dateTime);
         // 原始结构字段
         processOriginalColumn(originalTableDtoList, orgCode, sysCode, dsConfigId, dateTime);
 
@@ -113,13 +113,13 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         originalTableService.updateBatchById(tableList);
     }
 
-    public void processOriginalTable(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
+    public void processOriginalTable(OriginalStructureDto structureDto, LocalDateTime saveTime) {
         List<ConvOriginalTable> convOriginalTableList = CollUtil.newArrayList();
         List<ConvOriginalTable> storedTables = originalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>()
-                .eq(ConvOriginalTable::getSysCode, sysCode)
-                .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
+                .eq(ConvOriginalTable::getSysCode, structureDto.getSysCode())
+                .eq(ConvOriginalTable::getConvDsConfId, structureDto.getDsConfId())
                 .orderByDesc(ConvOriginalTable::getCreateTime));
-        for (OriginalTableDto tableDto : tableList){
+        for (OriginalTableDto tableDto : structureDto.getOriginalTables()){
             List<ConvOriginalTable> tables = storedTables.stream().filter(storeTable -> storeTable.getNameEn().equals(tableDto.getTableName())).collect(Collectors.toList());
             ConvOriginalTable originalTable;
             if (CollUtil.isNotEmpty(tables)){
@@ -134,13 +134,12 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 originalTable = ConvOriginalTable.builder()
                         .nameEn(tableDto.getTableName())
                         .nameCn(tableDto.getTableRemarks())
-                        .convDsConfId(dsConfigId)
-                        .orgCode(orgCode)
-                        .sysCode(sysCode)
+                        .convDsConfId(structureDto.getDsConfId())
+                        .orgCode(structureDto.getOrgCode())
+                        .sysCode(structureDto.getSysCode())
                         .createTime(saveTime)
                         .dataSource(0)
-                        .modelName(tableDto.getTableName())
-                        .modelDescription(tableDto.getTableRemarks())
+                        .probeTime(tableDto.getProbeTime())
                         .build();
                 // 已存在的模型，重新绑定
                 boundModel(originalTable);

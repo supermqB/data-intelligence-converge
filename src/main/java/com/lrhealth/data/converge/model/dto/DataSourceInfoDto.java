@@ -14,12 +14,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DataSourceInfoDto {
-
-    private Integer dsConfId;
-
     private String orgCode;
 
     private String sysCode;
+
+    private Integer dsConfId;
 
     private String dbType;
 
@@ -29,9 +28,11 @@ public class DataSourceInfoDto {
 
     private String password;
 
+    private String driverName;
+
+    private String databaseName;
+
     private String schema;
 
     private Integer structure;
-
-    private String driver;
 }

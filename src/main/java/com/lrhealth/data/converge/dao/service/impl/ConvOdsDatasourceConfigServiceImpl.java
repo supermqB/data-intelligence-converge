@@ -35,13 +35,15 @@ public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatas
         List<DataSourceInfoDto> dataSourceInfoDtoList = new ArrayList<>();
         for (ConvOdsDatasourceConfig datasourceConfig : datasourceConfigs){
             DataSourceInfoDto sourceInfoDto = DataSourceInfoDto.builder()
-                    .dsConfId(datasourceConfig.getId())
                     .orgCode(datasourceConfig.getOrgCode())
                     .sysCode(dto.getSysCode())
+                    .dsConfId(datasourceConfig.getId())
                     .dbType(datasourceConfig.getDbType())
                     .jdbcUrl(datasourceConfig.getDsUrl())
                     .username(datasourceConfig.getDsUsername())
                     .password(datasourceConfig.getDsPwd())
+                    .driverName(datasourceConfig.getDsDriverName())
+                    .databaseName(datasourceConfig.getDbName())
                     .schema(datasourceConfig.getSchema())
                     .structure(dto.getStructure())
                     .build();

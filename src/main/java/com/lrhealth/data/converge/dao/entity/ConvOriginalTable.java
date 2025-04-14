@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * <p>
@@ -115,4 +116,8 @@ public class ConvOriginalTable implements Serializable {
      * 原始模型备注
      */
     private String modelDescription;
+
+    private Long dataSize;
+
+    private Date probeTime;
 }
