@@ -1,9 +1,9 @@
 spring:
   #数据冶理&标准使用的redis配置
   redis:
-    host: 172.16.29.60
-    port: 6380
-    password: ENC(Wlcmq4L+jNeLd0O8Rym9fqOo1ewJMdj0ehzGbVf6fQU=)
+    host: 172.16.29.73
+    port: 6379
+    password: lr@2023
     redisson:
       config:
         singleServerConfig:
@@ -80,9 +80,9 @@ spring:
         xds-update: xds-update
         upload-tableCount: upload-tableCount
         update-collect-message: update-collect-message
-        upload-original-structure: upload-original-structure
-        upload-original-table-count: upload-original-table-count
-        upload-column-value: upload-column-value
+        upload-original-structure: upload-original-structure-test
+        upload-original-table-count: upload-original-table-count-test
+        upload-column-value: upload-column-value-test
         ## send
         ## tunnel-config-change-${ip}-${port} 按照前置机ip和端口区分
         tunnel-config-change: tunnel-config-change
