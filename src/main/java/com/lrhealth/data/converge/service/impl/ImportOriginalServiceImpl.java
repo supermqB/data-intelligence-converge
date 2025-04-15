@@ -5,11 +5,12 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.db.DbConnection;
 import com.lrhealth.data.converge.common.db.DbConnectionManager;
+import com.lrhealth.data.converge.common.enums.ProbeModelEnum;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
+import com.lrhealth.data.converge.dao.entity.ConvOriginalData;
+import com.lrhealth.data.converge.dao.entity.ConvOriginalProbe;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
-import com.lrhealth.data.converge.dao.service.ConvFieldTypeService;
-import com.lrhealth.data.converge.dao.service.ConvOriginalColumnService;
-import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;
+import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.ImportOriginalService;
 import com.lrhealth.data.model.original.model.OriginalModel;
@@ -44,6 +45,12 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     private ConvFieldTypeService fieldTypeService;
     @Resource
     private DbConnectionManager dbConnectionManager;
+    @Resource
+    private ConvOriginalDataService originalDataService;
+    @Resource
+    private ConvOriginalProbeService originalProbeService;
+
+
     @Override
     public void importPlatformDataType(DataSourceInfoDto dto) {
         List<DbTypeDto> fieldList = new ArrayList<>();
@@ -94,23 +101,48 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     }
 
     @Override
-    public void updateOriginalTableCount(OriginalTableCountDto tableCountDto) {
-        List<ConvOriginalTable> originalTableList = originalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>()
-                .eq(ConvOriginalTable::getSysCode, tableCountDto.getSysCode())
-                .eq(ConvOriginalTable::getConvDsConfId, tableCountDto.getDsConfId()));
-        Map<String, Long> tableCountMap = tableCountDto.getTableCountMap();
-        List<ConvOriginalTable> tableList = CollUtil.newArrayList();
+    public void originalTableProbe(OriDataProbeDTO probeDTO) {
+        List<ConvOriginalTable> originalTableList = originalTableService.list(
+                new LambdaQueryWrapper<ConvOriginalTable>()
+                .eq(ConvOriginalTable::getSysCode, probeDTO.getSysCode())
+                .eq(ConvOriginalTable::getConvDsConfId, probeDTO.getDsConfId()));
         for (ConvOriginalTable originalTable : originalTableList) {
-            if (!tableCountMap.containsKey(originalTable.getNameEn())) {
+            if (!probeDTO.getTableName().equalsIgnoreCase(originalTable.getNameEn())){
                 continue;
             }
             ConvOriginalTable table = ConvOriginalTable.builder()
                     .id(originalTable.getId())
-                    .dataCount(tableCountMap.get(originalTable.getNameEn()))
-                    .updateTime(LocalDateTime.now()).build();
-            tableList.add(table);
+                    .dataCount(probeDTO.getDataCount())
+                    .dataSize(probeDTO.getDataSize())
+                    .updateTime(LocalDateTime.now())
+                    .build();
+            originalTableService.updateById(table);
+
+            // 样例数据
+            String dataList = probeDTO.getOriDataList();
+            ConvOriginalData data = ConvOriginalData.builder()
+                    .tableId(originalTable.getId())
+                    .tableName(originalTable.getNameEn())
+                    .dsConfigId(Long.valueOf(originalTable.getConvDsConfId()))
+                    .data(dataList)
+                    .build();
+            originalDataService.save(data);
+
+            // 空值率
+            List<ColumnNullableDTO> nullableList = probeDTO.getNullableList();
+            List<ConvOriginalProbe> probeList = new ArrayList<>();
+            for (ColumnNullableDTO nullableDTO : nullableList){
+                ConvOriginalProbe probe = ConvOriginalProbe.builder()
+                        .probeModel(ProbeModelEnum.COLUMN_NULLABLE.getCode())
+                        .tableId(originalTable.getId())
+                        .tableName(originalTable.getNameEn())
+                        .columnName(nullableDTO.getColumnName())
+                        .nullable(nullableDTO.getNullable())
+                        .build();
+                probeList.add(probe);
+            }
+            originalProbeService.saveBatch(probeList);
         }
-        originalTableService.updateBatchById(tableList);
     }
 
     public void processOriginalTable(OriginalStructureDto structureDto, LocalDateTime saveTime) {

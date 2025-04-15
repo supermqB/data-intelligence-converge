@@ -2,14 +2,8 @@ package com.lrhealth.data.converge.kafka;
 
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
-import com.lrhealth.data.converge.model.dto.DbXdsMessageDto;
-import com.lrhealth.data.converge.model.dto.OriginalStructureDto;
-import com.lrhealth.data.converge.model.dto.OriginalTableCountDto;
-import com.lrhealth.data.converge.model.dto.ResultRecordDto;
-import com.lrhealth.data.converge.service.FeTunnelConfigService;
-import com.lrhealth.data.converge.service.ImportOriginalService;
-import com.lrhealth.data.converge.service.TaskResultViewService;
-import com.lrhealth.data.converge.service.XdsInfoService;
+import com.lrhealth.data.converge.model.dto.*;
+import com.lrhealth.data.converge.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -36,6 +30,8 @@ public class FepKafkaConsumer {
     private FeTunnelConfigService feTunnelConfigService;
     @Resource
     private ImportOriginalService importOriginalService;
+    @Resource
+    private ProbeService probeService;
 
 
     @KafkaListener(topics = "${spring.kafka.topic.fep.update-collect-message}")
@@ -114,8 +110,21 @@ public class FepKafkaConsumer {
     public void uploadTableCount(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive upload originalTable count msgBody={}", msgBody);
         try {
-            OriginalTableCountDto tableCountDto = JSON.parseObject(msgBody, OriginalTableCountDto.class);
-            importOriginalService.updateOriginalTableCount(tableCountDto);
+            OriDataProbeDTO tableCountDto = JSON.parseObject(msgBody, OriDataProbeDTO.class);
+            importOriginalService.originalTableProbe(tableCountDto);
+        } catch (Exception e) {
+            log.error("upload originalTable count error,{}", ExceptionUtils.getStackTrace(e));
+        } finally {
+            acknowledgment.acknowledge();
+        }
+    }
+
+    @KafkaListener(topics = "${spring.kafka.topic.fep.upload-column-value}")
+    public void saveColumnDictValue(@Payload String msgBody, Acknowledgment acknowledgment){
+        log.info("====================receive upload originalTable count msgBody={}", msgBody);
+        try {
+            ColumnValueUpDTO valueUpDTO = JSON.parseObject(msgBody, ColumnValueUpDTO.class);
+            probeService.saveColumnValueFreq(valueUpDTO);
         } catch (Exception e) {
             log.error("upload originalTable count error,{}", ExceptionUtils.getStackTrace(e));
         } finally {

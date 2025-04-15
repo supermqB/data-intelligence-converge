@@ -1,8 +1,8 @@
 package com.lrhealth.data.converge.service;
 
 import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
+import com.lrhealth.data.converge.model.dto.OriDataProbeDTO;
 import com.lrhealth.data.converge.model.dto.OriginalStructureDto;
-import com.lrhealth.data.converge.model.dto.OriginalTableCountDto;
 
 /**
  * @author jinmengyu
@@ -14,5 +14,5 @@ public interface ImportOriginalService {
 
     void importConvOriginal(OriginalStructureDto structureDto);
 
-    void updateOriginalTableCount(OriginalTableCountDto tableCountDto);
+    void originalTableProbe(OriDataProbeDTO oriDataProbeDTO);
 }
