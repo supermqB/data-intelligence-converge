@@ -3,7 +3,6 @@ package com.lrhealth.data.converge.controller;
 import com.lrhealth.data.common.result.ResultBase;
 import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
 import com.lrhealth.data.converge.service.DirectConnectCollectService;
-import com.lrhealth.data.converge.service.TunnelExecService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +17,6 @@ import javax.annotation.Resource;
 @RestController
 @RequestMapping("/task")
 public class TunnelTaskController {
-    @Resource
-    private TunnelExecService tunnelExecService;
 
     @Resource
     private DirectConnectCollectService directConnectCollectService;
