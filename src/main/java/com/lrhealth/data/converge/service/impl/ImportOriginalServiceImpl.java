@@ -152,16 +152,19 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 .eq(ConvOriginalTable::getConvDsConfId, structureDto.getDsConfId())
                 .orderByDesc(ConvOriginalTable::getCreateTime));
         for (OriginalTableDto tableDto : structureDto.getOriginalTables()){
-            List<ConvOriginalTable> tables = storedTables.stream().filter(storeTable -> storeTable.getNameEn().equals(tableDto.getTableName())).collect(Collectors.toList());
+            List<ConvOriginalTable> tables = storedTables.stream()
+                    .filter(storeTable -> storeTable.getNameEn().equals(tableDto.getTableName()))
+                    .collect(Collectors.toList());
             ConvOriginalTable originalTable;
             if (CollUtil.isNotEmpty(tables)){
                 // 已存在的进行更新
                 originalTable = ConvOriginalTable.builder()
                         .id(tables.get(0).getId())
+                        .probeTime(tableDto.getProbeTime())
+                        .nameCn(tableDto.getTableRemarks())
                         .createTime(saveTime)
                         .updateTime(saveTime)
                         .build();
-
             }else {
                 originalTable = ConvOriginalTable.builder()
                         .nameEn(tableDto.getTableName())
@@ -260,7 +263,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             }
             deleteColumnList.addAll(convOriginalColumns);
         }
-        boolean saved = originalColumnService.saveOrUpdateBatch(originalColumnList);
+        originalColumnService.saveOrUpdateBatch(originalColumnList);
 
 
         // 对于此次库表结构的数据类型进行处理
