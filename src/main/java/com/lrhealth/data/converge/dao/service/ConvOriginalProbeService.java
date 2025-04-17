@@ -8,4 +8,6 @@ import com.lrhealth.data.converge.dao.entity.ConvOriginalProbe;
  * @date 2025-04-14
  */
 public interface ConvOriginalProbeService extends IService<ConvOriginalProbe> {
+
+    void deletePastDictValue(Long columnId, Long tableId);
 }

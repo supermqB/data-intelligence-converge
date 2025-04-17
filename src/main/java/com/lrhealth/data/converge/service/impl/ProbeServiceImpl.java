@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import com.lrhealth.data.converge.common.enums.ProbeModelEnum;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalProbe;
 import com.lrhealth.data.converge.dao.service.ConvOriginalProbeService;
@@ -25,6 +26,12 @@ public class ProbeServiceImpl implements ProbeService {
     @Override
     public void saveColumnValueFreq(ColumnValueUpDTO valueUpDTO) {
         List<DictValueDTO> valueDTOList = valueUpDTO.getValueDTOList();
+
+        if (CollUtil.isEmpty(valueDTOList)) return;
+        // 先删除以前的探查数据
+        originalProbeService.deletePastDictValue(valueUpDTO.getColumnId(), valueUpDTO.getTableId());
+
+
         List<ConvOriginalProbe> probeList = new ArrayList<>();
         for (DictValueDTO valueDTO : valueDTOList){
             ConvOriginalProbe probe = ConvOriginalProbe.builder()
