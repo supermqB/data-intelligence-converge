@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 import com.lrhealth.data.converge.dao.service.ConvFeNodeService;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.model.dto.ConvDsConfDTO;
@@ -44,10 +44,10 @@ public class DsConfigTask implements CommandLineRunner {
 
     @Scheduled(cron = "0 0/30 * * * ?")
     public void timingDsConfigSync(){
-        List<ConvOdsDatasourceConfig> list = dsConfigService.list(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
-                .eq(ConvOdsDatasourceConfig::getDelFlag, 0));
+        List<ConvDsConfig> list = dsConfigService.list(new LambdaQueryWrapper<ConvDsConfig>()
+                .eq(ConvDsConfig::getDelFlag, 0));
         List<ConvFeNode> feNodeList = feNodeService.list(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getDelFlag, 0));
-        Map<String, List<ConvOdsDatasourceConfig>> groupOrgCodeMap = list.stream().collect(Collectors.groupingBy(ConvOdsDatasourceConfig::getOrgCode));
+        Map<String, List<ConvDsConfig>> groupOrgCodeMap = list.stream().collect(Collectors.groupingBy(ConvDsConfig::getOrgCode));
         Map<String, List<Long>> feNodeIdMap = feNodeList.stream().collect(Collectors.groupingBy(ConvFeNode::getOrgCode, Collectors.mapping(ConvFeNode::getId, Collectors.toList())));
 
         if (CollUtil.isEmpty(groupOrgCodeMap)){
@@ -55,12 +55,12 @@ public class DsConfigTask implements CommandLineRunner {
         }
         // todo: 整理orgCode S开头的监管机构的数据源向所有机构广播
 
-        for(Map.Entry<String, List<ConvOdsDatasourceConfig>> dsMap : groupOrgCodeMap.entrySet()){
+        for(Map.Entry<String, List<ConvDsConfig>> dsMap : groupOrgCodeMap.entrySet()){
             String orgCode = dsMap.getKey();
-            List<ConvOdsDatasourceConfig> dsList = dsMap.getValue();
+            List<ConvDsConfig> dsList = dsMap.getValue();
             List<Long> orgFeNodes = feNodeIdMap.get(orgCode);
             if (CollUtil.isEmpty(orgFeNodes) && CollUtil.isEmpty(dsList)) continue;
-            for (ConvOdsDatasourceConfig dsConfig : dsList){
+            for (ConvDsConfig dsConfig : dsList){
                 ConvDsConfDTO dsConfDTO = ConvDsConfDTO.builder()
                         .id(Long.valueOf(dsConfig.getId()))
                         .dsUrl(dsConfig.getDsUrl())

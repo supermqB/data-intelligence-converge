@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.dao.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
 import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
 
@@ -15,7 +15,7 @@ import java.util.List;
  * @author zhouyun
  * @since 2023-12-22
  */
-public interface ConvOdsDatasourceConfigService extends IService<ConvOdsDatasourceConfig> {
+public interface ConvOdsDatasourceConfigService extends IService<ConvDsConfig> {
 
     List<DataSourceInfoDto> getOrgReaderSource(DataSourceParamDto dto);
 

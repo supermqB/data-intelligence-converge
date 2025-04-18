@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.common.enums;
 
-import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.common.exception.CommonException;
+
 import java.util.Objects;
 
 /**

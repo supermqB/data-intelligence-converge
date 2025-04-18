@@ -3,16 +3,8 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.crypto.asymmetric.KeyType;
-import cn.hutool.crypto.asymmetric.RSA;
-import cn.hutool.http.HttpRequest;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.config.ConvergeConfig;
-import com.lrhealth.data.converge.common.exception.FeNodeStatusException;
-import com.lrhealth.data.converge.common.exception.PingException;
-import com.lrhealth.data.converge.common.util.RsaUtils;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.FileTask;
@@ -20,8 +12,6 @@ import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.FeNodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -29,11 +19,9 @@ import org.springframework.util.StringUtils;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
-import java.lang.System;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -74,49 +62,6 @@ public class FeNodeServiceImpl implements FeNodeService {
         convTaskLogs.forEach(convTaskLog -> logIdMap.put(convTaskLog.getTaskId() + "-" + convTaskLog.getFedLogId(), true));
         log.info("taskLog加载完成");
     }
-
-    @Override
-    @Retryable(value = {PingException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
-    public boolean ping(String ip, String port) {
-        String url = ip + ":" + port + "/health/pong";
-        RSA instance = RsaUtils.getInstance(convergeConfig.getPrivateKeyStr());
-        String token = "lrhealth:" + System.currentTimeMillis();
-        try {
-            log.info("ping: " + url);
-            String body = HttpRequest.get(url)
-                    .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
-                    .timeout(3000)
-                    .execute().body();
-            JSONObject jsonObject = JSON.parseObject(body);
-            return "200".equals(jsonObject.get("code"));
-        } catch (Exception e) {
-            throw new PingException("ping 前置机异常！" + url + "\n" + e.getMessage() + "\n"
-                    + Arrays.toString(e.getStackTrace()));
-        }
-    }
-
-
-    @Override
-    @Retryable(value = {FeNodeStatusException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
-    public FrontendStatusDto getFeNodeStatus(ConvFeNode node) {
-        String url = node.getIp() + ":" + node.getPort() + "/task/front/status";
-        RSA instance = RsaUtils.getInstance(convergeConfig.getPrivateKeyStr());
-        String token = "lrhealth:" + System.currentTimeMillis();
-        try {
-            log.info("开始请求前置机状态：{}", url);
-            String result = HttpRequest.get(url)
-                    .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
-                    .timeout(3000)
-                    .execute().body();
-            Object value = JSON.parseObject(result).get("value");
-            return JSON.parseObject(JSON.toJSONString(value),
-                    FrontendStatusDto.class);
-        } catch (Exception e) {
-            throw new FeNodeStatusException("获取前置机：" + node.getIp() + "状态异常！\n" + e.getMessage()
-                    + "\n" + Arrays.toString(e.getStackTrace()));
-        }
-    }
-
     @Override
     @Transactional
     public ConvTunnel updateTunnel(TunnelStatusKafkaDto tunnelStatusDto) {

@@ -5,9 +5,9 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
+import com.lrhealth.data.converge.common.exception.CommonException;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.mapper.ConvTunnelMapper;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
@@ -62,7 +62,7 @@ public class ConvTunnelServiceImpl extends ServiceImpl<ConvTunnelMapper, ConvTun
             log.error("不存在的管道id:{}", tunnelId);
             return null;
         }
-        ConvOdsDatasourceConfig datasource = datasourceConfigService.getById(tunnel.getWriterDatasourceId());
+        ConvDsConfig datasource = datasourceConfigService.getById(tunnel.getWriterDatasourceId());
         if (ObjectUtil.isEmpty(datasource)){
             log.error("不存在的数据源配置id:{}", tunnelId);
             return null;
@@ -80,9 +80,9 @@ public class ConvTunnelServiceImpl extends ServiceImpl<ConvTunnelMapper, ConvTun
         if (CharSequenceUtil.isBlank(sysCode)){
             throw new CommonException("sysCode不能为空！");
         }
-        ConvOdsDatasourceConfig datasource = datasourceConfigService.getOne(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
-                .eq(ConvOdsDatasourceConfig::getSysCode, sysCode)
-                .eq(ConvOdsDatasourceConfig::getDsType, 1));
+        ConvDsConfig datasource = datasourceConfigService.getOne(new LambdaQueryWrapper<ConvDsConfig>()
+                .eq(ConvDsConfig::getSysCode, sysCode)
+                .eq(ConvDsConfig::getDsType, 1));
         if (ObjectUtil.isEmpty(datasource)){
             log.error("不存在的数据源系统配置:{}", sysCode);
             return null;

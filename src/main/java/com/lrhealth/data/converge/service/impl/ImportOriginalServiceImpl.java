@@ -6,15 +6,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.db.DbConnection;
 import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.enums.ProbeModelEnum;
-import com.lrhealth.data.converge.dao.entity.ConvOriginalColumn;
-import com.lrhealth.data.converge.dao.entity.ConvOriginalData;
-import com.lrhealth.data.converge.dao.entity.ConvOriginalProbe;
-import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
+import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.service.ImportOriginalService;
-import com.lrhealth.data.model.original.model.OriginalModel;
-import com.lrhealth.data.model.original.service.OriginalModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
@@ -25,7 +20,9 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -40,7 +37,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     @Resource
     private ConvOriginalColumnService originalColumnService;
     @Resource
-    private OriginalModelService stdModelService;
+    private StdOriginalModelService stdModelService;
     @Resource
     private ConvFieldTypeService fieldTypeService;
     @Resource
@@ -271,14 +268,14 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     }
 
     private void boundModel(ConvOriginalTable originalTable){
-        List<OriginalModel> modelList = stdModelService.list(new LambdaQueryWrapper<OriginalModel>()
-                .eq(OriginalModel::getNameEn, originalTable.getNameEn())
-                .eq(OriginalModel::getSysCode, originalTable.getSysCode())
-                .orderByDesc(OriginalModel::getCreateTime));
+        List<StdOriginalModel> modelList = stdModelService.list(new LambdaQueryWrapper<StdOriginalModel>()
+                .eq(StdOriginalModel::getNameEn, originalTable.getNameEn())
+                .eq(StdOriginalModel::getSysCode, originalTable.getSysCode())
+                .orderByDesc(StdOriginalModel::getCreateTime));
         if (CollUtil.isEmpty(modelList)){
             return;
         }
-        OriginalModel existModel = modelList.get(0);
+        StdOriginalModel existModel = modelList.get(0);
         originalTable.setModelId(existModel.getId());
         originalTable.setModelName(existModel.getNameEn());
         originalTable.setModelDescription(existModel.getDescription());
@@ -292,7 +289,9 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         List<ConvOriginalTable> convOriginalTables = originalTableList.stream().filter(orgTable -> orgTable.getModelId() != null).collect(Collectors.toList());
         for(ConvOriginalTable convOriginalTable : convOriginalTables){
             Long modelId =convOriginalTable.getModelId();
-            stdModelService.updateById(OriginalModel.builder().id(modelId).originalId(convOriginalTable.getId())
+            stdModelService.updateById(StdOriginalModel.builder()
+                    .id(modelId)
+                    .originalId(convOriginalTable.getId())
                     .updateTime(LocalDateTime.now()).build());
         }
     }

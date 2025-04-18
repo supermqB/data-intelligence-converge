@@ -91,7 +91,7 @@ jasypt:
 
 converge:
   filepath: /tmp/file/converge
-  backup: /tmp/file/backup
+
 
 
 lrhealth:
@@ -102,11 +102,11 @@ lrhealth:
     dataSaveCron: 0/20 * * * * *
 
 datax:
-  softpath: /opt/soft/datax/
+
   exec: bin/datax.py
   home: /opt/soft/datax
   json-path: /tmp/fep/job
-  execute-number-limit: 0
+
   collect-multith: 0
   dest-path: /tmp/fep/file
 

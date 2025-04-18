@@ -7,15 +7,15 @@ import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.db.DbConnection;
 import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
+import com.lrhealth.data.converge.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.TemplateMakerUtil;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 import com.lrhealth.data.converge.dao.entity.ConvMessageQueueConfig;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
 import com.lrhealth.data.converge.dao.entity.ConvTask;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.service.*;
@@ -178,7 +178,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         // 获取到落库配置
         OriginalTableModelDto tableModelRel = originalTableService.getTableModelRel(table, sysCode);
         log.info("获取到的表映射:{}", tableModelRel);
-        ConvOdsDatasourceConfig datasourceConfig = dsConfigService.getById(writerDsId);
+        ConvDsConfig datasourceConfig = dsConfigService.getById(writerDsId);
 
         // sql准备, 按照operation区分
         // Map<operation, actual-(sqlTemplate and valueList)>

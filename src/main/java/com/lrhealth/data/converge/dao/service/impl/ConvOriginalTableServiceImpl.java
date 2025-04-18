@@ -2,7 +2,7 @@ package com.lrhealth.data.converge.dao.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.ConvOriginalTable;
 import com.lrhealth.data.converge.dao.mapper.ConvOriginalTableMapper;
 import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;

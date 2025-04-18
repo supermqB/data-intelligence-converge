@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.dao.entity.ConvFeNode;
 import com.lrhealth.data.converge.dao.entity.ConvMonitor;
 import com.lrhealth.data.converge.dao.entity.ConvMonitorLog;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 import com.lrhealth.data.converge.dao.mapper.ConvFeNodeMapper;
 import com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper;
 import com.lrhealth.data.converge.dao.mapper.ConvOdsDatasourceConfigMapper;
@@ -83,9 +83,9 @@ public class ConvMonitorServiceImpl implements ConvMonitorService {
             log.error("[{}]消息 缺少必要字段 orgCode = {} dsId = {}", MonitorMsg.MsgTypeEnum.getDescByCode(message.getMsgType()), message.getOrgCode(), message.getDsId());
             return;
         }
-        ConvOdsDatasourceConfig dsConfig = convOdsDatasourceConfigMapper.selectOne(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
-                .eq(ConvOdsDatasourceConfig::getOrgCode, message.getOrgCode())
-                .eq(ConvOdsDatasourceConfig::getId, message.getDsId()).eq(ConvOdsDatasourceConfig::getDelFlag, 0));
+        ConvDsConfig dsConfig = convOdsDatasourceConfigMapper.selectOne(new LambdaQueryWrapper<ConvDsConfig>()
+                .eq(ConvDsConfig::getOrgCode, message.getOrgCode())
+                .eq(ConvDsConfig::getId, message.getDsId()).eq(ConvDsConfig::getDelFlag, 0));
         if (Objects.isNull(dsConfig)) {
             return;
         }

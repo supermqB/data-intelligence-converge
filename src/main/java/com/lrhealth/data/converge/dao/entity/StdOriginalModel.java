@@ -1,14 +1,17 @@
 package com.lrhealth.data.converge.dao.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @TableName("std_original_model")
 public class StdOriginalModel {
     private static final long serialVersionUID = 1L;
@@ -19,14 +22,45 @@ public class StdOriginalModel {
     private String nameEn;
     @TableLogic
     private Integer delFlag;
-    private Date createTime;
+    /**
+     * 创建时间
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    /**
+     * 更新人
+     */
     private String updateBy;
-    private Date updateTime;
+
+    /**
+     * 更新时间
+     */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
+
     private String description;
     private String orgCode;
     private String sysCode;
-    private String dataType;
-    private String modelQuerySql;
-    private String convDsConfId;
 
+    /**
+     * 原始结构主键id
+     */
+    private Long originalId;
+    /**
+     * 表创建标志 0-未创建表 1-已创建表
+     */
+    private Long tableCreateFlag;
+    /**
+     * 数据源Id
+     */
+    private Integer convDsConfId;
+
+    private String dataType;
+
+    private String modelQuerySql;
+    /**
+     * 文件存储路径(hive)
+     */
+    private String storagePath;
 }

@@ -1,4 +1,4 @@
-package com.lrhealth.data.converge.service;
+package com.lrhealth.data.converge.dao.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lrhealth.data.converge.model.SysDict;

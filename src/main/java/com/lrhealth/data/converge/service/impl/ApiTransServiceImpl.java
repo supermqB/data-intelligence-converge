@@ -3,7 +3,7 @@ package com.lrhealth.data.converge.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.db.DbConnection;
 import com.lrhealth.data.converge.common.db.DbConnectionManager;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 import com.lrhealth.data.converge.dao.entity.StdOriginalModel;
 import com.lrhealth.data.converge.dao.mapper.StdOriginalModelMapper;
@@ -102,13 +102,13 @@ public class ApiTransServiceImpl implements ApiTransService {
      * 创建数据库操作statement
      */
     private Statement doCreateStatement(String tableName, Integer dsId) {
-        List<ConvOdsDatasourceConfig> dataSourceConfigs = convOdsDatasourceConfigService.list(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
-                .eq(ConvOdsDatasourceConfig::getId, dsId)
-                .eq(ConvOdsDatasourceConfig::getDelFlag, 0));
+        List<ConvDsConfig> dataSourceConfigs = convOdsDatasourceConfigService.list(new LambdaQueryWrapper<ConvDsConfig>()
+                .eq(ConvDsConfig::getId, dsId)
+                .eq(ConvDsConfig::getDelFlag, 0));
         if (CollectionUtils.isEmpty(dataSourceConfigs)) {
             throw new RuntimeException(tableName + "表关联的目标数据源不存在!无法完成写入操作!dsId =" + dsId);
         }
-        ConvOdsDatasourceConfig dsConf = dataSourceConfigs.get(0);
+        ConvDsConfig dsConf = dataSourceConfigs.get(0);
         try {
             DbConnection dbConnection = DbConnection.builder().dbUrl(dsConf.getDsUrl())
                     .dbUserName(dsConf.getDsUsername())

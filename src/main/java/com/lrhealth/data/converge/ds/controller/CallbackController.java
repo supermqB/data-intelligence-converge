@@ -1,11 +1,14 @@
 package com.lrhealth.data.converge.ds.controller;
 
 import com.alibaba.fastjson2.JSON;
-import com.lrhealth.data.common.result.ResultBase;
+import com.lrhealth.data.converge.common.result.ResultBase;
 import com.lrhealth.data.converge.ds.biz.DsFlowBiz;
 import com.lrhealth.data.converge.ds.dto.FlowInstanceDto;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 
@@ -23,7 +26,6 @@ public class CallbackController {
 
     /**
      * ds回调汇聚，组装工作流实例运行的结果，插入conv_dolpsche_flow_run_detail
-     * @return
      */
     @PostMapping(value = "/flow/callback")
     public ResultBase<String> flowCallback(@RequestBody FlowInstanceDto dto) {

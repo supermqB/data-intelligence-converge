@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.common.enums;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.lrhealth.data.common.exception.CommonException;
+import com.lrhealth.data.converge.common.exception.CommonException;
 
 /**
  * @author jinmengyu

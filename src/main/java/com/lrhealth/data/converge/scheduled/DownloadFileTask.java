@@ -2,13 +2,10 @@ package com.lrhealth.data.converge.scheduled;
 
 
 import cn.hutool.core.util.ObjectUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.util.MinioClientUtils;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
 import com.lrhealth.data.converge.common.util.thread.AsyncManager;
 import com.lrhealth.data.converge.dao.entity.ConvTaskLog;
-import com.lrhealth.data.converge.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.dao.service.ConvTunnelService;
 import com.lrhealth.data.converge.model.FileTask;
 import com.lrhealth.data.converge.model.TaskFileConfig;
 import com.lrhealth.data.converge.model.dto.PreFileStatusDto;
@@ -22,11 +19,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 /**
  * @author zhaohui
@@ -44,8 +38,6 @@ public class DownloadFileTask {
 
     @Resource
     private TaskFileService taskFileService;
-    @Resource
-    private ConvTunnelService convTunnelService;
 
     @Resource
     private Executor threadPoolTaskExecutor;
@@ -54,22 +46,6 @@ public class DownloadFileTask {
 
     public static final ConcurrentLinkedDeque<FileTask> taskDeque = new ConcurrentLinkedDeque<>();
 
-
-//   @Scheduled(cron = "${lrhealth.converge.scheduledCron}")
-    public void refreshFENodesStatus() {
-        //循环前置机
-        log.info("定时更新前置机任务状态！" + LocalDateTime.now());
-        List<ConvTunnel> tunnelList = convTunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
-                .ne(ConvTunnel::getStatus, 0)
-                .ne(ConvTunnel::getStatus, 4)
-                .ne(ConvTunnel::getFrontendId, -1L));
-        List<Long> frontendIdList =
-                tunnelList.stream().map(ConvTunnel::getFrontendId).distinct().collect(Collectors.toList());
-        convergeService.updateDownLoadFileTask(taskDeque);
-        for (Long id : frontendIdList) {
-            convergeService.updateFeNodeStatus(id, taskDeque);
-        }
-    }
 
     @PostConstruct
     public void loadTaskData() {

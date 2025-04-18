@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 
 /**
  * <p>
@@ -11,7 +11,7 @@ import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
  * @author zhouyun
  * @since 2023-12-22
  */
-public interface ConvOdsDatasourceConfigMapper extends BaseMapper<ConvOdsDatasourceConfig> {
+public interface ConvOdsDatasourceConfigMapper extends BaseMapper<ConvDsConfig> {
 
     void updateTime(Boolean status,Integer dsId);
 }

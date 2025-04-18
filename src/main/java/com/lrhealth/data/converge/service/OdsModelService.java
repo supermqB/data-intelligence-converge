@@ -1,7 +1,7 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.model.original.model.OriginalModel;
-import com.lrhealth.data.model.original.model.OriginalModelColumn;
+import com.lrhealth.data.converge.dao.entity.StdOriginalModel;
+import com.lrhealth.data.converge.dao.entity.StdOriginalModelColumn;
 
 import java.util.List;
 
@@ -13,7 +13,7 @@ public interface OdsModelService {
 
     String getTableDataType(String odsTableName, String sysCode);
 
-    List<OriginalModelColumn> getColumnList(String odsModelName, String sysCode);
+    List<StdOriginalModelColumn> getColumnList(String odsModelName, String sysCode);
 
-    List<OriginalModel> getModelList(List<Long> modelIdList);
+    List<StdOriginalModel> getModelList(List<Long> modelIdList);
 }

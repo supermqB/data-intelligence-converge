@@ -9,7 +9,7 @@ spring:
     name: lr-data-rdcp-data-converge
   profiles:
     # 环境配置
-    active: local
+    active: test
 
   # kafka 消费者设置
   kafka:

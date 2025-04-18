@@ -7,7 +7,10 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSONObject;
 import com.lrhealth.data.converge.common.config.ConvergeConfig;
-import com.lrhealth.data.converge.common.exception.*;
+import com.lrhealth.data.converge.common.exception.FileDownloadException;
+import com.lrhealth.data.converge.common.exception.FileMergeException;
+import com.lrhealth.data.converge.common.exception.FileSplitException;
+import com.lrhealth.data.converge.common.exception.FileStatusException;
 import com.lrhealth.data.converge.common.util.RsaUtils;
 import com.lrhealth.data.converge.common.util.file.FileUtils;
 import com.lrhealth.data.converge.model.FileTask;
@@ -16,7 +19,6 @@ import com.lrhealth.data.converge.model.dto.PreFileStatusDto;
 import com.lrhealth.data.converge.service.TaskFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -67,12 +69,6 @@ public class TaskFileServiceImpl implements TaskFileService {
     }
 
     @Override
-    @Recover
-    public boolean recoverSplit(FileSplitException e) {
-        return false;
-    }
-
-    @Override
     @Retryable(value = {FileStatusException.class}, maxAttempts = 12, backoff = @Backoff(delay = 2000, multiplier =
             1.5))
     public PreFileStatusDto getFileStatus(TaskFileConfig taskFileConfig) {
@@ -92,12 +88,6 @@ public class TaskFileServiceImpl implements TaskFileService {
             throw new FileStatusException("查询文件拆分状态异常！\n" + e.getMessage() + "\n" +
                     Arrays.toString(e.getStackTrace()));
         }
-    }
-
-    @Override
-    @Recover
-    public PreFileStatusDto recoverStatus(FileStatusException e) {
-        return null;
     }
 
     @Override
@@ -132,12 +122,6 @@ public class TaskFileServiceImpl implements TaskFileService {
     }
 
     @Override
-    @Recover
-    public boolean recoverDownload(FileDownloadException e) {
-        return false;
-    }
-
-    @Override
     @Retryable(value = {FileMergeException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public boolean mergeFile(TaskFileConfig taskFileConfig) {
         FileUtils fileUtil = new FileUtils();
@@ -153,39 +137,6 @@ public class TaskFileServiceImpl implements TaskFileService {
         } catch (Exception e) {
             throw new FileMergeException(e.getMessage());
         }
-    }
-
-    @Override
-    @Recover
-    public boolean recoverMerge(FileMergeException e) {
-        return false;
-    }
-
-    @Override
-    @Retryable(value = {FileDeleteException.class}, backoff = @Backoff(delay = 2000, multiplier = 1.5))
-    public boolean deleteFile(TaskFileConfig taskFileConfig) {
-        RSA instance = RsaUtils.getInstance(convergeConfig.getPrivateKeyStr());
-        String token = "lrhealth:" + System.currentTimeMillis();
-        try {
-            String result = HttpRequest.post(taskFileConfig.getUrl() + "/deleteFiles")
-                    .header("Authorization", instance.encryptBase64(token, KeyType.PrivateKey))
-                    .body(JSONObject.toJSONString(taskFileConfig.getFrontNodeTask()))
-                    .timeout(3000).execute().body();
-            if (!"true".equals(result)) {
-                throw new FileSplitException("通知文件删除异常！\n" + result);
-            }
-            return true;
-        } catch (Exception e) {
-            throw new FileDeleteException("文件删除异常！" + taskFileConfig.getFrontNodeTask().getFileName() + "\n"
-                    + e.getMessage() + "\n"
-                    + Arrays.toString(e.getStackTrace()));
-        }
-    }
-
-    @Override
-    @Recover
-    public boolean recoverDelete(FileDeleteException e) {
-        return false;
     }
 
     private long writeFile(TaskFileConfig taskFileConfig, Map.Entry<String, Integer> entry) {

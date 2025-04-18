@@ -13,7 +13,6 @@ import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
 import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
 import com.lrhealth.data.converge.model.dto.FepScheduledDto;
 import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
-import com.lrhealth.data.converge.service.DirectConnectCollectService;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.MessageQueueService;
@@ -46,8 +45,7 @@ public class DateIntelliConsumer {
     private String originalStructureTopic;
     @Resource
     private ConvTunnelService tunnelService;
-    @Resource
-    private DirectConnectCollectService directConnectCollectService;
+
     @Resource
     private FeTunnelConfigService tunnelConfigService;
     @Resource
@@ -99,11 +97,7 @@ public class DateIntelliConsumer {
         try {
             FepScheduledDto dto = JSON.parseObject(msgBody, FepScheduledDto.class);
             ConvTunnel tunnel = tunnelService.getOne(new LambdaQueryWrapper<ConvTunnel>().eq(ConvTunnel::getId, dto.getTunnelId()));
-            if (tunnel.getFrontendId() == -1){
-                directConnectCollectService.tunnelConfig(TunnelMessageDTO.builder().id(tunnel.getId()).build());
-                directConnectCollectService.tunnelExec(null, tunnel.getId());
-                return;
-            }
+
             String topic = tunnelScheduleTopic + CharPool.DASHED + kafkaService.topicSuffixIpPort(tunnel.getFrontendId());
             kafkaTemplate.send(topic, JSON.toJSONString(dto));
         } catch (Exception e) {

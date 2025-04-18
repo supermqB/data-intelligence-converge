@@ -9,16 +9,17 @@ import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.google.common.collect.Lists;
-import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.enums.*;
+import com.lrhealth.data.converge.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.SysDict;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.scheduled.DownloadFileTask;
-import com.lrhealth.data.converge.service.*;
-import com.lrhealth.data.model.original.model.OriginalModel;
-import com.lrhealth.data.model.original.model.OriginalModelColumn;
+import com.lrhealth.data.converge.service.ConvergeService;
+import com.lrhealth.data.converge.service.FeNodeService;
+import com.lrhealth.data.converge.service.FeTunnelConfigService;
+import com.lrhealth.data.converge.service.OdsModelService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -140,7 +141,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private void tunnelJdbcMessage(ConvTunnel tunnel, TunnelMessageDTO tunnelMessageDTO) {
         // 库表/日志的读库信息
         JdbcInfoDto jdbcInfoDto = new JdbcInfoDto();
-        ConvOdsDatasourceConfig readerDs = odsDatasourceConfigService.getById(tunnel.getReaderDatasourceId());
+        ConvDsConfig readerDs = odsDatasourceConfigService.getById(tunnel.getReaderDatasourceId());
         jdbcInfoDto.setDsId(readerDs.getId());
         jdbcInfoDto.setJdbcUrl(CharSequenceUtil.isBlank(readerDs.getDsUrlForFront()) ? readerDs.getDsUrl() : readerDs.getDsUrlForFront());
         jdbcInfoDto.setDbUserName(readerDs.getDsUsername());
@@ -159,7 +160,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             // 库到库
             String writeDbType = null;
             if (LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())) {
-                ConvOdsDatasourceConfig writerDs = odsDatasourceConfigService.getById(tunnel.getWriterDatasourceId());
+                ConvDsConfig writerDs = odsDatasourceConfigService.getById(tunnel.getWriterDatasourceId());
                 jdbcInfoDto.setJdbcUrlForIn(writerDs.getDsUrl());
                 jdbcInfoDto.setDbUserNameForIn(writerDs.getDsUsername());
                 jdbcInfoDto.setDbPasswdForIn(writerDs.getDsPwd());
@@ -224,26 +225,26 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 .in(ConvCollectField::getTableName, tableList)
                 .eq(ConvCollectField::getTunnelId, tunnel.getId())
                 .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
-        Map<String, List<OriginalModelColumn>> modelColumnMap = new HashMap<>(collectFieldList.size());
-        Map<String, OriginalModel> hdfsMap = new HashMap<>();
+        Map<String, List<StdOriginalModelColumn>> modelColumnMap = new HashMap<>(collectFieldList.size());
+        Map<String, StdOriginalModel> hdfsMap = new HashMap<>();
         Map<String, ModelConfig> hiveConfigMap = new HashMap<>();
         Map<Long, ConvOriginalTable> originalTableMap = null;
         if (isHive && CollUtil.isNotEmpty(collectFieldList)) {
             List<Long> modelIdList = new ArrayList<>();
             for (ConvCollectField collectField : collectFieldList) {
-                List<OriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(), collectField.getSystemCode());
+                List<StdOriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(), collectField.getSystemCode());
                 modelColumnMap.put(collectField.getTableName(), modelColumns);
                 modelIdList.add(modelColumns.get(0).getModelId());
             }
-            List<OriginalModel> modelList = odsModelService.getModelList(modelIdList);
+            List<StdOriginalModel> modelList = odsModelService.getModelList(modelIdList);
             //原始模型Map modelNameEn-model
-            hdfsMap = modelList.stream().filter(e -> CharSequenceUtil.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(OriginalModel::getNameEn, e -> e, (m1, m2) -> m1));
+            hdfsMap = modelList.stream().filter(e -> CharSequenceUtil.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(StdOriginalModel::getNameEn, e -> e, (m1, m2) -> m1));
             List<ModelConfig> modelConfigs = modelConfigService.list(new LambdaQueryWrapper<ModelConfig>().in(ModelConfig::getModelId, modelIdList));
             //Hive表配置Map modelNameEn-数据存储类型
             for (ModelConfig modelConfig : modelConfigs){
                 hiveConfigMap.put(modelConfig.getTableName(), modelConfig);
             }
-            List<Long> originalIdList = hdfsMap.values().stream().map(OriginalModel::getOriginalId).collect(Collectors.toList());
+            List<Long> originalIdList = hdfsMap.values().stream().map(StdOriginalModel::getOriginalId).collect(Collectors.toList());
             //查询原始结构
             if (CollUtil.isNotEmpty(originalIdList)) {
                 List<ConvOriginalTable> originalTables = convOriginalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>()
@@ -277,12 +278,12 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         }
         Map<String, ModelConfig> finalHiveConfigMap = hiveConfigMap;
         Map<Long, ConvOriginalTable> finalOriginalTableMap = originalTableMap;
-        Map<String, OriginalModel> finalHdfsMap = hdfsMap;
+        Map<String, StdOriginalModel> finalHdfsMap = hdfsMap;
         collectFieldList.forEach(model -> {
             TableInfoDto tableInfoDto = new TableInfoDto();
             tableInfoDto.setTableName(model.getTableName());
             tableInfoDto.setSqlQuery(model.getQuerySql());
-            OriginalModel originalModel = finalHdfsMap.get(model.getTableName());
+            StdOriginalModel originalModel = finalHdfsMap.get(model.getTableName());
             tableInfoDto.setHdfsPath(Objects.isNull(originalModel) ? null : originalModel.getStoragePath());
             ModelConfig modelConfig = finalHiveConfigMap.get(model.getTableName());
             if(ObjectUtil.isNotNull(modelConfig)){
@@ -307,19 +308,19 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     /**
      * 创建hive库columns映射关系
      */
-    private String doGetHiveColumns(String readerDbType,Map<String, List<OriginalModelColumn>> modelColumnMap, ConvCollectField field, Integer dataSource) {
-        List<OriginalModelColumn> originalModelColumns = modelColumnMap.get(field.getTableName());
+    private String doGetHiveColumns(String readerDbType,Map<String, List<StdOriginalModelColumn>> modelColumnMap, ConvCollectField field, Integer dataSource) {
+        List<StdOriginalModelColumn> originalModelColumns = modelColumnMap.get(field.getTableName());
         if (CollUtil.isEmpty(originalModelColumns)) {
             return null;
         }
         if (CharSequenceUtil.isNotEmpty(field.getColumnField())) {
             List<String> existNames = Arrays.asList(field.getColumnField().split(","));
             originalModelColumns = originalModelColumns.stream().filter(column -> existNames.contains(column.getNameEn()))
-                    .sorted(Comparator.comparing(OriginalModelColumn::getSeqNo)).collect(Collectors.toList());
+                    .sorted(Comparator.comparing(StdOriginalModelColumn::getSeqNo)).collect(Collectors.toList());
         }
         StringBuilder sb = new StringBuilder();
         //dataType=1为采集标准数据 write全部转换为varchar
-        for (OriginalModelColumn modelColumn : originalModelColumns) {
+        for (StdOriginalModelColumn modelColumn : originalModelColumns) {
             String dataType = null;
             if (dataSource == null || dataSource != 1){
                 dataType = transformDataType(readerDbType,modelColumn.getFieldType());

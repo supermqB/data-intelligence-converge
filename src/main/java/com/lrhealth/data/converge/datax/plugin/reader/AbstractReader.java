@@ -2,9 +2,9 @@ package com.lrhealth.data.converge.datax.plugin.reader;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.extra.spring.SpringUtil;
-import com.lrhealth.data.common.exception.CommonException;
 import com.lrhealth.data.converge.common.db.DbConnection;
 import com.lrhealth.data.converge.common.db.DbConnectionManager;
+import com.lrhealth.data.converge.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.QueryParserUtil;
 import com.lrhealth.data.converge.common.util.TemplateMakerUtil;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;

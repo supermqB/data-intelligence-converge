@@ -3,7 +3,7 @@ package com.lrhealth.data.converge.dao.adpter;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
-import com.lrhealth.data.common.enums.db.DataSourceEnum;
+import com.lrhealth.data.converge.common.enums.DataSourceEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang.StringUtils;

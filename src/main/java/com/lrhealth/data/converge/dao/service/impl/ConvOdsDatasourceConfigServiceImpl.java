@@ -4,7 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.lrhealth.data.converge.dao.entity.ConvOdsDatasourceConfig;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 import com.lrhealth.data.converge.dao.mapper.ConvOdsDatasourceConfigMapper;
 import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
 import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
@@ -25,15 +25,15 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatasourceConfigMapper, ConvOdsDatasourceConfig> implements ConvOdsDatasourceConfigService {
+public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatasourceConfigMapper, ConvDsConfig> implements ConvOdsDatasourceConfigService {
 
     @Override
     public List<DataSourceInfoDto> getOrgReaderSource(DataSourceParamDto dto) {
-        List<ConvOdsDatasourceConfig> datasourceConfigs = this.list(new LambdaQueryWrapper<ConvOdsDatasourceConfig>()
-                .eq(CharSequenceUtil.isNotBlank(dto.getOrgCode()), ConvOdsDatasourceConfig::getOrgCode, dto.getOrgCode())
-                .eq(dto.getDsConfigId() != null, ConvOdsDatasourceConfig::getId, dto.getDsConfigId()));
+        List<ConvDsConfig> datasourceConfigs = this.list(new LambdaQueryWrapper<ConvDsConfig>()
+                .eq(CharSequenceUtil.isNotBlank(dto.getOrgCode()), ConvDsConfig::getOrgCode, dto.getOrgCode())
+                .eq(dto.getDsConfigId() != null, ConvDsConfig::getId, dto.getDsConfigId()));
         List<DataSourceInfoDto> dataSourceInfoDtoList = new ArrayList<>();
-        for (ConvOdsDatasourceConfig datasourceConfig : datasourceConfigs){
+        for (ConvDsConfig datasourceConfig : datasourceConfigs){
             DataSourceInfoDto sourceInfoDto = DataSourceInfoDto.builder()
                     .orgCode(datasourceConfig.getOrgCode())
                     .sysCode(dto.getSysCode())
@@ -58,7 +58,7 @@ public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatas
             log.error("dsConfigId为空值");
             return null;
         }
-        ConvOdsDatasourceConfig datasourceConfig = this.getById(convDsConfigId);
+        ConvDsConfig datasourceConfig = this.getById(convDsConfigId);
         if (ObjectUtil.isEmpty(datasourceConfig)){
             log.error("不存在的数据源id[{}]", convDsConfigId);
             return null;

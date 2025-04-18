@@ -1,6 +1,6 @@
 package com.lrhealth.data.converge.controller;
 
-import com.lrhealth.data.common.result.ResultBase;
+import com.lrhealth.data.converge.common.result.ResultBase;
 import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
 import com.lrhealth.data.converge.service.ImportOriginalService;
 import lombok.extern.slf4j.Slf4j;

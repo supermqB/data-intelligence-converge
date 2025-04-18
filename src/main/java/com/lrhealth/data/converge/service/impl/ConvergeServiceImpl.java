@@ -10,9 +10,8 @@ import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.FileTask;
 import com.lrhealth.data.converge.model.TaskFileConfig;
-import com.lrhealth.data.converge.model.dto.*;
+import com.lrhealth.data.converge.model.dto.DsKafkaDto;
 import com.lrhealth.data.converge.service.ConvergeService;
-import com.lrhealth.data.converge.service.FeNodeService;
 import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.XdsInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,6 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
 /**
@@ -44,10 +42,6 @@ public class ConvergeServiceImpl implements ConvergeService {
 
     @Resource
     private ConvTaskService convTaskService;
-
-    @Resource
-    private FeNodeService feNodeService;
-
     @Resource
     private ConvTaskResultViewService convTaskResultViewService;
 
@@ -60,81 +54,6 @@ public class ConvergeServiceImpl implements ConvergeService {
     private KafkaService kafkaService;
     @Resource
     private XdsInfoService xdsInfoService;
-
-    @Override
-    public void updateDownLoadFileTask(ConcurrentLinkedDeque<FileTask> taskDeque) {
-        List<ConvTask> list = convTaskService.list(new LambdaQueryWrapper<ConvTask>()
-                .eq(ConvTask::getStatus, 3));
-        for (ConvTask convTask : list) {
-            addTaskResultView(taskDeque, convTask);
-            addTaskResultFile(taskDeque, convTask);
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void updateFeNodeStatus(Long feNodeId, ConcurrentLinkedDeque<FileTask> taskDeque) {
-        ConvFeNode node = convFeNodeService.getById(feNodeId);
-        if (!feNodeService.ping(node.getIp(), String.valueOf(node.getPort()))) {
-            node.setState(0);
-            convFeNodeService.updateById(node);
-            log.error("前置机：" + node.getIp() + "ping 异常！");
-            return;
-        }
-        //更新前置机节点状态-上线
-        node.setState(1);
-        convFeNodeService.updateById(node);
-
-        FrontendStatusDto frontendStatusDto = feNodeService.getFeNodeStatus(node);
-        if (frontendStatusDto == null || frontendStatusDto.getTunnelStatusDtoList() == null) {
-            log.error("status返回结果异常: " + frontendStatusDto);
-            return;
-        }
-
-        updateFepStatus(frontendStatusDto, taskDeque);
-
-        log.info("前置机：" + node.getIp() + " 状态更新结束！");
-    }
-
-    @Override
-    public void updateFepStatus(FrontendStatusDto frontendStatusDto, ConcurrentLinkedDeque<FileTask> taskDeque){
-        List<TunnelStatusDto> tunnelStatusDtoList = frontendStatusDto.getTunnelStatusDtoList();
-        for (TunnelStatusDto tunnelStatusDto : tunnelStatusDtoList) {
-            //更新 tunnel
-            TunnelStatusKafkaDto tunnelStatus = new TunnelStatusKafkaDto();
-            tunnelStatus.setTunnelId(tunnelStatusDto.getTunnelId());
-            tunnelStatus.setTunnelStatus(tunnelStatusDto.getTunnelStatus());
-            ConvTunnel tunnel = feNodeService.updateTunnel(tunnelStatus);
-            if(tunnel == null){
-                log.warn("不存在的管道信息！" + tunnelStatusDto.getTunnelId());
-                continue;
-            }
-            List<TaskStatusDto> taskStatusList = tunnelStatusDto.getTaskStatusList();
-            for (TaskStatusDto taskStatusDto : taskStatusList) {
-                ConvTask oldTask = convTaskService.getOne(new LambdaQueryWrapper<ConvTask>()
-                        .eq(ConvTask::getFedTaskId, taskStatusDto.getTaskId())
-                        .eq(ConvTask::getTunnelId, tunnel.getId()), false);
-                //更新 task
-                TaskInfoKafkaDto taskDto = new TaskInfoKafkaDto();
-                taskDto.setTaskId(taskStatusDto.getTaskId());
-                taskDto.setStartTime(taskStatusDto.getStartTime());
-                taskDto.setEndTime(taskStatusDto.getEndTime());
-                taskDto.setStatus(taskStatusDto.getStatus());
-                ConvTask convTask = feNodeService.saveOrUpdateTask(taskDto, tunnel, oldTask);
-
-                List<TaskLogDto> taskLogs = taskStatusDto.getTaskLogs();
-                feNodeService.saveOrUpdateLog(taskLogs, convTask.getId());
-
-                List<ResultViewInfoDto> resultViewInfoDtoList = taskStatusDto.getDataxInfoList();
-                feNodeService.updateTaskResultView(taskDeque, resultViewInfoDtoList, convTask);
-
-                List<ResultFileInfoDto> resultFileInfoDtoList = taskStatusDto.getFileInfoList();
-                feNodeService.updateTaskResultFile(taskDeque, resultFileInfoDtoList, convTask);
-
-                sendDsKafka(convTask, oldTask, tunnel.getId());
-            }
-        }
-    }
 
     @Override
     public void sendDsKafka(ConvTask convTask, ConvTask oldTask, Long tunnelId){
@@ -282,33 +201,4 @@ public class ConvergeServiceImpl implements ConvergeService {
         return new TaskFileConfig(convTask, frontNodeTask, tunnel, feNode, taskResultView, taskResultFile,url,
                 destPath);
     }
-
-    private void addTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, ConvTask convTask) {
-        List<ConvTaskResultView> taskResultViews = convTaskResultViewService.list(new LambdaQueryWrapper<ConvTaskResultView>()
-                .eq(ConvTaskResultView::getTaskId, convTask.getId())
-                .and(l -> l.eq(ConvTaskResultView::getStatus,1)
-                        .or()
-                        .eq(ConvTaskResultView::getStatus,2)));
-        for (ConvTaskResultView taskResultView : taskResultViews) {
-            FileTask fileTask = new FileTask(convTask.getId(), taskResultView.getFeStoredFilename());
-            if (!taskDeque.contains(fileTask)) {
-                taskDeque.add(fileTask);
-            }
-        }
-    }
-
-    private void addTaskResultFile(ConcurrentLinkedDeque<FileTask> taskDeque, ConvTask convTask) {
-        List<ConvTaskResultFile> taskResultFiles = convTaskResultFileService.list(new LambdaQueryWrapper<ConvTaskResultFile>()
-                .eq(ConvTaskResultFile::getTaskId, convTask.getId())
-                .and(l -> l.eq(ConvTaskResultFile::getStatus,1)
-                        .or()
-                        .eq(ConvTaskResultFile::getStatus,2)));
-        for (ConvTaskResultFile taskResultFile : taskResultFiles) {
-            FileTask fileTask = new FileTask(convTask.getId(), taskResultFile.getFeStoredFilename());
-            if (!taskDeque.contains(fileTask)) {
-                taskDeque.add(fileTask);
-            }
-        }
-    }
-
 }

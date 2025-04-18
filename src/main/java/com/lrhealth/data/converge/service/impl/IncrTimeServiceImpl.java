@@ -67,16 +67,6 @@ public class IncrTimeServiceImpl implements IncrTimeService {
             log.error("[{}]原始表不存在！", xds.getOdsTableName());
             return;
         }
-        ConvOdsDatasourceConfig dsConfig = datasourceConfigService.getById(xds.getDsConfigId());
-        //若使用HDFS存储 通过原始模型 查询对应的hive数据源
-        if (dsConfig != null && "HDFS".equals(dsConfig.getDbType())){
-            StdOriginalModel stdOriginalModel = stdOriginalModelMapper.selectOne(new LambdaQueryWrapper<StdOriginalModel>()
-                    .eq(StdOriginalModel::getId, table.getModelId())
-                    .eq(StdOriginalModel::getDelFlag, 0));
-            if (stdOriginalModel != null && CharSequenceUtil.isNotEmpty(stdOriginalModel.getConvDsConfId())){
-                dsConfig = datasourceConfigService.getById(Integer.valueOf(stdOriginalModel.getConvDsConfId()));
-            }
-        }
         List<ConvOriginalColumn> convOriginalColumns = originalColumnService.list(new LambdaQueryWrapper<ConvOriginalColumn>()
                 .eq(ConvOriginalColumn::getTableId, table.getId())
                 .ne(ConvOriginalColumn::getIncrFlag, "0"));
@@ -101,7 +91,6 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                     .updateTime(LocalDateTime.now())
                     .build();
             if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
-//                Timestamp value = Timestamp.valueOf(latestValue);
                 update.setLatestTime(latestValue);
             }else {
                 update.setLatestSeq(latestValue);

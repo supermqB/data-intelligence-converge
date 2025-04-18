@@ -1,10 +1,10 @@
-package com.lrhealth.data.converge.service.impl;
+package com.lrhealth.data.converge.dao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lrhealth.data.converge.dao.mapper.SysDictMapper;
+import com.lrhealth.data.converge.dao.service.SysDictService;
 import com.lrhealth.data.converge.model.SysDict;
-import com.lrhealth.data.converge.service.SysDictService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

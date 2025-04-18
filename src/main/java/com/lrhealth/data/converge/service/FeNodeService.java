@@ -10,12 +10,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 public interface FeNodeService {
 
-    public boolean ping(String ip, String port);
-
-
-    public FrontendStatusDto getFeNodeStatus(ConvFeNode node);
-
-
     ConvTunnel updateTunnel(TunnelStatusKafkaDto tunnelStatusDto);
 
     ConvTask saveOrUpdateTask(TaskInfoKafkaDto taskInfoKafkaDto, ConvTunnel tunnel,ConvTask oldTask);

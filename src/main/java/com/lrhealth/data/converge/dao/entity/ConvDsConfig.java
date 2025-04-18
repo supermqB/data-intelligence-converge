@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("conv_ds_config")
-public class ConvOdsDatasourceConfig implements Serializable {
+public class ConvDsConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
