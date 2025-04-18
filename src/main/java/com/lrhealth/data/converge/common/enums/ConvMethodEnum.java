@@ -26,16 +26,6 @@ public enum ConvMethodEnum {
 
     private final String info;
 
-    /**
-     * 是否是数据库方式
-     *
-     * @param code 编码
-     * @return 是-true
-     */
-    public static boolean isDb(String code) {
-        return DB_TABLE.code.equals(code);
-    }
-
     ConvMethodEnum(String code, String info) {
         this.code = code;
         this.info = info;

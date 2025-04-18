@@ -20,9 +20,4 @@ public interface ConvTaskService extends IService<ConvTask> {
 
     void updateTaskStatus(Integer taskId, TaskStatusEnum taskStatusEnum);
 
-    void taskWaitingTransfer(Integer taskId);
-
-    void taskDownloaded(Integer taskId);
-
-    void updateTaskCompleted(Integer taskId);
 }

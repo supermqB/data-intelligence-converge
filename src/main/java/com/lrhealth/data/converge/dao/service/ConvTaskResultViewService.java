@@ -14,7 +14,4 @@ import com.lrhealth.data.converge.dao.entity.ConvTaskResultView;
  */
 public interface ConvTaskResultViewService extends IService<ConvTaskResultView> {
 
-    ConvTaskResultView createJobExecInstance(Integer taskId, Long dataXJobId, String tableName, String startIndex, String endIndex);
-
-    Long getDataXJoId(Integer taskResultViewId, Integer taskId);
 }

@@ -61,24 +61,4 @@ public enum ApiMsgEnum implements MsgEnum {
         }
         return retMap;
     }
-
-    public static ApiMsgEnum getByCode(String code) {
-        ApiMsgEnum[] enumArr = ApiMsgEnum.values();
-        for (ApiMsgEnum aEnum : enumArr) {
-            if (aEnum.getCode().equals(code)) {
-                return aEnum;
-            }
-        }
-        return null;
-    }
-
-    public static ApiMsgEnum getByMessage(String message) {
-        ApiMsgEnum[] enumArr = ApiMsgEnum.values();
-        for (ApiMsgEnum aEnum : enumArr) {
-            if (aEnum.getMessage().equals(message)) {
-                return aEnum;
-            }
-        }
-        return null;
-    }
 }

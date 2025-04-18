@@ -1,15 +1,18 @@
 package com.lrhealth.data.converge.common.exception;
 
-import com.lrhealth.data.converge.common.enums.MsgEnum;
-import lombok.Getter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 公用异常
  *
  * @author lr
  **/
-@Getter
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class CommonException extends RuntimeException {
+
+    private static final long serialVersionUID = 2056523341164047917L;
     private String code = "";
     private String message = "";
 
@@ -19,11 +22,6 @@ public class CommonException extends RuntimeException {
         this.message = message;
     }
 
-    public CommonException(MsgEnum msgEnum) {
-        super(msgEnum.getMessage());
-        this.message = msgEnum.getMessage();
-        this.code = msgEnum.getCode();
-    }
 
     public CommonException(String code, String message) {
         super(message);
@@ -31,8 +29,4 @@ public class CommonException extends RuntimeException {
         this.code = code;
     }
 
-    public CommonException(String message, Throwable e) {
-        super(message, e);
-        this.message = String.format("%s %s", message, e.getMessage());
-    }
 }

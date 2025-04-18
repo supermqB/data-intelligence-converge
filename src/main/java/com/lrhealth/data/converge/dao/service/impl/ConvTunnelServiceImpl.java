@@ -5,7 +5,6 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 import com.lrhealth.data.converge.dao.entity.ConvTunnel;
@@ -17,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.time.LocalDateTime;
 
 
 /**
@@ -34,18 +32,6 @@ public class ConvTunnelServiceImpl extends ServiceImpl<ConvTunnelMapper, ConvTun
 
     @Resource
     private ConvOdsDatasourceConfigService datasourceConfigService;
-
-    @Override
-    public void updateTunnelStatus(Long tunnelId, TunnelStatusEnum tunnelStatusEnum) {
-        boolean updated = this.updateById(ConvTunnel.builder()
-                .id(tunnelId)
-                .status(tunnelStatusEnum.getValue())
-                .updateTime(LocalDateTime.now())
-                .build());
-        if (!updated){
-            log.error("tunnel update fail, tunnelId: " + tunnelId);
-        }
-    }
 
     @Override
     public ConvTunnel getTunnelWithoutDelFlag(Long tunnelId) {

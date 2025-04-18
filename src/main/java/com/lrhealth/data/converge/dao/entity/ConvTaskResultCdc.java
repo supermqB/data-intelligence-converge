@@ -93,15 +93,4 @@ public class ConvTaskResultCdc implements Serializable {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    public static ConvTaskResultCdc zero() {
-        // @formatter:off
-        return ConvTaskResultCdc.builder()
-            .dataCount(0)
-            .addCount(0)
-            .deleteCount(0)
-            .updateCount(0)
-            .build();
-        // @formatter:on
-    }
-
 }

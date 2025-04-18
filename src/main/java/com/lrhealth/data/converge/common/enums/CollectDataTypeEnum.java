@@ -16,46 +16,6 @@ public enum CollectDataTypeEnum {
 
     private final String info;
 
-    /**
-     * 是否是基础数据
-     *
-     * @param code 数据分类
-     * @return 是-true
-     */
-    public static boolean isBaseData(String code) {
-        return BASE.code.equals(code);
-    }
-
-    /**
-     * 是否是字典数据
-     *
-     * @param code 数据分类
-     * @return 是-true
-     */
-    public static boolean isDictData(String code) {
-        return DICT.code.equals(code);
-    }
-
-    /**
-     * 是否是基础数据或字典数据
-     *
-     * @param code 数据分类
-     * @return 是-true
-     */
-    public static boolean isBaseOrDictData(String code) {
-        return isDictData(code) || isBaseData(code);
-    }
-
-    /**
-     * 是否是业务数据
-     *
-     * @param code 数据分类
-     * @return 是-true
-     */
-    public static boolean isBusinessData(String code) {
-        return BUSINESS.code.equals(code);
-    }
-
     CollectDataTypeEnum(String code, String info) {
         this.code = code;
         this.info = info;
@@ -69,12 +29,4 @@ public enum CollectDataTypeEnum {
         return info;
     }
 
-    public static String getCodeByInfo(String info) {
-        for (CollectDataTypeEnum dataType : CollectDataTypeEnum.values()) {
-            if (dataType.getInfo().equals(info)) {
-                return dataType.getCode();
-            }
-        }
-        return null;
-    }
 }

@@ -8,7 +8,6 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.lrhealth.data.converge.common.constants.CommonConstant;
 import com.lrhealth.data.converge.common.enums.CollectDataTypeEnum;
 import com.lrhealth.data.converge.common.enums.ConvMethodEnum;
 import com.lrhealth.data.converge.common.enums.KafkaSendFlagEnum;
@@ -91,8 +90,10 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
         Xds xds = Xds.builder()
                 .id(IdUtil.getSnowflakeNextId())
                 .orgCode(orgCode).sysCode(sysCode)
-                .convergeMethod(ConvMethodEnum.FILE.getCode()).dataType(CollectDataTypeEnum.DICT.getCode())
-                .dataConvergeStartTime(LocalDateTime.now()).dataConvergeStatus(XdsStatusEnum.INIT.getCode())
+                .convergeMethod(ConvMethodEnum.FILE.getCode())
+                .dataType(CollectDataTypeEnum.DICT.getCode())
+                .dataConvergeStartTime(LocalDateTime.now())
+                .dataConvergeStatus(XdsStatusEnum.INIT.getCode())
                 .oriFileFromIp(NetUtil.getLocalhostStr()).odsModelName("dict")
                 .oriFileName(file.getOriginalFilename()).oriFileType("xlsx")
                 .oriFileSize(BigDecimal.valueOf(file.getSize()))
@@ -177,7 +178,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
      */
     public Xds updateXds(Xds xds) {
         xds.setUpdateTime(LocalDateTime.now());
-        xds.setUpdateBy(CommonConstant.DEFAULT_USER);
+        xds.setUpdateBy("sys");
         xdsService.updateById(xds);
         return getXdsInfoById(xds.getId());
     }
