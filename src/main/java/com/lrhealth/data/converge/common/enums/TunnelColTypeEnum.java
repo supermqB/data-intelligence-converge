@@ -1,7 +1,5 @@
 package com.lrhealth.data.converge.common.enums;
 
-import java.util.Objects;
-
 /**
  * 采集类型
  *
@@ -26,15 +24,6 @@ public enum TunnelColTypeEnum {
 
     TunnelColTypeEnum(Integer value) {
         this.value = value;
-    }
-
-    public static TunnelColTypeEnum of(Integer status) {
-        for (TunnelColTypeEnum taskEnum : TunnelColTypeEnum.values()) {
-            if (Objects.equals(taskEnum.value, status)) {
-                return taskEnum;
-            }
-        }
-        return null;
     }
 
     public Integer getValue() {

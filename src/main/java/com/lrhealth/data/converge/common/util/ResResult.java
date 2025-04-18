@@ -28,9 +28,6 @@ public class ResResult<T> {
      */
     private T data;
 
-    private ResResult() {
-    }
-
     public ResResult(Integer code, String msg, T data) {
         this.code = code;
         this.msg = msg;

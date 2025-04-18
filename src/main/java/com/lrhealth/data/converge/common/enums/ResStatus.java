@@ -3,7 +3,6 @@ package com.lrhealth.data.converge.common.enums;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.util.Locale;
-import java.util.Optional;
 
 /**
  * status enum
@@ -42,15 +41,4 @@ public enum ResStatus {
         }
     }
 
-    /**
-     * Retrieve Status enum entity by status code.
-     */
-    public static Optional<ResStatus> findStatusBy(int code) {
-        for (ResStatus status : ResStatus.values()) {
-            if (code == status.getCode()) {
-                return Optional.of(status);
-            }
-        }
-        return Optional.empty();
-    }
 }

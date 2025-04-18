@@ -145,15 +145,6 @@ public enum OdsDataSizeEnum {
         this.tableName = tableName;
     }
 
-    public static OdsDataSizeEnum of(String tableName) {
-        for (OdsDataSizeEnum taskEnum : OdsDataSizeEnum.values()) {
-            if (Objects.equals(taskEnum.tableName, tableName)) {
-                return taskEnum;
-            }
-        }
-        return null;
-    }
-
     public Integer getValue() {
         return value;
     }

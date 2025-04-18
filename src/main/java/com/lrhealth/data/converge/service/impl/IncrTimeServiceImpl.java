@@ -6,7 +6,6 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
 import com.lrhealth.data.converge.dao.entity.*;
-import com.lrhealth.data.converge.dao.mapper.StdOriginalModelMapper;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.IncrSequenceDto;
 import com.lrhealth.data.converge.service.IncrTimeService;
@@ -33,16 +32,13 @@ public class IncrTimeServiceImpl implements IncrTimeService {
     private ConvTaskService taskService;
     @Resource
     private ConvTunnelService tunnelService;
-    @Resource
-    private ConvOdsDatasourceConfigService datasourceConfigService;
+
     @Resource
     private ConvOriginalTableService originalTableService;
     @Resource
     private ConvOriginalColumnService originalColumnService;
     @Resource
     private ConvCollectIncrTimeService convCollectIncrTimeService;
-    @Resource
-    private StdOriginalModelMapper stdOriginalModelMapper;
     @Resource
     private KafkaService kafkaService;
 

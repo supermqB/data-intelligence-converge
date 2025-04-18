@@ -2,9 +2,6 @@ package com.lrhealth.data.converge.common.util;
 
 import cn.hutool.log.Log;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.InputStream;
 import java.util.List;
 
@@ -24,30 +21,6 @@ public class ShellUtil {
     private static final Log log = Log.get(ShellUtil.class);
 
     private ShellUtil() {
-    }
-
-    public static void createShellFile(String filePath, String... str) {
-        try {
-
-            File sh = new File(filePath);
-            if (sh.exists()) {
-                sh.delete();
-            }
-            sh.createNewFile();
-            sh.setExecutable(true);
-            FileWriter writer = new FileWriter(sh);
-            BufferedWriter bufferedWriter = new BufferedWriter(writer);
-            for (int i = 0; i < str.length; i++) {
-                bufferedWriter.write(str[i]);
-                if (i < str.length - 1) {
-                    bufferedWriter.newLine();
-                }
-            }
-            bufferedWriter.flush();
-            bufferedWriter.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     /**

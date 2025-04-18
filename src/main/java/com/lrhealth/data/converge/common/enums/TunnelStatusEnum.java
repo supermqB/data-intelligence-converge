@@ -1,7 +1,5 @@
 package com.lrhealth.data.converge.common.enums;
 
-import java.util.Objects;
-
 /**
  * 治理任务状态
  *
@@ -22,15 +20,6 @@ public enum TunnelStatusEnum {
 
     TunnelStatusEnum(Integer value) {
         this.value = value;
-    }
-
-    public static TunnelStatusEnum of(Integer status) {
-        for (TunnelStatusEnum taskEnum : TunnelStatusEnum.values()) {
-            if (Objects.equals(taskEnum.value, status)) {
-                return taskEnum;
-            }
-        }
-        return null;
     }
 
     public Integer getValue() {

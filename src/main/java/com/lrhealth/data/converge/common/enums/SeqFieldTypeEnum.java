@@ -1,7 +1,5 @@
 package com.lrhealth.data.converge.common.enums;
 
-import java.util.Objects;
-
 /**
  * 增量字段类型
  *
@@ -23,15 +21,6 @@ public enum SeqFieldTypeEnum {
 
     SeqFieldTypeEnum(String value) {
         this.value = value;
-    }
-
-    public static SeqFieldTypeEnum of(String status) {
-        for (SeqFieldTypeEnum taskEnum : SeqFieldTypeEnum.values()) {
-            if (Objects.equals(taskEnum.value, status)) {
-                return taskEnum;
-            }
-        }
-        return null;
     }
 
     public String getValue() {

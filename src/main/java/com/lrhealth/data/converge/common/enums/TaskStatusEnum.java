@@ -1,7 +1,5 @@
 package com.lrhealth.data.converge.common.enums;
 
-import java.util.Objects;
-
 /**
  * 治理任务状态
  *
@@ -23,15 +21,6 @@ public enum TaskStatusEnum {
 
     TaskStatusEnum(Integer value) {
         this.value = value;
-    }
-
-    public static TaskStatusEnum of(Integer status) {
-        for (TaskStatusEnum taskEnum : TaskStatusEnum.values()) {
-            if (Objects.equals(taskEnum.value, status)) {
-                return taskEnum;
-            }
-        }
-        return null;
     }
 
     public Integer getValue() {

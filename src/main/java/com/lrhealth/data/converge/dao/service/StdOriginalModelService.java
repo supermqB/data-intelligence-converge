@@ -3,9 +3,6 @@ package com.lrhealth.data.converge.dao.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lrhealth.data.converge.dao.entity.StdOriginalModel;
-import com.lrhealth.data.converge.dao.entity.StdOriginalModelColumn;
-
-import java.util.List;
 
 /**
  * <p>
@@ -18,6 +15,5 @@ import java.util.List;
 
 public interface StdOriginalModelService extends IService<StdOriginalModel> {
 
-    List<StdOriginalModelColumn> queryModelAndColumnByCatalogId();
 
 }

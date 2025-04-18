@@ -19,13 +19,4 @@ public enum LibraryTableModelEnum {
     private final Integer code;
     private final String description;
 
-    public static LibraryTableModelEnum of(Integer code) {
-        for (LibraryTableModelEnum taskEnum : LibraryTableModelEnum.values()) {
-            if (taskEnum.code.equals(code)) {
-                return taskEnum;
-            }
-        }
-        return null;
-    }
-
 }

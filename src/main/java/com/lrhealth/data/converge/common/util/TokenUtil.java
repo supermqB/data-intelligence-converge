@@ -17,20 +17,6 @@ public class TokenUtil {
      */
     private static final String secretKey = "secretKey";
 
-    /**
-     * 生成token
-     */
-    public static String generateToken(String subject) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + 3600000);
-
-        return Jwts.builder()
-                .setSubject(subject)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS256, secretKey)
-                .compact();
-    }
 
     public static boolean validateToken(String token) {
         try {

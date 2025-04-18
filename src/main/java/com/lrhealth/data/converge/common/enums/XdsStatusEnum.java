@@ -1,10 +1,6 @@
 package com.lrhealth.data.converge.common.enums;
 
 
-import com.lrhealth.data.converge.common.exception.CommonException;
-
-import java.util.Optional;
-
 /**
  * Xds状态
  * 0 初始化，1 汇聚完成，2 汇聚失败
@@ -47,48 +43,8 @@ public enum XdsStatusEnum {
         this.desc = desc;
     }
 
-
-    /**
-     * 根据编码获取任务状态
-     *
-     * @param code 编码
-     * @return 任务状态
-     */
-    public static Integer getStatusByCode(Integer code) {
-        if (code == null) {
-            throw new CommonException("状态参数为空");
-        }
-        for (XdsStatusEnum statusEnum : XdsStatusEnum.values()) {
-            if (code.equals(statusEnum.code)) {
-                return statusEnum.code;
-            }
-        }
-        throw new CommonException("未找到匹配的状态值");
-    }
-
-    /**
-     * 根据编码获取任务状态
-     *
-     * @param code 编码
-     * @return 任务状态
-     */
-    public static Optional<XdsStatusEnum> getEnumByCode(Integer code) {
-        if (code == null) {
-            throw new CommonException("状态参数为空");
-        }
-        for (XdsStatusEnum statusEnum : XdsStatusEnum.values()) {
-            if (code.equals(statusEnum.code)) {
-                return Optional.of(statusEnum);
-            }
-        }
-        throw new CommonException("未找到匹配的状态值");
-    }
-
     public Integer getCode() {
         return code;
     }
 
-    public String getDesc() {
-        return desc;
-    }
 }
