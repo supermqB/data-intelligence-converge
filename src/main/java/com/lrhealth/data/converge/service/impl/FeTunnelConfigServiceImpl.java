@@ -21,11 +21,9 @@ import com.lrhealth.data.model.original.model.OriginalModel;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.lang.System;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,8 +41,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
 
     @Resource
     private ConvTunnelService tunnelService;
-    @Resource
-    private ConvFeNodeService convFeNodeService;
+
     @Resource
     private ConvCollectFieldService collectFieldService;
     @Resource
@@ -70,36 +67,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
 
     @Value("${file-collect.structure-type}")
     private String structureTypeStr;
-
-
-    @Override
-    public List<TunnelMessageDTO> getFepTunnelConfig(String ip, Integer port) {
-        List<TunnelMessageDTO> messageDTOList = new ArrayList<>();
-        if (ip.equals(System.getProperty("converge.ip"))) {
-            directTunnelConfig(messageDTOList);
-            return messageDTOList;
-        }
-        // 查询到所有创建的前置机
-        List<ConvFeNode> fepList = getFepListByIpAndPort(ip, port);
-        if (CollUtil.isEmpty(fepList)) return CollUtil.newArrayList();
-        // 组装管道信息
-        fepList.forEach(fep -> feNodeTunnelConfig(messageDTOList, fep));
-        return messageDTOList;
-    }
-
-    @Override
-    @Async
-    public void updateFepStatus(ActiveFepUploadDto activeFepUploadDto) {
-        FrontendStatusDto frontendStatusDto = activeFepUploadDto.getFrontendStatusDto();
-        List<ConvFeNode> fepList = getFepListByIpAndPort(activeFepUploadDto.getIp(), activeFepUploadDto.getPort());
-        if (fepList.isEmpty()) return;
-        if (frontendStatusDto == null || frontendStatusDto.getTunnelStatusDtoList() == null) {
-            log.error("fep status上报日志异常: " + frontendStatusDto);
-            return;
-        }
-        convergeService.updateFepStatus(frontendStatusDto, DownloadFileTask.taskDeque);
-    }
-
     @Override
     public void kafkaUpdateFepStatus(String key, String msgBody) {
         if (CharSequenceUtil.isBlank(key)) return;
@@ -143,47 +110,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             default:
                 throw new CommonException("不存在的kafka标识：" + key);
         }
-    }
-
-
-    private List<ConvFeNode> getFepListByIpAndPort(String ip, Integer port) {
-        if (CharSequenceUtil.isBlank(ip)) {
-            throw new CommonException("请输入前置机ip地址");
-        }
-        List<ConvFeNode> fepList = convFeNodeService.list(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getIp, ip)
-                .eq((port != null), ConvFeNode::getPort, port)
-                .eq(ConvFeNode::getDelFlag, 0));
-        if (CollUtil.isEmpty(fepList)) {
-            return Collections.emptyList();
-        }
-        return fepList;
-    }
-
-    /**
-     * 直连管道配置
-     *
-     * @param messageDTOList
-     */
-    public void directTunnelConfig(List<TunnelMessageDTO> messageDTOList) {
-        List<ConvTunnel> tunnelList = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>().eq(ConvTunnel::getFrontendId, -1));
-        if (CollUtil.isEmpty(tunnelList)) {
-            return;
-        }
-        tunnelList.forEach(tunnel -> {
-            TunnelMessageDTO tunnelMessageDTO = getTunnelMessage(tunnel);
-            messageDTOList.add(tunnelMessageDTO);
-        });
-    }
-
-    private void feNodeTunnelConfig(List<TunnelMessageDTO> messageDTOList, ConvFeNode fep) {
-        List<ConvTunnel> tunnelList = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>().eq(ConvTunnel::getFrontendId, fep.getId()));
-        if (CollUtil.isEmpty(tunnelList)) {
-            return;
-        }
-        tunnelList.forEach(tunnel -> {
-            TunnelMessageDTO tunnelMessageDTO = getTunnelMessage(tunnel);
-            messageDTOList.add(tunnelMessageDTO);
-        });
     }
 
     @Override

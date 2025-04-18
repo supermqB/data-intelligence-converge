@@ -4,7 +4,6 @@ import com.lrhealth.data.model.original.model.OriginalModel;
 import com.lrhealth.data.model.original.model.OriginalModelColumn;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author jinmengyu
@@ -13,8 +12,6 @@ import java.util.Map;
 public interface OdsModelService {
 
     String getTableDataType(String odsTableName, String sysCode);
-
-    Map<String, String> getOdsColumnTypeMap(String odsModelName, String sysCode);
 
     List<OriginalModelColumn> getColumnList(String odsModelName, String sysCode);
 

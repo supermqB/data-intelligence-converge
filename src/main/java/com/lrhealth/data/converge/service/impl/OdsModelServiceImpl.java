@@ -21,8 +21,6 @@ import javax.crypto.spec.PBEParameterSpec;
 import java.security.Key;
 import java.security.SecureRandom;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author jinmengyu
@@ -51,20 +49,6 @@ public class OdsModelServiceImpl implements OdsModelService {
         }
         return tableList.get(0).getDataType();
     }
-
-    @Override
-    public Map<String, String> getOdsColumnTypeMap(String odsModelName, String sysCode) {
-        List<OriginalModel> modelList = originalModelService.list(new LambdaQueryWrapper<OriginalModel>()
-                .eq(OriginalModel::getNameEn, odsModelName)
-                .eq(OriginalModel::getSysCode, sysCode));
-        if (modelList.size() != 1){
-            throw new CommonException("originalModel查询{}错误", odsModelName);
-        }
-        List<OriginalModelColumn> modelColumns = modelColumnService.list(new LambdaQueryWrapper<OriginalModelColumn>()
-                .eq(OriginalModelColumn::getModelId, modelList.get(0).getId()));
-        return modelColumns.stream().collect(Collectors.toMap(OriginalModelColumn::getNameEn, OriginalModelColumn::getElementFormat));
-    }
-
     @Override
     public List<OriginalModelColumn> getColumnList(String odsModelName, String sysCode) {
         List<OriginalModel> originalModel = originalModelService.list(new LambdaQueryWrapper<OriginalModel>()
