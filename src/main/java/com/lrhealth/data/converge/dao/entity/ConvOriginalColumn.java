@@ -158,4 +158,10 @@ public class ConvOriginalColumn implements Serializable {
      * 字段数据类型编号
      */
     private String dataType;
+
+    private String elementFormat;
+
+    private Integer probeTag;
+
+    private String elementType;
 }

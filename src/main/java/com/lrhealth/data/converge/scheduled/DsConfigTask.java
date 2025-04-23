@@ -45,7 +45,8 @@ public class DsConfigTask implements CommandLineRunner {
     @Scheduled(cron = "0 0/30 * * * ?")
     public void timingDsConfigSync(){
         List<ConvDsConfig> list = dsConfigService.list(new LambdaQueryWrapper<ConvDsConfig>()
-                .eq(ConvDsConfig::getDelFlag, 0));
+                .eq(ConvDsConfig::getDelFlag, 0)
+                .isNotNull(ConvDsConfig::getOrgCode));
         List<ConvFeNode> feNodeList = feNodeService.list(new LambdaQueryWrapper<ConvFeNode>().eq(ConvFeNode::getDelFlag, 0));
         Map<String, List<ConvDsConfig>> groupOrgCodeMap = list.stream().collect(Collectors.groupingBy(ConvDsConfig::getOrgCode));
         Map<String, List<Long>> feNodeIdMap = feNodeList.stream().collect(Collectors.groupingBy(ConvFeNode::getOrgCode, Collectors.mapping(ConvFeNode::getId, Collectors.toList())));

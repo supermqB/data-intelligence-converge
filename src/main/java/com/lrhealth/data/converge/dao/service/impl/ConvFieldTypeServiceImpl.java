@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.collect.Lists;
 import com.lrhealth.data.converge.common.util.DatabaseTypeUtil;
 import com.lrhealth.data.converge.dao.entity.ConvFieldType;
 import com.lrhealth.data.converge.dao.mapper.ConvFieldTypeMapper;
@@ -47,6 +48,11 @@ public class ConvFieldTypeServiceImpl extends ServiceImpl<ConvFieldTypeMapper, C
         saveFieldMap(fieldList, dbType);
     }
 
+    @Override
+    public void saveFieldType(DbTypeDto field, Integer convDsConfigId) {
+        saveFieldType(Lists.newArrayList(field), convDsConfigId);
+    }
+
     private void saveFieldMap(List<DbTypeDto> fieldList, String dbType){
         List<ConvFieldType> fieldTypeList = this.list(new LambdaQueryWrapper<ConvFieldType>()
                 .eq(ConvFieldType::getClientSource, dbType)
@@ -54,7 +60,8 @@ public class ConvFieldTypeServiceImpl extends ServiceImpl<ConvFieldTypeMapper, C
         List<DbTypeDto> newFieldList = fieldList.stream()
                 .filter(input -> fieldTypeList.stream()
                         .noneMatch(exist -> input.getTypeName().equals(exist.getClientFieldType())
-                        && input.getDataType().equals(exist.getClientDataType()))).collect(Collectors.toList());
+                        && input.getDataType().equals(exist.getClientDataType())))
+                .collect(Collectors.toList());
         List<ConvFieldType> addList = new ArrayList<>();
         for (DbTypeDto fieldType : newFieldList){
             String dataType = fieldType.getDataType();
@@ -65,7 +72,7 @@ public class ConvFieldTypeServiceImpl extends ServiceImpl<ConvFieldTypeMapper, C
                     .clientFieldType(fieldName)
                     .platformSource("java")
                     .platformDataType(dataType)
-                    .platformFieldType(DatabaseTypeUtil.getJavaType(dataType))
+                    .platformFieldType(DatabaseTypeUtil.getJavaType(Integer.valueOf(dataType)))
                     .build();
             addList.add(type);
         }
@@ -80,5 +87,10 @@ public class ConvFieldTypeServiceImpl extends ServiceImpl<ConvFieldTypeMapper, C
             return;
         }
         saveFieldMap(fieldList, dbType);
+    }
+
+    @Override
+    public String getFormatElement(String fieldType, Integer fieldTypeLength) {
+        return null;
     }
 }

@@ -18,6 +18,9 @@ public interface ConvFieldTypeService extends IService<ConvFieldType> {
 
     void saveFieldType(List<DbTypeDto> fieldList, Integer convDsConfigId);
 
+    void saveFieldType(DbTypeDto field, Integer convDsConfigId);
+
     void saveFieldType(List<DbTypeDto> fieldList, String dbType);
 
+    String getFormatElement(String fieldType, Integer fieldTypeLength);
 }
