@@ -13,7 +13,7 @@ import lombok.*;
 @AllArgsConstructor
 public class TaskLogDto extends TaskInfoKafkaDto{
 
-    private Integer logId;
+    private Long logId;
 
     private String logDetail;
 

@@ -50,7 +50,7 @@ public class ConvTaskLog implements Serializable {
     /**
      * dataX或者其它引擎的任务id
      */
-    private Integer fedLogId;
+    private Long fedLogId;
 
 
 }
