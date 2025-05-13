@@ -14,4 +14,5 @@ import com.lrhealth.data.converge.dao.entity.ConvTaskResultCdc;
  */
 public interface ConvTaskResultCdcService extends IService<ConvTaskResultCdc> {
 
+    void insertOrUpdateTaskResultCdc(ConvTaskResultCdc taskResultCdc);
 }

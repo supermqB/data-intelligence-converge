@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharPool;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.text.StrPool;
@@ -14,10 +15,7 @@ import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.common.exception.CommonException;
 import com.lrhealth.data.converge.common.util.TemplateMakerUtil;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
-import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
-import com.lrhealth.data.converge.dao.entity.ConvMessageQueueConfig;
-import com.lrhealth.data.converge.dao.entity.ConvTask;
-import com.lrhealth.data.converge.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.kafka.factory.KafkaConsumerContext;
 import com.lrhealth.data.converge.kafka.factory.KafkaDynamicConsumerFactory;
@@ -87,6 +85,9 @@ public class MessageQueueServiceImpl implements MessageQueueService {
 
     private Properties sqlTemplateProp;
 
+    @Resource
+    private ConvTaskResultCdcService convTaskResultCdcService;
+
     /**
      * 启动时加载-sql的执行模板
      */
@@ -145,7 +146,8 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         try {
             long tunnelId = Long.parseLong(topicKey.substring(0, topicKey.indexOf(StrPool.DASHED)));
             ConvTunnel tunnel = tunnelService.getById(tunnelId);
-
+            // 新增或查询task
+            ConvTask task = taskService.cdcFindTask(tunnel);
             // 同一个管道内采集的表，进行拆分
             Map<String, List<MessageParseDto>> tidyTableBodyMap = getTidyTableBodyMap(msgBody);
 
@@ -153,7 +155,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
                 String table = tableBody.getKey();
                 List<MessageParseDto> bodyList = tableBody.getValue();
                 // 同一张表
-                tableSqlSave(table, tunnel.getSysCode(), tunnel.getWriterDatasourceId(), bodyList);
+                tableSqlSave(table, tunnel.getSysCode(), tunnel.getWriterDatasourceId(), bodyList, task.getId());
             }
         }catch (Exception e){
             log.error("message queue exec error, {}", ExceptionUtils.getStackTrace(e));
@@ -174,7 +176,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         return result;
     }
 
-    private void tableSqlSave(String table, String sysCode, Integer writerDsId, List<MessageParseDto> parseDtoList){
+    private void tableSqlSave(String table, String sysCode, Integer writerDsId, List<MessageParseDto> parseDtoList, Integer taskId){
         // 获取到落库配置
         OriginalTableModelDto tableModelRel = originalTableService.getTableModelRel(table, sysCode);
         log.info("获取到的表映射:{}", tableModelRel);
@@ -183,6 +185,17 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         // sql准备, 按照operation区分
         // Map<operation, actual-(sqlTemplate and valueList)>
         Map<String, OpSqlDto> sqlValueMap = prepareSqlForOp(parseDtoList, tableModelRel);
+        Map<String, Integer> operationCount = new HashMap<>();
+        StringBuilder operLog = new StringBuilder();
+        int totalCount = 0;
+        for (Map.Entry<String, OpSqlDto> value : sqlValueMap.entrySet()){
+            String operation = value.getKey();
+            String standardOperation = getStandardOperation(operation);
+            int count = value.getValue().getValueMapList().size();
+            totalCount += count;
+            operationCount.put(standardOperation, count);
+            operLog.append(standardOperation).append(count).append("条数据;");
+        }
         // 获取连接
         DbConnection connection = DbConnection.builder()
                 .dbUrl(datasourceConfig.getDsUrl())
@@ -193,6 +206,19 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         Connection conn = dbConnectionManager.getConnection(connection);
         // 执行sql
         doBatchInsert(datasourceConfig.getDsUrl().contains("hive2"), conn, sqlValueMap);
+
+        AsyncFactory.convTaskLog(taskId, String.format("%s | table: %s获取记录%s条: ",DateUtil.now(),table,totalCount) + operLog);
+
+        // 更新convTaskResultCdc
+        ConvTaskResultCdc resultCdc = ConvTaskResultCdc.builder()
+                .taskId(Long.valueOf(taskId))
+                .tableName(table)
+                .dataCount(totalCount)
+                .addCount(operationCount.getOrDefault("insert", 0))
+                .updateCount(operationCount.getOrDefault("update", 0))
+                .deleteCount(operationCount.getOrDefault("delete", 0))
+                .build();
+        convTaskResultCdcService.insertOrUpdateTaskResultCdc(resultCdc);
     }
 
     private void doBatchInsert(boolean isHive, Connection conn, Map<String, OpSqlDto> sqlValueMap){
@@ -214,7 +240,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         // 表达式填充
         Map<String, Object> propMap = new HashMap<>();
         propMap.put("sysCode", tunnel.getSysCode());
-        propMap.put("tunnelId", tunnel.getId());
+        propMap.put("tunnelId", tunnel.getId().toString());
         String topic;
         String cdcMessageTopicExpression = "CDC-DATA-${sysCode}-${tunnelId}";
         try {
@@ -459,8 +485,20 @@ public class MessageQueueServiceImpl implements MessageQueueService {
                 log.info("准备执行落库语句，sql={}", execSql);
                 stat.execute(execSql.toString());
             } catch (Exception e) {
-                log.error("sql execute failed, [sql]={}", sql);
+                log.error("sql execute failed, [sql]={}", execSql);
             }
+        }
+    }
+
+    private String getStandardOperation(String operation){
+        char o = operation.charAt(0);
+        switch (o){
+            case 'c':
+                return "insert";
+            case 'd':
+                return "delete";
+            default:
+                return "update";
         }
     }
 

@@ -20,4 +20,6 @@ public interface ConvTaskService extends IService<ConvTask> {
 
     void updateTaskStatus(Integer taskId, TaskStatusEnum taskStatusEnum);
 
+    ConvTask cdcFindTask(ConvTunnel tunnel);
+
 }

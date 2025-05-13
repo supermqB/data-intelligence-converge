@@ -1,5 +1,7 @@
 package com.lrhealth.data.converge.dao.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lrhealth.data.converge.common.enums.TaskStatusEnum;
 import com.lrhealth.data.converge.dao.entity.ConvTask;
@@ -9,6 +11,7 @@ import com.lrhealth.data.converge.dao.service.ConvTaskService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -47,6 +50,17 @@ public class ConvTaskServiceImpl extends ServiceImpl<ConvTaskMapper, ConvTask> i
         if (!updated){
             log.error("task update fail, taskId: " + taskId);
         }
+    }
+
+    @Override
+    public ConvTask cdcFindTask(ConvTunnel tunnel) {
+        List<ConvTask> convTasks = this.list(new LambdaQueryWrapper<ConvTask>()
+                .eq(ConvTask::getTunnelId, tunnel.getId())
+                .orderByDesc(ConvTask::getCreateTime));
+        if (CollUtil.isNotEmpty(convTasks)){
+            return convTasks.get(0);
+        }
+        return createTask(tunnel, true);
     }
 
 }
