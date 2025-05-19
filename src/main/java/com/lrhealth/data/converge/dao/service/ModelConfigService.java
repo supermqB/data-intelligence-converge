@@ -10,5 +10,6 @@ import com.lrhealth.data.converge.dao.entity.ModelConfig;
  */
 public interface ModelConfigService extends IService<ModelConfig> {
 
+   ModelConfig getModelConfig(Long modelId);
 
 }

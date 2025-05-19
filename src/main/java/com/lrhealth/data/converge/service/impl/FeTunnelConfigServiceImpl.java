@@ -3,17 +3,18 @@ package com.lrhealth.data.converge.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.google.common.collect.Lists;
-import com.lrhealth.data.converge.common.enums.*;
+import com.lrhealth.data.converge.common.enums.FileStorageTypeEnum;
+import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
+import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
+import com.lrhealth.data.converge.common.enums.TunnelColTypeEnum;
 import com.lrhealth.data.converge.common.exception.CommonException;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
-import com.lrhealth.data.converge.model.SysDict;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.scheduled.DownloadFileTask;
 import com.lrhealth.data.converge.service.ConvergeService;
@@ -25,7 +26,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,8 +59,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private OdsModelService odsModelService;
     @Resource
     private ModelConfigService modelConfigService;
-    @Resource
-    private ConvOriginalTableService convOriginalTableService;
     @Resource
     private ConvFieldTypeService convFieldTypeService;
     @Resource
@@ -169,7 +167,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 writeDbType = writerDs.getDbType();
             }
             // 表以及对应的sql信息
-            assembleTableInfoMessage(tunnel, jdbcInfoDto, writeDbType,readerDs.getDbType());
+            assembleTableInfoMessage(tunnel, jdbcInfoDto, writeDbType);
         }
 
         if (tunnel.getConvergeMethod().equals(CDC_LOG.getCode())) {
@@ -215,134 +213,97 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
 
-    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, String writeDbType,String readerDbType) {
-        boolean isHive = "HDFS".equals(writeDbType);
+    private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, String writeDbType) {
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
-        List<String> tableList = Arrays.asList(tunnel.getCollectRange().split(","));
-        // 增量字段
-        List<ConvCollectField> collectFieldList = collectFieldService.list(new LambdaQueryWrapper<ConvCollectField>()
-                .in(ConvCollectField::getTableName, tableList)
-                .eq(ConvCollectField::getTunnelId, tunnel.getId())
-                .eq(ConvCollectField::getSystemCode, tunnel.getSysCode()));
-        Map<String, List<StdOriginalModelColumn>> modelColumnMap = new HashMap<>(collectFieldList.size());
-        Map<String, StdOriginalModel> hdfsMap = new HashMap<>();
-        Map<String, ModelConfig> hiveConfigMap = new HashMap<>();
-        Map<Long, ConvOriginalTable> originalTableMap = null;
-        if (isHive && CollUtil.isNotEmpty(collectFieldList)) {
-            List<Long> modelIdList = new ArrayList<>();
-            for (ConvCollectField collectField : collectFieldList) {
-                List<StdOriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(), collectField.getSystemCode());
-                modelColumnMap.put(collectField.getTableName(), modelColumns);
-                modelIdList.add(modelColumns.get(0).getModelId());
-            }
-            List<StdOriginalModel> modelList = odsModelService.getModelList(modelIdList);
-            //原始模型Map modelNameEn-model
-            hdfsMap = modelList.stream().filter(e -> CharSequenceUtil.isNotEmpty(e.getStoragePath())).collect(Collectors.toMap(StdOriginalModel::getNameEn, e -> e, (m1, m2) -> m1));
-            List<ModelConfig> modelConfigs = modelConfigService.list(new LambdaQueryWrapper<ModelConfig>().in(ModelConfig::getModelId, modelIdList));
-            //Hive表配置Map modelNameEn-数据存储类型
-            for (ModelConfig modelConfig : modelConfigs){
-                hiveConfigMap.put(modelConfig.getTableName(), modelConfig);
-            }
-            List<Long> originalIdList = hdfsMap.values().stream().map(StdOriginalModel::getOriginalId).collect(Collectors.toList());
-            //查询原始结构
-            if (CollUtil.isNotEmpty(originalIdList)) {
-                List<ConvOriginalTable> originalTables = convOriginalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>()
-                        .in(ConvOriginalTable::getId, originalIdList)
-                        .eq(ConvOriginalTable::getDelFlag, 0));
-                originalTableMap = originalTables.stream().collect(Collectors.toMap(ConvOriginalTable::getId, e -> e, (m1, m2) -> m1));
-            }
-        }
-        // 湘潭Dm数据库关键字进行处理逻辑 ‘“keyWord”’ 前置机校验以‘“开头不做拼接处理
-        if ("Dm".equals(writeDbType)){
-            List<SysDict> dmKeyWords = sysDictService.getDbKeyWords("db_key_words");
-            if (CollUtil.isNotEmpty(dmKeyWords)){
-                Set<String> dmKeyWordsSet = dmKeyWords.stream().map(sysDict -> sysDict.getDictItemValue().toUpperCase()).collect(Collectors.toSet());
-                for (ConvCollectField convCollectField : collectFieldList) {
-                    String columnField = convCollectField.getColumnField();
-                    if (CharSequenceUtil.isEmpty(columnField)){
-                        continue;
-                    }
-                    StringBuilder sb = new StringBuilder();
-                    for (String fieldStr : columnField.split(",")) {
-                        if (dmKeyWordsSet.contains(fieldStr.toUpperCase())){
-                            sb.append("'\"").append(fieldStr).append("\"'").append(",");
-                        }else {
-                            sb.append(fieldStr).append(",");
-                        }
-                    }
-                    String collectFields = sb.substring(0, sb.length() - 1);
-                    convCollectField.setColumnField(collectFields);
-                }
-            }
-        }
-        Map<String, ModelConfig> finalHiveConfigMap = hiveConfigMap;
-        Map<Long, ConvOriginalTable> finalOriginalTableMap = originalTableMap;
-        Map<String, StdOriginalModel> finalHdfsMap = hdfsMap;
-        collectFieldList.forEach(model -> {
+
+        // 采集配置
+        List<ConvCollectField> collectFieldList = collectFieldService.getTunnelTableConfigs(tunnel.getId());
+        for (ConvCollectField collectField : collectFieldList){
             TableInfoDto tableInfoDto = new TableInfoDto();
-            tableInfoDto.setTableName(model.getTableName());
-            tableInfoDto.setSqlQuery(model.getQuerySql());
-            StdOriginalModel originalModel = finalHdfsMap.get(model.getTableName());
-            tableInfoDto.setHdfsPath(Objects.isNull(originalModel) ? null : originalModel.getStoragePath());
-            ModelConfig modelConfig = finalHiveConfigMap.get(model.getTableName());
-            if(ObjectUtil.isNotNull(modelConfig)){
-                tableInfoDto.setHiveFileType(modelConfig.getTableType());
-                DbConfigColumnDTO dto = JSON.parseObject(modelConfig.getDbConfig(), DbConfigColumnDTO.class);
-                tableInfoDto.setHivePartitionColumn(CollUtil.isEmpty(dto.getPartitionKey()) ? null : dto.getPartitionKey().get(0));
+            if ("HDFS".equals(writeDbType)) {
+                // 设置hdfs的一些配置
+                setHdfsCollectConfig(collectField, tableInfoDto);
+            }else {
+                tableInfoDto.setWriterColumns(collectField.getColumnField());
             }
-            tableInfoDto.setWriterColumns(isHive ? doGetHiveColumns(readerDbType,modelColumnMap, model, Objects.isNull(originalModel) ? null : (finalOriginalTableMap.get(originalModel.getOriginalId()) == null ? null : finalOriginalTableMap.get(originalModel.getOriginalId()).getDataSource())) : model.getColumnField());
+            tableInfoDto.setTableName(collectField.getTableName());
+            tableInfoDto.setSqlQuery(collectField.getQuerySql());
+
+            // 增量配置
             if (tunnel.getColType().equals(TunnelColTypeEnum.FREQUENCY_INCREMENT.getValue())) {
-                // 1-时间 2-序列
-                tableInfoDto.setSeqField(model.getConditionField());
-                tableInfoDto.setSeqFieldType(model.getConditionFieldType());
-                Map<String, String> fieldMap = new HashMap<>();
-                getIncrFieldMap(tunnel, model, fieldMap);
-                tableInfoDto.setIncrTimeMap(fieldMap);
+                List<IncrColumnDTO> incrConfigList = getIncrConfigList(collectField.getConditionField(),
+                        tunnel.getId(), collectField.getTableName());
+                tableInfoDto.setIncrConfigList(incrConfigList);
+                tableInfoDto.setSeqField(collectField.getConditionField());
             }
             tableInfoDtoList.add(tableInfoDto);
-        });
+        }
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
+    }
+
+    private List<IncrColumnDTO> getIncrConfigList(String conditionField, Long tunnelId, String tableName){
+        List<IncrColumnDTO> incrConfigList = new ArrayList<>();
+        String[] incrFields = conditionField.split(",");
+        for (String incrField : incrFields){
+            IncrColumnDTO incrConfig = getIncrConfig(tunnelId, incrField, tableName);
+            incrConfigList.add(incrConfig);
+        }
+        return incrConfigList;
+    }
+
+    private void setHdfsCollectConfig(ConvCollectField collectField, TableInfoDto tableInfoDto){
+        // 获取原始模型
+        List<StdOriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(), collectField.getSystemCode());
+        Long modelId = modelColumns.get(0).getModelId();
+        StdOriginalModel stdModel = odsModelService.getModel(modelId);
+        // 设置hdfs写入路径
+        tableInfoDto.setHdfsPath(stdModel.getStoragePath());
+        // 设置datax写入字段格式
+        tableInfoDto.setWriterColumns(doGetHiveColumns(modelColumns, collectField.getColumnField()));
+
+        // 查询其他hive配置
+        ModelConfig modelConfig = modelConfigService.getModelConfig(modelId);
+        if(ObjectUtil.isNotNull(modelConfig)){
+            tableInfoDto.setHiveFileType(modelConfig.getTableType());
+            DbConfigColumnDTO dto = JSON.parseObject(modelConfig.getDbConfig(), DbConfigColumnDTO.class);
+            tableInfoDto.setHivePartitionColumn(CollUtil.isEmpty(dto.getPartitionKey()) ? null : dto.getPartitionKey().get(0));
+        }
     }
 
     /**
      * 创建hive库columns映射关系
      */
-    private String doGetHiveColumns(String readerDbType,Map<String, List<StdOriginalModelColumn>> modelColumnMap, ConvCollectField field, Integer dataSource) {
-        List<StdOriginalModelColumn> originalModelColumns = modelColumnMap.get(field.getTableName());
-        if (CollUtil.isEmpty(originalModelColumns)) {
+    private String doGetHiveColumns(List<StdOriginalModelColumn> modelColumnList, String columnField) {
+        if (CollUtil.isEmpty(modelColumnList)) {
             return null;
         }
-        if (CharSequenceUtil.isNotEmpty(field.getColumnField())) {
-            List<String> existNames = Arrays.asList(field.getColumnField().split(","));
-            originalModelColumns = originalModelColumns.stream().filter(column -> existNames.contains(column.getNameEn()))
-                    .sorted(Comparator.comparing(StdOriginalModelColumn::getSeqNo)).collect(Collectors.toList());
+        if (CharSequenceUtil.isNotEmpty(columnField)) {
+            List<String> existNames = Arrays.asList(columnField.split(","));
+            modelColumnList = modelColumnList.stream()
+                    .filter(column -> existNames.contains(column.getNameEn()))
+                    .sorted(Comparator.comparing(StdOriginalModelColumn::getSeqNo))
+                    .collect(Collectors.toList());
         }
         StringBuilder sb = new StringBuilder();
         //dataType=1为采集标准数据 write全部转换为varchar
-        for (StdOriginalModelColumn modelColumn : originalModelColumns) {
-            String dataType = null;
-            if (dataSource == null || dataSource != 1){
-                dataType = transformDataType(readerDbType,modelColumn.getFieldType());
-            }else {
-                dataType = transformDataType(readerDbType,"varchar");
-            }
+        for (StdOriginalModelColumn modelColumn : modelColumnList) {
+            String dataType = transformDataType(modelColumn.getFieldType());
             sb.append("{\"name\":\"").append(modelColumn.getNameEn())
                     .append("\",\"type\":\"").append(dataType)
                     .append("\"}").append(",\n");
         }
-        boolean dataSourceFlag = (dataSource != null && dataSource == 1);
         String substring = sb.substring(0, sb.length() - 2);
-        return substring.concat(",\n").concat("{\"name\":\"" + "xds_id").concat("\",\"type\":\"" + (dataSourceFlag ? "VARCHAR" : "BIGINT") + "\"}")
-                .concat(",\n").concat("{\"name\":\"" + "load_time").concat("\",\"type\":\"" + (dataSourceFlag ? "VARCHAR" : "TIMESTAMP")  + "\"}");
+        return substring
+                .concat(",\n")
+                .concat("{\"name\":\"" + "xds_id")
+                .concat("\",\"type\":\"" + "BIGINT" + "\"}")
+                .concat(",\n")
+                .concat("{\"name\":\"" + "load_time")
+                .concat("\",\"type\":\"" + "TIMESTAMP"  + "\"}");
     }
 
-    private String transformDataType(String readerDataType,String fieldType) {
-        Map<String, String> reader2DataXTypeMapping = getReaderDbType2DataXTypeMapping(readerDataType);
-        String configDataType = reader2DataXTypeMapping.get(fieldType);
-        if(CharSequenceUtil.isNotEmpty(configDataType)){
-            return configDataType;
-        }
+    private String transformDataType(String fieldType) {
         fieldType = fieldType.toLowerCase();
         String transformStr;
         switch (fieldType) {
@@ -402,29 +363,31 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         return convFieldTypeList.stream().collect(Collectors.toMap(ConvFieldType::getClientFieldType, ConvFieldType::getPlatformFieldType));
     }
 
-    private void getIncrFieldMap(ConvTunnel tunnel, ConvCollectField field, Map<String, String> fieldMap) {
-        String column = field.getConditionField();
-        ConvCollectIncrTime collectIncrTime = incrTimeService.getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
-                .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
+    private IncrColumnDTO getIncrConfig(Long tunnelId, String column, String tableName) {
+        ConvCollectIncrTime incrTime = incrTimeService.getOne(
+                new LambdaQueryWrapper<ConvCollectIncrTime>()
+                .eq(ConvCollectIncrTime::getTunnelId, tunnelId)
                 .eq(ConvCollectIncrTime::getIncrField, column)
-                .eq(ConvCollectIncrTime::getTableName, field.getTableName()));
-        if (ObjectUtil.isNotNull(collectIncrTime)) {
-            // 已进行增量采集，使用最新采集时间
-            if (SeqFieldTypeEnum.TIME.getValue().equals(field.getConditionFieldType())) {
-                fieldMap.put(column, collectIncrTime.getLatestTime());
-            } else {
-                fieldMap.put(column, collectIncrTime.getLatestSeq());
-            }
-        } else {
-            // 第一次增量采集，使用初始点位
-            if (SeqFieldTypeEnum.TIME.getValue().equals(field.getConditionFieldType())) {
-                LocalDateTime timePoint = field.getTimePoint();
-                String format = DateUtil.format(timePoint, "yyyy-MM-dd HH:mm:ss");
-                fieldMap.put(column, format);
-            } else {
-                fieldMap.put(column, String.valueOf(field.getNumPoint()));
-            }
+                .eq(ConvCollectIncrTime::getTableName, tableName));
+        if (ObjectUtil.isEmpty(incrTime)){
+            log.error("管道{}-表{}-字段{}没有增量配置",tunnelId, tableName, column);
+            throw new RuntimeException();
         }
+        IncrColumnDTO incrColumnDTO = IncrColumnDTO.builder()
+                .columnName(incrTime.getIncrField())
+                .tableName(incrTime.getTableName())
+                .incrType(Integer.valueOf(incrTime.getIncrFieldType()))
+                .build();
+        // 数字
+        if (incrColumnDTO.getIncrType() == 1) {
+            incrColumnDTO.setSeqStartPoint(CharSequenceUtil.isBlank(incrTime.getLatestSeq()) ?
+                    incrTime.getSeqStartPoint() : incrTime.getLatestSeq());
+        } else {
+           incrColumnDTO.setTimeStartPoint(CharSequenceUtil.isBlank(incrTime.getLatestTime()) ?
+                   incrTime.getTimeStartPoint() : incrTime.getLatestTime());
+           incrColumnDTO.setTimeEndPoint(incrTime.getTimeEndPoint());
+        }
+        return incrColumnDTO;
     }
 
 

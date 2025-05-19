@@ -15,5 +15,5 @@ public interface OdsModelService {
 
     List<StdOriginalModelColumn> getColumnList(String odsModelName, String sysCode);
 
-    List<StdOriginalModel> getModelList(List<Long> modelIdList);
+    StdOriginalModel getModel(Long modelId);
 }

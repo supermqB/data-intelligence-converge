@@ -98,4 +98,21 @@ public class ConvCollectIncrTime implements Serializable {
      */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
+
+    // 表模型id
+    private Long modelId;
+
+    // 字段模型id
+    private Long columnId;
+
+    // 时间起始点位
+    private String timeStartPoint;
+
+    // 时间结束点位
+    private String timeEndPoint;
+
+    // 数字起始点位
+    private String seqStartPoint;
+
+    private String seqEndPoint;
 }

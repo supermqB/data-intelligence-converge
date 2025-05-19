@@ -2,10 +2,9 @@ package com.lrhealth.data.converge.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-
-import java.time.LocalDateTime;
 
 /**
  * @Author lei
@@ -47,19 +46,13 @@ public class ConvCollectField {
      */
     private String conditionField;
 
-    /**
-     * 增量字段类型
-     */
-    private String conditionFieldType;
-
     private String tableName;
 
     private String querySql;
 
-    private String storeTableName;
+    private Integer colType;
 
-    private LocalDateTime timePoint;
-
-    private Integer numPoint;
+    @TableLogic
+    private Integer delFlag;
 
 }
