@@ -2,7 +2,6 @@ package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
@@ -59,10 +58,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     private OdsModelService odsModelService;
     @Resource
     private ModelConfigService modelConfigService;
-    @Resource
-    private ConvFieldTypeService convFieldTypeService;
-    @Resource
-    private SysDictService sysDictService;
 
     @Value("${file-collect.structure-type}")
     private String structureTypeStr;
@@ -117,7 +112,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 管道基本信息
         // todo: 用普通的convert替换beanutil
         BeanUtil.copyProperties(tunnel, tunnelMessageDTO);
-        tunnelMessageDTO.setTimeDif(getCronTimeUnit(tunnel.getTimeDif(), tunnel.getTimeUnit()));
         tunnelMessageDTO.setDependenceTunnelIds(tunnel.getDependenceTunnelId());
         TunnelCMEnum tunnelCMEnum = TunnelCMEnum.of(tunnel.getConvergeMethod());
         switch (Objects.requireNonNull(tunnelCMEnum)) {
@@ -141,16 +135,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         JdbcInfoDto jdbcInfoDto = new JdbcInfoDto();
         ConvDsConfig readerDs = odsDatasourceConfigService.getById(tunnel.getReaderDatasourceId());
         jdbcInfoDto.setDsId(readerDs.getId());
-        jdbcInfoDto.setJdbcUrl(CharSequenceUtil.isBlank(readerDs.getDsUrlForFront()) ? readerDs.getDsUrl() : readerDs.getDsUrlForFront());
-        jdbcInfoDto.setDbUserName(readerDs.getDsUsername());
-        jdbcInfoDto.setDbPasswd(readerDs.getDsPwd());
-        jdbcInfoDto.setDbSchema(readerDs.getSchema());
         // 库表采集
         if (tunnel.getConvergeMethod().equals(LIBRARY_TABLE.getCode())) {
             // 全量/增量采集
             jdbcInfoDto.setColType(tunnel.getColType());
-            jdbcInfoDto.setFullColStartTime(String.valueOf(tunnel.getFullColStartTime()));
-            jdbcInfoDto.setFullColEndTime(String.valueOf(tunnel.getFullColEndTime()));
             // 库到库/库到文件
             jdbcInfoDto.setCollectModel(tunnel.getCollectModel());
             // 单表采集还是自定义sql
@@ -159,9 +147,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             String writeDbType = null;
             if (LibraryTableModelEnum.DATABASE_TO_DATABASE.getCode().equals(jdbcInfoDto.getCollectModel())) {
                 ConvDsConfig writerDs = odsDatasourceConfigService.getById(tunnel.getWriterDatasourceId());
-                jdbcInfoDto.setJdbcUrlForIn(writerDs.getDsUrl());
-                jdbcInfoDto.setDbUserNameForIn(writerDs.getDsUsername());
-                jdbcInfoDto.setDbPasswdForIn(writerDs.getDsPwd());
                 jdbcInfoDto.setDsConfigId(tunnel.getWriterDatasourceId());
                 jdbcInfoDto.setHdfsCluster(writerDs.getHdfsCluster());
                 writeDbType = writerDs.getDbType();
@@ -324,8 +309,13 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             case "int8":
                 transformStr = "BIGINT";
                 break;
-            case "datetime":
+            case "date":
                 transformStr = "DATE";
+                break;
+            case "datetime":
+            case "timestamp":
+            case "timestampz":
+                transformStr = "TIMESTAMP";
                 break;
             case "numeric":
             case "number":
@@ -333,10 +323,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 break;
             case "float8":
                 transformStr = "FLOAT";
-                break;
-            case "timestamp":
-            case "timestampz":
-                transformStr = "TIMESTAMP";
                 break;
             default:
                 if (fieldType.startsWith("timestamp")){
@@ -350,18 +336,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         return transformStr.toUpperCase();
     }
 
-    /**
-     * 获取数据库-dataX数据类型映射关系
-     */
-    public Map<String, String> getReaderDbType2DataXTypeMapping(String readerDbType) {
-        List<ConvFieldType> convFieldTypeList = convFieldTypeService.list(new LambdaQueryWrapper<ConvFieldType>()
-                .eq(ConvFieldType::getClientSource,readerDbType)
-                .eq(ConvFieldType::getPlatformSource, "DataX"));
-        if (CollectionUtil.isEmpty(convFieldTypeList)){
-            return new HashMap<>();
-        }
-        return convFieldTypeList.stream().collect(Collectors.toMap(ConvFieldType::getClientFieldType, ConvFieldType::getPlatformFieldType));
-    }
 
     private IncrColumnDTO getIncrConfig(Long tunnelId, String column, String tableName) {
         ConvCollectIncrTime incrTime = incrTimeService.getOne(
@@ -385,27 +359,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         } else {
            incrColumnDTO.setTimeStartPoint(CharSequenceUtil.isBlank(incrTime.getLatestTime()) ?
                    incrTime.getTimeStartPoint() : incrTime.getLatestTime());
-           incrColumnDTO.setTimeEndPoint(incrTime.getTimeEndPoint());
         }
+        incrColumnDTO.setIncrMaxSql(incrTime.getMaxSql());
         return incrColumnDTO;
-    }
-
-
-    private Integer getCronTimeUnit(Integer timeDif, String timeUnit) {
-        int seconds = 0;
-        // 转换时间为毫秒
-        if (CharSequenceUtil.isBlank(timeUnit)) {
-            return seconds;
-        }
-        //小时
-        if ("h".equals(timeUnit)) {
-            seconds = timeDif * 3600;
-        }
-        //分钟
-        if ("m".equals(timeUnit)) {
-            seconds = timeDif * 60;
-        }
-        return seconds * 1000;
-
     }
 }

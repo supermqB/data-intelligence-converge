@@ -115,4 +115,6 @@ public class ConvCollectIncrTime implements Serializable {
     private String seqStartPoint;
 
     private String seqEndPoint;
+
+    private String maxSql;
 }

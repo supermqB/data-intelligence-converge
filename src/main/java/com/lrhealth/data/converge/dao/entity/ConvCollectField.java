@@ -55,4 +55,5 @@ public class ConvCollectField {
     @TableLogic
     private Integer delFlag;
 
+    private String customSql;
 }

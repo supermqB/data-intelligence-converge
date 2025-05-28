@@ -27,7 +27,7 @@ public class IncrColumnDTO {
 
     private String timeStartPoint;
 
-    private String timeEndPoint;
-
     private String seqStartPoint;
+
+    private String incrMaxSql;
 }

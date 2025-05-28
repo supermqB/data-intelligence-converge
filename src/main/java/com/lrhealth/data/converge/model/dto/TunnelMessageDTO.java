@@ -78,7 +78,6 @@ public class TunnelMessageDTO {
      */
     private Integer status;
 
-
     /**
      * 管道依赖
      */
