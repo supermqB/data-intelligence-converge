@@ -165,7 +165,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
             kafkaService.xdsSendKafka(updateXds);
         }
         // 更新最新采集时间
-        incrTimeService.updateTableLatestTime(dbXdsMessageDto.getId(), dbXdsMessageDto.getEndIndex());
+        incrTimeService.updateTableLatestTime(dbXdsMessageDto.getId(), dbXdsMessageDto.getIncrConfigDTOList());
         return true;
     }
 

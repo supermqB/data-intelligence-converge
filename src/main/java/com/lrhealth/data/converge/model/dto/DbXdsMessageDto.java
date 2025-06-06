@@ -2,6 +2,8 @@ package com.lrhealth.data.converge.model.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * @author jinmengyu
  * @date 2023-11-21
@@ -29,5 +31,5 @@ public class DbXdsMessageDto {
 
     private Long xdsId;
 
-    private String endIndex;
+    private List<IncrConfigDTO> incrConfigDTOList;
 }

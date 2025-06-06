@@ -1,12 +1,12 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.enums.SeqFieldTypeEnum;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
+import com.lrhealth.data.converge.model.dto.IncrConfigDTO;
 import com.lrhealth.data.converge.model.dto.IncrSequenceDto;
 import com.lrhealth.data.converge.service.IncrTimeService;
 import com.lrhealth.data.converge.service.KafkaService;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author jinmengyu
@@ -44,8 +45,8 @@ public class IncrTimeServiceImpl implements IncrTimeService {
 
     @Async
     @Override
-    public void updateTableLatestTime(Long xdsId, String endIndex) {
-        if (CharSequenceUtil.isBlank(endIndex)){
+    public void updateTableLatestTime(Long xdsId, List<IncrConfigDTO> incrConfigDTOList) {
+        if (CollUtil.isEmpty(incrConfigDTOList)){
             log.error("[{}]没有endIndex!!!!", xdsId);
             return;
         }
@@ -69,10 +70,17 @@ public class IncrTimeServiceImpl implements IncrTimeService {
         if (CollUtil.isEmpty(convOriginalColumns)){
             return;
         }
-        convOriginalColumns.forEach(column -> updateCollectIncrTime(tunnel, xds, column, endIndex));
+        convOriginalColumns.forEach(column -> updateCollectIncrTime(tunnel, xds, column, incrConfigDTOList));
     }
 
-    private void updateCollectIncrTime(ConvTunnel tunnel, Xds xds, ConvOriginalColumn column, String latestValue){
+    private void updateCollectIncrTime(ConvTunnel tunnel, Xds xds, ConvOriginalColumn column, List<IncrConfigDTO> incrConfigDTOList){
+        List<IncrConfigDTO> configDTOS = incrConfigDTOList.stream()
+                .filter(incrConfigDTO -> column.getNameEn().equalsIgnoreCase(incrConfigDTO.getSeqField()))
+                .collect(Collectors.toList());
+        if (configDTOS.size() != 1){
+            log.error("modelId={}的字段{}的增量值上传错误", column.getTableId(), column.getNameEn());
+        }
+        IncrConfigDTO incrConfig = configDTOS.get(0);
         ConvCollectIncrTime collectIncrTime = convCollectIncrTimeService.getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
                 .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
                 .eq(ConvCollectIncrTime::getTableName, xds.getOdsTableName())
@@ -87,9 +95,9 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                     .updateTime(LocalDateTime.now())
                     .build();
             if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
-                update.setLatestTime(latestValue);
+                update.setLatestTime(incrConfig.getIncrTime());
             }else {
-                update.setLatestSeq(latestValue);
+                update.setLatestSeq(incrConfig.getIncrTime());
             }
             convCollectIncrTimeService.updateById(update);
             // 给前置机更新最新采集时间
@@ -106,9 +114,9 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 .sysCode(xds.getSysCode())
                 .build();
         if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
-            build.setLatestTime(latestValue);
+            build.setLatestTime(incrConfig.getIncrTime());
         }else {
-            build.setLatestSeq(latestValue);
+            build.setLatestSeq(incrConfig.getIncrTime());
         }
         convCollectIncrTimeService.saveOrUpdate(build);
         // 给前置机更新最新采集时间

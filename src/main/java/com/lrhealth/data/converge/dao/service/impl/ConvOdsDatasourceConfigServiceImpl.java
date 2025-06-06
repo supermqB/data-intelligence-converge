@@ -46,6 +46,7 @@ public class ConvOdsDatasourceConfigServiceImpl extends ServiceImpl<ConvOdsDatas
                     .databaseName(datasourceConfig.getDbName())
                     .schema(datasourceConfig.getSchema())
                     .structure(dto.getStructure())
+                    .driverName(datasourceConfig.getDsDriverName())
                     .build();
             dataSourceInfoDtoList.add(sourceInfoDto);
         }
