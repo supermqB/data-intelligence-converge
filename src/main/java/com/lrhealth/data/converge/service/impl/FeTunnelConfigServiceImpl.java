@@ -16,10 +16,7 @@ import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
 import com.lrhealth.data.converge.scheduled.DownloadFileTask;
-import com.lrhealth.data.converge.service.ConvergeService;
-import com.lrhealth.data.converge.service.FeNodeService;
-import com.lrhealth.data.converge.service.FeTunnelConfigService;
-import com.lrhealth.data.converge.service.OdsModelService;
+import com.lrhealth.data.converge.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -44,6 +41,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
 
     @Resource
     private ConvCollectFieldService collectFieldService;
+    @Resource
+    private ConvActiveInterfaceConfigService activeInterfaceConfigService;
     @Resource
     private ConvergeService convergeService;
     @Resource
@@ -122,12 +121,26 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             case FILE_MODE:
                 tunnelFileMessage(tunnel, tunnelMessageDTO);
                 break;
+            case ACTIVE_INTERFACE_MODE:
+                tunnelInterfaceMessage(tunnel, tunnelMessageDTO);
+                break;
             case INTERFACE_MODE:
                 break;
             default:
                 throw new CommonException("不支持的汇聚方式");
         }
         return tunnelMessageDTO;
+    }
+
+    private void tunnelInterfaceMessage(ConvTunnel tunnel, TunnelMessageDTO tunnelMessageDTO) {
+        ConvActiveInterfaceConfig config =  activeInterfaceConfigService.getOne(new LambdaQueryWrapper<ConvActiveInterfaceConfig>()
+                .eq(ConvActiveInterfaceConfig::getTunnelId, tunnel.getId()));
+        tunnelMessageDTO.setActiveInterfaceDTO(ActiveInterfaceDTO.builder().requestBody(config.getRequestBody())
+                .authentication(config.getAuthentication())
+                .requestMethod(config.getRequestMethod())
+                .requestParam(config.getRequestParam())
+                .requestUrl(config.getRequestUrl())
+                .dataPath(config.getDataPath()).build());
     }
 
     private void tunnelJdbcMessage(ConvTunnel tunnel, TunnelMessageDTO tunnelMessageDTO) {

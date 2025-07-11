@@ -13,6 +13,7 @@ import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
 import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
 import com.lrhealth.data.converge.model.dto.FepScheduledDto;
 import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
+import com.lrhealth.data.converge.service.ActiveInterfaceService;
 import com.lrhealth.data.converge.service.FeTunnelConfigService;
 import com.lrhealth.data.converge.service.KafkaService;
 import com.lrhealth.data.converge.service.MessageQueueService;
@@ -54,6 +55,8 @@ public class DateIntelliConsumer {
     private KafkaService kafkaService;
     @Resource
     private MessageQueueService queueService;
+    @Resource
+    private ActiveInterfaceService activeInterfaceService;
 
     @KafkaListener(topics = "${spring.kafka.topic.intelligence.tunnel-datasource-change}")
     public void getFepTunnelConfig(@Payload String msgBody, Acknowledgment acknowledgment){
@@ -73,6 +76,11 @@ public class DateIntelliConsumer {
                 if (TunnelCMEnum.CDC_LOG.getCode().equals(tunnel.getConvergeMethod())){
                     log.info("cdc 实时采集，启动汇聚落库消费者");
                     queueService.cdcDbSaveQueue(tunnel);
+                }
+                //主动接口采集
+                if (TunnelCMEnum.ACTIVE_INTERFACE_MODE.getCode().equals(tunnel.getConvergeMethod())){
+                    activeInterfaceService.initInterfaceDataConsumer(tunnel);
+                    log.info("主动接口采集，启动汇聚落库消费者");
                 }
                 // 发送给前置机
                 String topicSuffix = kafkaService.topicSuffixIpPort(tunnel.getFrontendId());

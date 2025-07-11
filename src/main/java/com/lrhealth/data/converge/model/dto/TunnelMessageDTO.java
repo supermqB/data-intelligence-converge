@@ -88,4 +88,9 @@ public class TunnelMessageDTO {
      */
     private FileCollectInfoDto fileCollectInfoDto;
 
+    /**
+     * 接口信息
+     */
+    private ActiveInterfaceDTO activeInterfaceDTO;
+
 }

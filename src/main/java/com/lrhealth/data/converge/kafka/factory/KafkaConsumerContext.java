@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.kafka.factory;
 
+import com.lrhealth.data.converge.service.ActiveInterfaceService;
 import com.lrhealth.data.converge.service.MessageQueueService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -44,9 +45,13 @@ public class KafkaConsumerContext {
      * 任务调度器，用于定时任务
      */
     private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(24);
+    private static final ScheduledExecutorService activeExecutor = Executors.newScheduledThreadPool(24);
 
     @Resource
     private MessageQueueService queueService;
+
+    @Resource
+    private ActiveInterfaceService activeInterfaceService;
 
     /**
      * 添加一个Kafka消费者任务
@@ -94,6 +99,41 @@ public class KafkaConsumerContext {
             // 使用多线程处理整理后的表
             topicBodyMap.entrySet().stream().parallel().forEach(map -> queueService.messageQueueHandle(topicKey, map.getValue()));
         }, 0, 30, TimeUnit.SECONDS);
+        // 将任务存入对应的列表以后续管理
+        scheduleMap.put(topicKey, future);
+    }
+
+    public <K, V> void addActiveInterfaceConsumerTask(String topicKey, KafkaConsumer<K, V> consumer) {
+        // 存入消费者列表
+        consumerMap.put(topicKey, consumer);
+        log.info("创建主动接口采集消费定时任务: key={}", topicKey);
+        // 创建定时任务，每隔30s拉取消息并处理
+        ScheduledFuture<?> future = activeExecutor.scheduleAtFixedRate(() -> {
+            // 每次执行拉取消息之前，先检查订阅者是否已被取消（如果订阅者不存在于订阅者列表中说明被取消了）
+            // 因为Kafka消费者对象是非线程安全的，因此在这里把取消订阅的逻辑和拉取并处理消息的逻辑写在一起并放入定时器中，判断列表中是否存在消费者对象来确定是否取消任务
+            if (!consumerMap.containsKey(topicKey)) {
+                // 取消订阅并关闭消费者
+                consumer.unsubscribe();
+                consumer.close();
+                log.info("取消订阅，关闭消费者: key={}", topicKey);
+                // 关闭定时任务
+                scheduleMap.remove(topicKey).cancel(true);
+                log.info("删除定时任务: key={}", topicKey);
+                return;
+            }
+            // 拉取消息
+            ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
+            Map<String, List<String>> topicBodyMap = new HashMap<>();
+            for (ConsumerRecord<K, V> record : records) {
+                // 自定义处理每次拉取的消息逻辑
+                String topicName = record.topic();
+                String msgBody = (String) record.value();
+                log.info("interface collector receive kafka data, topic=[{}], value=[{}]", topicName,  msgBody);
+                topicBodyMap.computeIfAbsent(topicName, k -> new ArrayList<>()).add(msgBody);
+            }
+            // 使用多线程处理整理后的表
+            topicBodyMap.entrySet().stream().parallel().forEach(map -> activeInterfaceService.activeInterfaceHandler(topicKey, map.getValue()));
+        }, 0, 10, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理
         scheduleMap.put(topicKey, future);
     }

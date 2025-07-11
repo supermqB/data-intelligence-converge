@@ -16,10 +16,12 @@ public enum TunnelCMEnum {
     CDC_LOG("2", "日志模式（CDC）"),
 
     FILE_MODE("3", "文件模式"),
-
+    //被动接口模式
     INTERFACE_MODE("4", "接口模式"),
 
-    QUEUE_MODE("5", "队列模式");
+    QUEUE_MODE("5", "队列模式"),
+
+    ACTIVE_INTERFACE_MODE("6", "接口模式(主动)");
 
     private final String code;
     private final String description;
