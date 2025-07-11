@@ -23,7 +23,7 @@ spring:
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      group-id: local-profile
+      group-id: local-profile-1
     listener:
       type: SINGLE
     topic:

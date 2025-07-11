@@ -123,16 +123,16 @@ public class KafkaConsumerContext {
             }
             // 拉取消息
             ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
-            Map<String, List<String>> topicBodyMap = new HashMap<>();
+            List<String> topicBodyList = new ArrayList<>();
             for (ConsumerRecord<K, V> record : records) {
                 // 自定义处理每次拉取的消息逻辑
                 String topicName = record.topic();
                 String msgBody = (String) record.value();
                 log.info("interface collector receive kafka data, topic=[{}], value=[{}]", topicName,  msgBody);
-                topicBodyMap.computeIfAbsent(topicName, k -> new ArrayList<>()).add(msgBody);
+                topicBodyList.add(msgBody);
             }
             // 使用多线程处理整理后的表
-            topicBodyMap.entrySet().stream().parallel().forEach(map -> activeInterfaceService.activeInterfaceHandler(topicKey, map.getValue()));
+           activeInterfaceService.activeInterfaceHandler(topicKey, topicBodyList);
         }, 0, 10, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理
         scheduleMap.put(topicKey, future);

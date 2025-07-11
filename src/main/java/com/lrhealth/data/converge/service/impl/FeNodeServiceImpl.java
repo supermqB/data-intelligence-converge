@@ -54,6 +54,9 @@ public class FeNodeServiceImpl implements FeNodeService {
     @Resource
     private ConvTaskResultFileService convTaskResultFileService;
 
+    @Resource
+    private ConvTaskResultInterfaceService convTaskResultInterfaceService;
+
     private static ConcurrentMap<String, Boolean> logIdMap = new ConcurrentHashMap<>();
 
     @PostConstruct
@@ -202,6 +205,20 @@ public class FeNodeServiceImpl implements FeNodeService {
     }
 
     @Override
+    public ConvTaskResultInterface saveOrUpdateInterface(ResultInterfaceDTO resultInfoDto, ConvTask convTask) {
+        ConvTaskResultInterface convTaskResultInterface = new ConvTaskResultInterface();
+        ConvTaskResultInterface taskResult = convTaskResultInterfaceService.getOne(new LambdaQueryWrapper<ConvTaskResultInterface>()
+                .eq(ConvTaskResultInterface::getTaskId, convTask.getId()));
+        if (taskResult != null && taskResult.getStatus() > 1) {
+            return taskResult;
+        }
+        BeanUtils.copyProperties(resultInfoDto, convTaskResultInterface);
+        convTaskResultInterfaceService.saveOrUpdate(taskResult, new LambdaQueryWrapper<ConvTaskResultInterface>()
+                .eq(ConvTaskResultInterface::getTaskId, convTask.getId()));
+        return taskResult;
+    }
+
+    @Override
     @Transactional
     public void updateTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, List<ResultViewInfoDto> resultViewInfoDtoList, ConvTask convTask) {
         if (CollUtil.isEmpty(resultViewInfoDtoList)) {
@@ -228,6 +245,19 @@ public class FeNodeServiceImpl implements FeNodeService {
                     log.info("添加文件下载任务: " + taskResultView);
                 }
             }
+        }
+    }
+
+    @Override
+    public void updateTaskResultInterface( List<ResultInterfaceDTO> resultViewList, ConvTask convTask) {
+        if (CollUtil.isEmpty(resultViewList)) {
+            return;
+        }
+        for (ResultInterfaceDTO resultInfoDto : resultViewList) {
+            if (resultInfoDto == null) {
+                continue;
+            }
+            ConvTaskResultInterface result = this.saveOrUpdateInterface(resultInfoDto, convTask);
         }
     }
 

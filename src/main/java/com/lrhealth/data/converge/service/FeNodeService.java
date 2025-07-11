@@ -21,7 +21,11 @@ public interface FeNodeService {
 
     ConvTaskResultFile saveOrUpdateFile(ResultFileInfoDto resultFileInfoDto, ConvTask convTask);
 
+    ConvTaskResultInterface saveOrUpdateInterface(ResultInterfaceDTO resultFileInfoDto, ConvTask convTask);
+
     void updateTaskResultView(ConcurrentLinkedDeque<FileTask> taskDeque, List<ResultViewInfoDto> resultViewInfoDtoList, ConvTask convTask);
+
+    void updateTaskResultInterface( List<ResultInterfaceDTO> resultViewInfoDtoList, ConvTask convTask);
 
     void updateTaskResultFile(ConcurrentLinkedDeque<FileTask> taskDeque, List<ResultFileInfoDto> resultFileInfoDtoList, ConvTask convTask);
 }

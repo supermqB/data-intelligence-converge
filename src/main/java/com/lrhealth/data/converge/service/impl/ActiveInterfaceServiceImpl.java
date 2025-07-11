@@ -35,6 +35,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
     @Resource
     private ConvActiveInterfaceConfigService activeInterfaceConfigService;
     private static final String ACTIVE_INTERFACE_GROUP_ID = "active_interface";
+    private static final String TOPIC_KEY = "TOPIC_KEY";
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
@@ -78,7 +79,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
     public void initInterfaceDataConsumer(ConvTunnel tunnel) {
         String topic = getTopic(tunnel);
         //创建唯一的topic，启动消费者监听
-        String topicKey = tunnel.getId().toString()  + CharPool.DASHED + topic;
+        String topicKey = TOPIC_KEY + topic;
         Integer status = tunnel.getStatus();
         switch (status){
             case 1:
