@@ -1,19 +1,21 @@
 package com.lrhealth.data.converge.service.impl;
 
 import cn.hutool.core.text.CharPool;
+import cn.hutool.core.text.StrPool;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.common.db.DbConnection;
+import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
-import com.lrhealth.data.converge.dao.entity.ConvActiveInterfaceConfig;
-import com.lrhealth.data.converge.dao.entity.ConvTask;
-import com.lrhealth.data.converge.dao.entity.ConvTunnel;
-import com.lrhealth.data.converge.dao.service.ConvActiveInterfaceConfigService;
-import com.lrhealth.data.converge.dao.service.ConvTaskService;
-import com.lrhealth.data.converge.dao.service.ConvTunnelService;
+import com.lrhealth.data.converge.dao.entity.*;
+import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.kafka.factory.KafkaConsumerContext;
 import com.lrhealth.data.converge.kafka.factory.KafkaDynamicConsumerFactory;
+import com.lrhealth.data.converge.model.dto.OriginalTableModelDto;
 import com.lrhealth.data.converge.service.ActiveInterfaceService;
+import io.jsonwebtoken.lang.Collections;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +24,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -32,8 +37,6 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
     private ConvTunnelService tunnelService;
     @Resource
     private ConvTaskService taskService;
-    @Resource
-    private ConvActiveInterfaceConfigService activeInterfaceConfigService;
     private static final String ACTIVE_INTERFACE_GROUP_ID = "active_interface";
     private static final String TOPIC_KEY = "TOPIC_KEY";
 
@@ -41,50 +44,121 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
     private String bootstrapServers;
     @Resource
     private KafkaDynamicConsumerFactory dynamicConsumerFactory;
-
-    private static final String TOPIC_PREFIX = "interface-collection-data-tunnelId";
-
+    @Resource
+    private ConvOriginalTableService originalTableService;
+    @Resource
+    private ConvOdsDatasourceConfigService dsConfigService;
+    @Resource
+    private StdOriginalModelColumnService stdOriginalModelColumnService;
+    private static final String TOPIC_PREFIX = "interface-collection-data-tunnelId-";
+    @Resource
+    private DbConnectionManager dbConnectionManager;
     @Resource
     private KafkaConsumerContext consumerContext;
+
     @PostConstruct
-    private void initialRegistry(){
+    private void initialRegistry() {
         // 初始化主动接口采集消费者
         List<ConvTunnel> queueTunnels = tunnelService.list(new LambdaQueryWrapper<ConvTunnel>()
                 .eq(ConvTunnel::getConvergeMethod, TunnelCMEnum.ACTIVE_INTERFACE_MODE.getCode())
                 .notIn(ConvTunnel::getStatus, TunnelStatusEnum.PAUSE.getValue(), TunnelStatusEnum.ABANDON.getValue())
                 .ne(ConvTunnel::getDelFlag, 1));
-        for (ConvTunnel convTunnel : queueTunnels){
+        for (ConvTunnel convTunnel : queueTunnels) {
             initInterfaceDataConsumer(convTunnel);
         }
     }
-    private void startConsumer(String broker, String topic, String topicKey){
+
+    private void startConsumer(String broker, String topic, String topicKey) {
         KafkaConsumer<Object, Object> consumer = dynamicConsumerFactory.createConsumer(topic, ACTIVE_INTERFACE_GROUP_ID, broker);
         log.info("主动接口采集kafka消费者创建成功！, consumer={}", consumer);
         consumerContext.addActiveInterfaceConsumerTask(topicKey, consumer);
     }
 
-    public void interfaceDataSave() {
-
-    }
-
     @Override
     public void activeInterfaceHandler(String topicKey, List<String> value) {
         log.info("主动接口数据处理开始！, topicKey={}, value={}", topicKey, value);
-        //TODO 处理采集的数据，准备存入数据库中
+        if(Collections.isEmpty( value)){
+            return;
+        }
+        long tunnelId = Long.parseLong(topicKey.substring(topicKey.
+                lastIndexOf(StrPool.DASHED) + 1));
+        ConvTunnel tunnel = tunnelService.getById(tunnelId);
+        //获取采集表，获取ods数据源id
+        String table = tunnel.getCollectRange();
+        OriginalTableModelDto tableModelRel = originalTableService.getTableModelRel(table, tunnel.getSysCode());
+        log.info("获取到接口采集的表字段信息:{}", tableModelRel);
+        List<StdOriginalModelColumn> tableColumns = stdOriginalModelColumnService.list
+                (new LambdaQueryWrapper<StdOriginalModelColumn>()
+                        .eq(StdOriginalModelColumn::getModelId, tableModelRel.getModelId())
+                        .eq(StdOriginalModelColumn::getDelFlag, 0));
+        ConvDsConfig datasourceConfig = dsConfigService.getById(tunnel.getWriterDatasourceId());
+        //根据字段列表，组装insert语句
+        String insertSql = assemblyInsertSql(tableColumns, table, value);
+        log.info("接口采集拼接的最终insertSql={}", insertSql);
+        interfaceDataSave(datasourceConfig, insertSql);
     }
+
+    private void interfaceDataSave(ConvDsConfig datasourceConfig, String insertSql) {
+        // 获取连接
+        DbConnection connection = DbConnection.builder()
+                .dbUrl(datasourceConfig.getDsUrl())
+                .dbUserName(datasourceConfig.getDsUsername())
+                .dbPassword(datasourceConfig.getDsPwd())
+                .dbDriver(datasourceConfig.getDsDriverName())
+                .build();
+        Connection conn = dbConnectionManager.getConnection(connection);
+        try (Statement stat = conn.createStatement()) {
+            stat.execute(insertSql);
+        } catch (Exception e) {
+            log.error("sql execute failed,error={}", e.getMessage());
+        }
+    }
+
+    private String assemblyInsertSql(List<StdOriginalModelColumn> tableColumns, String table, List<String> dataList) {
+        String templateSql = "insert into %s (%s)  values %s";
+        StringBuilder execSql = new StringBuilder();
+        String fields = tableColumns.stream().map(StdOriginalModelColumn::getNameEn).collect(Collectors.joining(","));
+        List<JSONObject> data = dataList.stream().map(item -> JSONObject.parseObject(item, JSONObject.class)).collect(Collectors.toList());
+        for (JSONObject item : data) {
+            StringBuilder value = new StringBuilder();
+            value.append("(");
+            for (StdOriginalModelColumn column : tableColumns) {
+                String fieldName = column.getNameEn();
+                Object fieldValue = item.get(fieldName);
+                if (fieldValue == null) {
+                    value.append("null").append(CharPool.COMMA);
+                } else {
+                    value.append("'").append(fieldValue).append("'").append(CharPool.COMMA);
+                }
+            }
+            value.deleteCharAt(value.length() - 1);
+            value.append(")");
+            //校验字段和参数的个数是否一致
+            if (tableColumns.size() != value.toString().split(",").length) {
+                log.error("字段和参数个数不一致！:{}", value);
+            } else {
+                execSql.append(value);
+                execSql.append(",");
+            }
+        }
+        execSql.deleteCharAt(execSql.length() - 1);
+        return String.format(templateSql, table, fields, execSql);
+    }
+
     private static String getTopic(ConvTunnel tunnel) {
-        return  TOPIC_PREFIX + tunnel.getId().toString() ;
+        return TOPIC_PREFIX + tunnel.getId().toString();
     }
+
     @Override
     public void initInterfaceDataConsumer(ConvTunnel tunnel) {
         String topic = getTopic(tunnel);
         //创建唯一的topic，启动消费者监听
         String topicKey = TOPIC_KEY + topic;
         Integer status = tunnel.getStatus();
-        switch (status){
+        switch (status) {
             case 1:
                 ConvTask task = taskService.createTask(tunnel, false);
-                startConsumer(bootstrapServers,topic,topicKey);
+                startConsumer(bootstrapServers, topic, topicKey);
                 AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
                 break;
             case 2:
