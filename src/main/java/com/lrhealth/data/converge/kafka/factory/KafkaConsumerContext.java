@@ -107,7 +107,7 @@ public class KafkaConsumerContext {
         // 存入消费者列表
         consumerMap.put(topicKey, consumer);
         log.info("创建主动接口采集消费定时任务: key={}", topicKey);
-        // 创建定时任务，每隔30s拉取消息并处理
+        // 创建定时任务，每隔10s拉取消息并处理
         ScheduledFuture<?> future = activeExecutor.scheduleAtFixedRate(() -> {
             // 每次执行拉取消息之前，先检查订阅者是否已被取消（如果订阅者不存在于订阅者列表中说明被取消了）
             // 因为Kafka消费者对象是非线程安全的，因此在这里把取消订阅的逻辑和拉取并处理消息的逻辑写在一起并放入定时器中，判断列表中是否存在消费者对象来确定是否取消任务
@@ -123,16 +123,20 @@ public class KafkaConsumerContext {
             }
             // 拉取消息
             ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
-            List<String> topicBodyList = new ArrayList<>();
+            //创建一个容量为1000的阻塞队列
+            BlockingQueue<String> topicBodyQueue = new ArrayBlockingQueue<>(1000);
             for (ConsumerRecord<K, V> record : records) {
                 // 自定义处理每次拉取的消息逻辑
                 String topicName = record.topic();
                 String msgBody = (String) record.value();
                 log.info("interface collector receive kafka data, topic=[{}], value=[{}]", topicName,  msgBody);
-                topicBodyList.add(msgBody);
+                try {
+                    topicBodyQueue.put(msgBody);
+                } catch (InterruptedException e) {
+                    log.info("interface collector put queue data,error:{}", e.getMessage());
+                }
             }
-            // 使用多线程处理整理后的表
-           activeInterfaceService.activeInterfaceHandler(topicKey, topicBodyList);
+           activeInterfaceService.activeInterfaceHandler(topicKey, topicBodyQueue);
         }, 0, 10, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理
         scheduleMap.put(topicKey, future);

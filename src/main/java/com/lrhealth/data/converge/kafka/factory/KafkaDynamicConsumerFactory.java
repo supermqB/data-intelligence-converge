@@ -29,6 +29,9 @@ public class KafkaDynamicConsumerFactory {
         Properties consumerProperties = new Properties();
         consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, broker);
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        consumerProperties.put("max.poll.records", 1000);
+        consumerProperties.put("fetch.max.bytes", 128 * 1024 * 1024);
+        consumerProperties.put("max.partition.fetch.bytes", 2 * 1024 * 1024);
         consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         // 信任所有类型以反序列化

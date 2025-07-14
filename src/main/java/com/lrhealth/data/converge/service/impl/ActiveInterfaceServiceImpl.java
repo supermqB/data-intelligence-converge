@@ -27,6 +27,7 @@ import javax.annotation.Resource;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
 
 
@@ -75,11 +76,12 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
     }
 
     @Override
-    public void activeInterfaceHandler(String topicKey, List<String> value) {
-        log.info("主动接口数据处理开始！, topicKey={}, value={}", topicKey, value);
-        if(Collections.isEmpty( value)){
+    public void activeInterfaceHandler(String topicKey, BlockingQueue<String> values) {
+        log.info("主动接口数据处理开始！, topicKey={}, values={}", topicKey, values);
+        if (Collections.isEmpty(values)) {
             return;
         }
+
         long tunnelId = Long.parseLong(topicKey.substring(topicKey.
                 lastIndexOf(StrPool.DASHED) + 1));
         ConvTunnel tunnel = tunnelService.getById(tunnelId);
@@ -93,9 +95,10 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
                         .eq(StdOriginalModelColumn::getDelFlag, 0));
         ConvDsConfig datasourceConfig = dsConfigService.getById(tunnel.getWriterDatasourceId());
         //根据字段列表，组装insert语句
-        String insertSql = assemblyInsertSql(tableColumns, table, value);
+        String insertSql = assemblyInsertSql(tableColumns, table, values);
         log.info("接口采集拼接的最终insertSql={}", insertSql);
         interfaceDataSave(datasourceConfig, insertSql);
+
     }
 
     private void interfaceDataSave(ConvDsConfig datasourceConfig, String insertSql) {
@@ -114,7 +117,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
         }
     }
 
-    private String assemblyInsertSql(List<StdOriginalModelColumn> tableColumns, String table, List<String> dataList) {
+    private String assemblyInsertSql(List<StdOriginalModelColumn> tableColumns, String table, BlockingQueue<String> dataList) {
         String templateSql = "insert into %s (%s)  values %s";
         StringBuilder execSql = new StringBuilder();
         String fields = tableColumns.stream().map(StdOriginalModelColumn::getNameEn).collect(Collectors.joining(","));
