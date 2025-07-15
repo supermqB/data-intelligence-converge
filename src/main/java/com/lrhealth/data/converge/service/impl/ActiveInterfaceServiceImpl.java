@@ -26,6 +26,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
@@ -76,7 +77,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
     }
 
     @Override
-    public void activeInterfaceHandler(String topicKey, BlockingQueue<String> values) {
+    public void activeInterfaceHandler(String topicKey, List<String> values) {
         log.info("主动接口数据处理开始！, topicKey={}, values={}", topicKey, values);
         if (Collections.isEmpty(values)) {
             return;
@@ -117,7 +118,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
         }
     }
 
-    private String assemblyInsertSql(List<StdOriginalModelColumn> tableColumns, String table, BlockingQueue<String> dataList) {
+    private String assemblyInsertSql(List<StdOriginalModelColumn> tableColumns, String table, List<String> dataList) {
         String templateSql = "insert into %s (%s)  values %s";
         StringBuilder execSql = new StringBuilder();
         String fields = tableColumns.stream().map(StdOriginalModelColumn::getNameEn).collect(Collectors.joining(","));

@@ -86,7 +86,7 @@ public class KafkaConsumerContext {
                 // 自定义处理每次拉取的消息逻辑
                 String topicName = record.topic();
                 String msgBody = (String) record.value();
-                log.info("receive kafka data, topic=[{}], value=[{}]", topicName,  msgBody);
+                log.info("receive kafka data, topic=[{}], value=[{}]", topicName, msgBody);
                 topicBodyMap.computeIfAbsent(topicName, k -> new ArrayList<>()).add(msgBody);
             }
 //            for (Map.Entry<String, List<String>> map : topicBodyMap.entrySet()) {
@@ -107,40 +107,66 @@ public class KafkaConsumerContext {
         // 存入消费者列表
         consumerMap.put(topicKey, consumer);
         log.info("创建主动接口采集消费定时任务: key={}", topicKey);
+
+        // 创建容量为1000的线程安全阻塞队列
+        BlockingQueue<String> topicBodyQueue = new LinkedBlockingQueue<>();
         // 创建定时任务，每隔10s拉取消息并处理
         ScheduledFuture<?> future = activeExecutor.scheduleAtFixedRate(() -> {
-            // 每次执行拉取消息之前，先检查订阅者是否已被取消（如果订阅者不存在于订阅者列表中说明被取消了）
-            // 因为Kafka消费者对象是非线程安全的，因此在这里把取消订阅的逻辑和拉取并处理消息的逻辑写在一起并放入定时器中，判断列表中是否存在消费者对象来确定是否取消任务
+            // 检查消费者是否已被移除
             if (!consumerMap.containsKey(topicKey)) {
-                // 取消订阅并关闭消费者
+                // 清理资源
                 consumer.unsubscribe();
                 consumer.close();
-                log.info("取消订阅，关闭消费者: key={}", topicKey);
-                // 关闭定时任务
                 scheduleMap.remove(topicKey).cancel(true);
-                log.info("删除定时任务: key={}", topicKey);
+                log.info("消费者已关闭并删除定时任务: key={}", topicKey);
                 return;
             }
-            // 拉取消息
-            ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
-            //创建一个容量为1000的阻塞队列
-            BlockingQueue<String> topicBodyQueue = new ArrayBlockingQueue<>(1000);
-            for (ConsumerRecord<K, V> record : records) {
-                // 自定义处理每次拉取的消息逻辑
-                String topicName = record.topic();
-                String msgBody = (String) record.value();
-                log.info("interface collector receive kafka data, topic=[{}], value=[{}]", topicName,  msgBody);
-                try {
-                    topicBodyQueue.put(msgBody);
-                } catch (InterruptedException e) {
-                    log.info("interface collector put queue data,error:{}", e.getMessage());
+            try {
+                // 拉取消息，最多等待1秒钟，配置最多一次拉取1000条
+                ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
+
+                // 如果本次无新消息，但队列中仍有数据，则触发一次处理
+                if (records.isEmpty()) {
+                    if (!topicBodyQueue.isEmpty()) {
+                        flushQueue(topicKey, topicBodyQueue);
+                    }
+                    return;
                 }
+                // 处理拉取到的消息
+                for (ConsumerRecord<K, V> record : records) {
+                    String msgBody = (String) record.value();
+                    log.info("interface collector receive kafka data, topic=[{}], value=[{}]", record.topic(), msgBody);
+                    try {
+                        if (topicBodyQueue.size() == 1000) {
+                            flushQueue(topicKey, topicBodyQueue); // 触发处理并清空队列
+                        }
+                        topicBodyQueue.add(msgBody);
+                    } catch (Exception e) {
+                        log.error("插入队列失败: {}", e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("处理 Kafka 消息时发生异常: {}", e.getMessage(), e);
             }
-           activeInterfaceService.activeInterfaceHandler(topicKey, topicBodyQueue);
         }, 0, 10, TimeUnit.SECONDS);
-        // 将任务存入对应的列表以后续管理
         scheduleMap.put(topicKey, future);
     }
+
+    /**
+     * 提交队列中的数据并清空
+     */
+    private void flushQueue(String topicKey, BlockingQueue<String> queue) {
+        if (queue.isEmpty()) return;
+        List<String> dataList = new ArrayList<>(queue);
+        queue.clear();
+        try {
+            activeInterfaceService.activeInterfaceHandler(topicKey, dataList);
+            log.info("提交队列批次数量: {}", dataList.size());
+        } catch (Exception e) {
+            log.error("提交队列数据失败: {}", e.getMessage());
+        }
+    }
+
 
     /**
      * 移除Kafka消费者定时任务并关闭消费者订阅
