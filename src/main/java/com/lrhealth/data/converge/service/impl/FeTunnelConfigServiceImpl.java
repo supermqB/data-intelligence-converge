@@ -42,6 +42,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     @Resource
     private ConvCollectFieldService collectFieldService;
     @Resource
+    private ConvFileCollectService fileCollectService;
+    @Resource
     private ConvActiveInterfaceConfigService activeInterfaceConfigService;
     @Resource
     private ConvergeService convergeService;
@@ -190,15 +192,19 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
     private void tunnelFileMessage(ConvTunnel tunnel, TunnelMessageDTO tunnelMessageDTO) {
+        ConvFileCollect fileCollect = fileCollectService.getOne(new LambdaQueryWrapper<ConvFileCollect>().eq(ConvFileCollect::getTunnelId, tunnel.getId()));
+        if(ObjectUtil.isNull(fileCollect)){
+            return;
+        }
         FileCollectInfoDto fileCollectInfoDto = new FileCollectInfoDto();
         // 文件采集目录
-        fileCollectInfoDto.setFileModeCollectDir(tunnel.getFileModeCollectDir());
+        fileCollectInfoDto.setFileModeCollectDir(fileCollect.getFileModeCollectDir());
         // 文件的采集范围
-        fileCollectInfoDto.setFileCollectRange(tunnel.getCollectRange());
-        fileCollectInfoDto.setFileStorageMode(tunnel.getFileStorageMode());
-        fileCollectInfoDto.setStructuredDataFlag(tunnel.getStructuredDataFlag());
+        fileCollectInfoDto.setFileCollectRange(fileCollect.getFileCollectRange());
+        fileCollectInfoDto.setFileStorageMode(Integer.valueOf(fileCollect.getFileStorageMode()));
+        fileCollectInfoDto.setStructuredDataFlag(fileCollect.getStructuredDataFlag());
         List<String> fileSuffixList = new ArrayList<>();
-        Integer fileStorageMode = tunnel.getFileStorageMode();
+        Integer fileStorageMode = Integer.valueOf(fileCollect.getFileStorageMode());
         FileStorageTypeEnum type = FileStorageTypeEnum.of(fileStorageMode);
         switch (Objects.requireNonNull(type)) {
             case DATABASE:
@@ -213,7 +219,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 break;
         }
         fileCollectInfoDto.setFileSuffix(fileSuffixList);
-
+        fileCollectInfoDto.setIncrFlag(fileCollect.getIncrFlag());
         tunnelMessageDTO.setFileCollectInfoDto(fileCollectInfoDto);
     }
 

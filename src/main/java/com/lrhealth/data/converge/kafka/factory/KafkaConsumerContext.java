@@ -1,6 +1,7 @@
 package com.lrhealth.data.converge.kafka.factory;
 
 import com.lrhealth.data.converge.service.ActiveInterfaceService;
+import com.lrhealth.data.converge.service.FileCollectService;
 import com.lrhealth.data.converge.service.MessageQueueService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -52,6 +53,9 @@ public class KafkaConsumerContext {
 
     @Resource
     private ActiveInterfaceService activeInterfaceService;
+
+    @Resource
+    private FileCollectService fileCollectService;
 
     /**
      * 添加一个Kafka消费者任务
@@ -152,6 +156,56 @@ public class KafkaConsumerContext {
         scheduleMap.put(topicKey, future);
     }
 
+
+    public <K, V> void addFileCollectConsumerTask(String topicKey, KafkaConsumer<K, V> consumer) {
+        // 存入消费者列表
+        consumerMap.put(topicKey, consumer);
+        log.info("创建文件采集消费定时任务: key={}", topicKey);
+
+        // 创建容量为1000的线程安全阻塞队列
+        BlockingQueue<String> topicBodyQueue = new LinkedBlockingQueue<>();
+        // 创建定时任务，每隔10s拉取消息并处理
+        ScheduledFuture<?> future = activeExecutor.scheduleAtFixedRate(() -> {
+            // 检查消费者是否已被移除
+            if (!consumerMap.containsKey(topicKey)) {
+                // 清理资源
+                consumer.unsubscribe();
+                consumer.close();
+                scheduleMap.remove(topicKey).cancel(true);
+                log.info("消费者已关闭并删除定时任务: key={}", topicKey);
+                return;
+            }
+            try {
+                // 拉取消息，最多等待1秒钟，配置最多一次拉取1000条
+                ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
+
+                // 如果本次无新消息，但队列中仍有数据，则触发一次处理
+                if (records.isEmpty()) {
+                    if (!topicBodyQueue.isEmpty()) {
+                        flushQueueData(topicKey, topicBodyQueue);
+                    }
+                    return;
+                }
+                // 处理拉取到的消息
+                for (ConsumerRecord<K, V> record : records) {
+                    String msgBody = (String) record.value();
+                    log.info("file collector receive kafka data, topic=[{}], count=[{}]", record.topic(), records.count());
+                    try {
+                        if (topicBodyQueue.size() == 1000) {
+                            flushQueueData(topicKey, topicBodyQueue); // 触发处理并清空队列
+                        }
+                        topicBodyQueue.add(msgBody);
+                    } catch (Exception e) {
+                        log.error("插入队列失败: {}", e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("处理 Kafka 消息时发生异常: {}", e.getMessage(), e);
+            }
+        }, 0, 10, TimeUnit.SECONDS);
+        scheduleMap.put(topicKey, future);
+    }
+
     /**
      * 提交队列中的数据并清空
      */
@@ -161,6 +215,20 @@ public class KafkaConsumerContext {
         queue.clear();
         try {
             activeInterfaceService.activeInterfaceHandler(topicKey, dataList);
+            log.info("提交队列批次数量: {}", dataList.size());
+        } catch (Exception e) {
+            log.error("提交队列数据失败: {}", e.getMessage());
+        }
+    }
+    /**
+     * 提交队列中的数据并清空
+     */
+    private void flushQueueData(String topicKey, BlockingQueue<String> queue) {
+        if (queue.isEmpty()) return;
+        List<String> dataList = new ArrayList<>(queue);
+        queue.clear();
+        try {
+            fileCollectService.fileDataHandler(topicKey, dataList);
             log.info("提交队列批次数量: {}", dataList.size());
         } catch (Exception e) {
             log.error("提交队列数据失败: {}", e.getMessage());

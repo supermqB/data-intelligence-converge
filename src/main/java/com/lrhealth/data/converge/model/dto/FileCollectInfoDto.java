@@ -44,4 +44,9 @@ public class FileCollectInfoDto {
      * 1-结构化数据，2-非结构化数据
      */
     private Integer structuredDataFlag;
+    /**
+     * 0:全量文件夹下的所有文件，1:增量，文件夹下的新增文件
+     */
+
+    private Integer incrFlag;
 }

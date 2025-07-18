@@ -1,5 +1,6 @@
 package com.lrhealth.data.converge.service.impl;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharPool;
 import cn.hutool.core.text.StrPool;
 import com.alibaba.fastjson.JSONObject;
@@ -26,9 +27,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.sql.Connection;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
 
 

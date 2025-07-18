@@ -13,10 +13,7 @@ import com.lrhealth.data.converge.model.dto.DataSourceInfoDto;
 import com.lrhealth.data.converge.model.dto.DataSourceParamDto;
 import com.lrhealth.data.converge.model.dto.FepScheduledDto;
 import com.lrhealth.data.converge.model.dto.TunnelMessageDTO;
-import com.lrhealth.data.converge.service.ActiveInterfaceService;
-import com.lrhealth.data.converge.service.FeTunnelConfigService;
-import com.lrhealth.data.converge.service.KafkaService;
-import com.lrhealth.data.converge.service.MessageQueueService;
+import com.lrhealth.data.converge.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,6 +55,9 @@ public class DateIntelliConsumer {
     @Resource
     private ActiveInterfaceService activeInterfaceService;
 
+    @Resource
+    private FileCollectService fileCollectService;
+
     @KafkaListener(topics = "${spring.kafka.topic.intelligence.tunnel-datasource-change}")
     public void getFepTunnelConfig(@Payload String msgBody, Acknowledgment acknowledgment){
         log.info("====================receive tunnel-config msgBody={}", msgBody);
@@ -87,6 +87,12 @@ public class DateIntelliConsumer {
                 TunnelMessageDTO tunnelMessage = tunnelConfigService.getTunnelMessage(tunnel);
                 if (tunnel.getDelFlag() == 1){
                     tunnelMessage.setStatus(TunnelStatusEnum.ABANDON.getValue());
+                }
+                // 文件采集如果是写数据库，需要添加客户端监听
+                if (TunnelCMEnum.FILE_MODE.getCode().equals(tunnelMessage.getConvergeMethod())){
+                    if (tunnelMessage.getFileCollectInfoDto() != null && tunnelMessage.getFileCollectInfoDto().getFileStorageMode() == 1){
+                        fileCollectService.initFileDataConsumer(tunnel);
+                    }
                 }
                 String topic = tunnelConfigTopic + CharPool.DASHED + topicSuffix;
                 kafkaTemplate.send(topic, JSON.toJSONString(tunnelMessage));

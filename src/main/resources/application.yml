@@ -167,7 +167,7 @@ message:
     manageSuf: management
 
 file-collect:
-  structure-type: csv
+  structure-type: json
 
 xds:
   switch-on: true
