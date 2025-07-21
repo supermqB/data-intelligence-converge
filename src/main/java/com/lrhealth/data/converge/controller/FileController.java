@@ -1,7 +1,9 @@
 package com.lrhealth.data.converge.controller;
 
+import com.lrhealth.data.converge.service.DictConvergeService;
 import com.lrhealth.data.converge.service.FileService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,16 +23,14 @@ import javax.annotation.Resource;
 public class FileController {
     @Resource
     private FileService fileService;
+    @Resource
+    private DictConvergeService dictConvergeService;
 
     @PostMapping("/upload")
     public void uploadFile(@RequestParam(value = "file") MultipartFile file,
-                           @RequestParam(value = "projectId") String projectId){
+                           @RequestParam(value = "path") String path){
         long start = System.currentTimeMillis();
-        try {
-            fileService.uploadFile(file, projectId);
-        } catch (Exception e) {
-            log.info("异常信息 {}",e.getMessage());
-        }
+        fileService.uploadFile(file, path);
         long end = System.currentTimeMillis();
         log.info("文件大小{}, 耗时 = {} ms, 上传速率{}/s",formatSize(file.getSize(),0,true),end - start,formatSize(file.getSize(),end-start,false));
     }
@@ -60,6 +60,18 @@ public class FileController {
             }
         }
         return String.format("%.00f %s", formattedSize, units[index]);
+    }
+
+    @PostMapping("/dict")
+    public void dictConverge(@RequestParam(value = "file") MultipartFile file,
+                             @RequestParam(value = "orgCode") String orgCode,
+                             @RequestParam(value = "sysCode") String sysCode){
+        try {
+            // 读取文件, 第一行表头获取， 表不存在的时候建表
+            dictConvergeService.dictConverge(file, orgCode, sysCode);
+        }catch (Exception e){
+            log.error("excel parsing error, {}", ExceptionUtils.getStackTrace(e));
+        }
     }
 
 }

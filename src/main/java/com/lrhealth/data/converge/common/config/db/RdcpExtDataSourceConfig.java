@@ -2,7 +2,9 @@ package com.lrhealth.data.converge.common.config.db;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisXMLLanguageDriver;
+import com.baomidou.mybatisplus.core.config.GlobalConfig;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.lrhealth.data.converge.handler.MybatisFillHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
@@ -26,7 +28,8 @@ import javax.sql.DataSource;
  */
 @Slf4j
 @Configuration
-@MapperScan(basePackages = {"com.lrhealth.data.model.*.mapper", "com.lrhealth.data.converge.dao.mapper"},
+@MapperScan(basePackages = {"com.lrhealth.data.converge.dao.mapper",
+"com.lrhealth.data.converge.scheduled.dao.mapper","com.lrhealth.data.converge.ds.dao.mapper"},
         sqlSessionFactoryRef = "rdcpExtSqlSessionFactory")
 public class RdcpExtDataSourceConfig {
 
@@ -47,6 +50,9 @@ public class RdcpExtDataSourceConfig {
         configuration.setJdbcTypeForNull(JdbcType.NULL);
         sqlSessionFactoryBean.setConfiguration(configuration);
         sqlSessionFactoryBean.setTransactionFactory(new SpringManagedTransactionFactory());
+        GlobalConfig globalConfig = new GlobalConfig();
+        globalConfig.setMetaObjectHandler(new MybatisFillHandler());
+        sqlSessionFactoryBean.setGlobalConfig(globalConfig);
         return sqlSessionFactoryBean.getObject();
     }
 

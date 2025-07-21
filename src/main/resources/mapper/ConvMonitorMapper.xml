@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lrhealth.data.converge.dao.mapper.ConvMonitorMapper">
+
+    <select id="selectFepByMonitor" resultType="com.lrhealth.data.converge.dao.entity.ConvFeNode">
+        SELECT
+            cfn.NAME,
+            cfn.ip,
+            cfn.port,
+            cfn.org_code,
+            cm.update_time
+        FROM
+            conv_fe_node cfn,
+            ( SELECT conv_fe_node_id, update_time FROM conv_monitor WHERE monitor_type = '1' ) cm
+        WHERE
+            cfn.ID = cm.conv_fe_node_id
+          AND cfn.del_flag = 0
+    </select>
+</mapper>

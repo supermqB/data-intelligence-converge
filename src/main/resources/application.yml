@@ -10,3 +10,165 @@ spring:
   profiles:
     # 环境配置
     active: local
+
+  # kafka 消费者设置
+  kafka:
+    producer:
+      retries: 3
+      batch-size: 1000
+      linger-ms: 5
+      buffer-memory: 33554432
+      acks: 1
+      maxBlock: 1
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: local-profile-1
+    listener:
+      type: SINGLE
+    topic:
+      cdc: cdc-data
+      intelligence:
+        fep-task: frontend-reschedule-test
+        tunnel-datasource-change: tunnel-datasource-change-test
+        original-structure: original-structure
+      fep:
+        ## listen
+        xds-create: xds-create
+        xds-update: xds-update
+        upload-tableCount: upload-tableCount
+        update-collect-message: update-collect-message
+        upload-original-structure: upload-original-structure
+        upload-original-table-count: upload-original-table-count
+        upload-column-value: upload-column-value
+        ## send
+        ## tunnel-config-change-${ip}-${port} 按照前置机ip和端口区分
+        tunnel-config-change: tunnel-config-change
+        ## original-structure-config-${orgCode} 按照系统编码区分
+        original-structure-config: original-structure-config
+        ## tunnel-schedule-task-${ip}-${port} 按照前置机ip和端口区分
+        tunnel-schedule-task: tunnel-schedule-task
+        ## increment-sequence-${ip}-${port} 按照前置机ip和端口区分
+        increment-sequence: increment-sequence
+        fep-link: fep-link
+
+  servlet:
+    multipart:
+      # 文件最大限制
+      max-file-size: 1024MB
+      # 请求最大限制
+      max-request-size: 1024MB
+      enabled: true
+      # 设置文件缓存的临界点,超过则先保存到临时目录,默认为0,所有文件都会进行缓存
+      file-size-threshold: 0
+
+  redis:
+    redisson:
+      config:
+        singleServerConfig:
+          idleConnectionTimeout: 10000
+          connectTimeout: 10000
+          timeout: 3000
+          retryAttempts: 3
+          retryInterval: 1500
+          subscriptionsPerConnection: 5
+          subscriptionConnectionMinimumIdleSize: 1
+          subscriptionConnectionPoolSize: 50
+          connectionMinimumIdleSize: 32
+          connectionPoolSize: 64
+          database: 0
+          dnsMonitoringInterval: 5000
+
+  datasource:
+    #最小空闲连接数
+    minimum-idle: 5
+    # 空闲连接存活最大时间，默认2分钟
+    idle-timeout: 120000
+    # 连接池最大连接数，默认是10
+    maximum-pool-size: 10
+    # 此属性控制从池返回的连接的默认自动提交行为,默认值：true
+    auto-commit: true
+    # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+    max-lifetime: 1800000
+    # 数据库连接超时时间,默认30秒
+    connection-timeout: 30000
+    # 连接测试query
+    connection-test-query: SELECT 1
+
+  devtools:
+    restart:
+      enabled: false
+
+# 文件上传校验
+file:
+  upload:
+    check:
+      switch: 1
+      max_file_num: 5
+      max_file_size: 1073741824 # 1G；单位是 字节；
+      file_suffix: xls;xlsx
+
+# xss 校验
+xss:
+  urlPatterns: /*
+  enabled: true
+  excludes: null
+
+# 分页pageHelper
+pagehelper:
+  auto-runtime-dialect: true
+  supportMethodsArguments: true
+  params: count=countSql
+
+jasypt:
+  encryptor:
+    # 配置加密算法
+    algorithm: PBEWithMD5AndDES
+    iv-generator-classname: org.jasypt.iv.NoIvGenerator
+    property:
+      # 算法识别前缀(当算法发现配置文件中的值以这前缀开始，后缀结尾时，会使用指定算法解密)
+      prefix: ENC(
+      # 算法识别后缀
+      suffix: )
+
+#MinIO对象存储，文件服务器
+minio:
+  endpoint: http://172.16.29.17:9001
+  accessKey: exMYNZIl9mKJZWxN79HZ
+  secretKey: iPrpcnsDn5k0zzd8HepbgMaYtn2H6hqURfPvZDOm
+  bucketName: file-collect
+
+## 消息队列可能的各种消息体key,用StrPool.COMMA(,)分割
+message:
+  body:
+    ## 修改前的值
+    prevalue: before
+    ## 修改后的值
+    postvalue: after
+    ## 采集的表
+    collectTable: table
+    ## 动作
+    operation: op
+    ## 动作的代码
+    insertOp: c
+    updateOp: u
+    deleteOp: d
+    manageOp: management
+  sql:
+    ## sql模板的路径
+    path: D:\sql.properties
+    ## sql插入的后缀
+    insertSuf: insert
+    ## sql更新的后缀
+    updateSuf: update
+    ## sql删除的后缀
+    deleteSuf: delete
+    ## sql治理的后缀
+    manageSuf: management
+
+file-collect:
+  structure-type: json
+
+xds:
+  switch-on: true
+

@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController()
 @RequestMapping("/health")
 public class HealthController {
+
+
     private static final String OK = "ok";
+
 
     /**
      * 健康检查

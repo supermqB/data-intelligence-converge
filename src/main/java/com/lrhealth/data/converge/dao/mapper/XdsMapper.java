@@ -26,5 +26,5 @@ public interface XdsMapper extends BaseMapper<Xds> {
      * @param wrapper 动态查询条件
      * @return 分页对象列表
      */
-    IPage<Xds> selectByPage(IPage<Xds> page, @Param(Constants.WRAPPER) Wrapper<Xds> wrapper);
+//    IPage<Xds> selectByPage(IPage<Xds> page, @Param(Constants.WRAPPER) Wrapper<Xds> wrapper);
 }

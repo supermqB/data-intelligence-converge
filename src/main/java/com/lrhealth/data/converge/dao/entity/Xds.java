@@ -131,7 +131,7 @@ public class Xds implements Serializable {
     /**
      * ODS数据库落库数据条数
      */
-    private Integer dataCount;
+    private Long dataCount;
     /**
      * 创建人
      */
@@ -155,4 +155,23 @@ public class Xds implements Serializable {
      */
     private Integer delFlag;
 
+    private Long dataSize;
+
+    /**
+     * 平台数据源id
+     */
+    private Integer dsConfigId;
+
+    /**
+     * 汇聚任务id
+     */
+    private Integer convTaskId;
+
+    private Long xdsId;
+
+    /**
+     * 采集类型
+     * 1-单次自定义采集 2-增量采集 3-全量采集
+     */
+    private Integer colType;
 }
