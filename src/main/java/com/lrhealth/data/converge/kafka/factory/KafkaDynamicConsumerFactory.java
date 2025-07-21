@@ -35,6 +35,7 @@ public class KafkaDynamicConsumerFactory {
         consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         // 信任所有类型以反序列化
+        consumerProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false"); // 禁用自动提交
         consumerProperties.put("spring.json.trusted.packages", "*");
         // 新建消费者
         KafkaConsumer<K, V> consumer = new KafkaConsumer<>(consumerProperties);

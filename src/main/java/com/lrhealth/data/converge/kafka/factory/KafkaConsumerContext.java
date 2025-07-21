@@ -102,6 +102,7 @@ public class KafkaConsumerContext {
 //            }
             // 使用多线程处理整理后的表
             topicBodyMap.entrySet().stream().parallel().forEach(map -> queueService.messageQueueHandle(topicKey, map.getValue()));
+            consumer.commitSync();
         }, 0, 30, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理
         scheduleMap.put(topicKey, future);
@@ -149,6 +150,7 @@ public class KafkaConsumerContext {
                         log.error("插入队列失败: {}", e.getMessage());
                     }
                 }
+                consumer.commitSync();
             } catch (Exception e) {
                 log.error("处理 Kafka 消息时发生异常: {}", e.getMessage(), e);
             }
@@ -199,6 +201,7 @@ public class KafkaConsumerContext {
                         log.error("插入队列失败: {}", e.getMessage());
                     }
                 }
+                consumer.commitSync();
             } catch (Exception e) {
                 log.error("处理 Kafka 消息时发生异常: {}", e.getMessage(), e);
             }
