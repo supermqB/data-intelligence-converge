@@ -37,7 +37,7 @@ public class ConvFileCollect implements Serializable {
 
     private String fileSuffix;
 
-    private String fileStorageMode;
+    private Integer fileStorageMode;
 
     /**
      * 0：全量，文件夹下的所有文件，1：增量，新增文件

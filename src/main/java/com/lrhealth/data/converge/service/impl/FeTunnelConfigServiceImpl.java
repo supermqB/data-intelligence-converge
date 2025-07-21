@@ -201,10 +201,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         fileCollectInfoDto.setFileModeCollectDir(fileCollect.getFileModeCollectDir());
         // 文件的采集范围
         fileCollectInfoDto.setFileCollectRange(fileCollect.getFileCollectRange());
-        fileCollectInfoDto.setFileStorageMode(Integer.valueOf(fileCollect.getFileStorageMode()));
+        fileCollectInfoDto.setFileStorageMode(fileCollect.getFileStorageMode());
         fileCollectInfoDto.setStructuredDataFlag(fileCollect.getStructuredDataFlag());
         List<String> fileSuffixList = new ArrayList<>();
-        Integer fileStorageMode = Integer.valueOf(fileCollect.getFileStorageMode());
+        Integer fileStorageMode = fileCollect.getFileStorageMode();
         FileStorageTypeEnum type = FileStorageTypeEnum.of(fileStorageMode);
         switch (Objects.requireNonNull(type)) {
             case DATABASE:
