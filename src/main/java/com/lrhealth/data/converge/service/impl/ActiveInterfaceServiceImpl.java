@@ -1,6 +1,5 @@
 package com.lrhealth.data.converge.service.impl;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharPool;
 import cn.hutool.core.text.StrPool;
 import com.alibaba.fastjson.JSONObject;
@@ -9,6 +8,7 @@ import com.lrhealth.data.converge.common.db.DbConnection;
 import com.lrhealth.data.converge.common.db.DbConnectionManager;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
+import com.lrhealth.data.converge.common.util.db.DbOperateUtils;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
@@ -26,8 +26,8 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.sql.Connection;
-import java.sql.Statement;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 
@@ -97,12 +97,15 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
         //根据字段列表，组装insert语句
         String insertSql = assemblyInsertSql(tableColumns, table, values);
         log.info("接口采集拼接的最终insertSql={}", insertSql);
-        interfaceDataSave(datasourceConfig, insertSql);
-
+        try {
+            //保存数据并，合并小文件。
+            interfaceDataSave(table, datasourceConfig, insertSql);
+        } catch (Exception e) {
+            log.error("接口采集数据保存失败：{}", e.getMessage());
+        }
     }
 
-    private void interfaceDataSave(ConvDsConfig datasourceConfig, String insertSql) {
-        // 获取连接
+    private void interfaceDataSave(String table, ConvDsConfig datasourceConfig, String insertSql) throws Exception {
         DbConnection connection = DbConnection.builder()
                 .dbUrl(datasourceConfig.getDsUrl())
                 .dbUserName(datasourceConfig.getDsUsername())
@@ -110,11 +113,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
                 .dbDriver(datasourceConfig.getDsDriverName())
                 .build();
         Connection conn = dbConnectionManager.getConnection(connection);
-        try (Statement stat = conn.createStatement()) {
-            stat.execute(insertSql);
-        } catch (Exception e) {
-            log.error("sql execute failed,error={}", e.getMessage());
-        }
+        DbOperateUtils.batchInsertHiveBySql(table, insertSql, conn, datasourceConfig.getDbIp(), true);
     }
 
     private String assemblyInsertSql(List<StdOriginalModelColumn> tableColumns, String table, List<String> dataList) {

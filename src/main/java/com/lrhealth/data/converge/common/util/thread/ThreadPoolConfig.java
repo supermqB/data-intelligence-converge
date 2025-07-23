@@ -19,6 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 public class ThreadPoolConfig
 {
+    public static final String  DATA_SINK_THREAD_POOL = "dataSinkThreadPool";
     // 核心线程池大小
     private int corePoolSize = 50;
 
@@ -63,4 +64,25 @@ public class ThreadPoolConfig
             }
         };
     }
+
+    @Bean(name = DATA_SINK_THREAD_POOL)
+    public ThreadPoolTaskExecutor dataSinkThreadPool() {
+        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+        //核心线程数量
+        threadPoolTaskExecutor.setCorePoolSize(24);
+        //最大线程数量
+        threadPoolTaskExecutor.setMaxPoolSize(48);
+        //队列中最大任务数
+        threadPoolTaskExecutor.setQueueCapacity(1024);
+        //线程名称前缀
+        threadPoolTaskExecutor.setThreadNamePrefix("dataSinkThreadPool-");
+        //拒绝策略
+        threadPoolTaskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        //线程空闲后最大存活时间
+        threadPoolTaskExecutor.setKeepAliveSeconds(10);
+        //初始化线程池
+        threadPoolTaskExecutor.initialize();
+        return threadPoolTaskExecutor;
+    }
+
 }
