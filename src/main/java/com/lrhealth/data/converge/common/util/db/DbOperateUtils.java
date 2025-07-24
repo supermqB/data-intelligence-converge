@@ -10,6 +10,24 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DbOperateUtils {
+    /**
+     * 批量插入数据到hive数据库,insertSql为拼接好的批量插入sql
+     * @param tableName
+     * @param insertSql
+     * @param connection
+     * @param dbType
+     * @param mergeFiles
+     * @throws Exception
+     */
+    public static void batchInsertHiveBySql(String tableName,String  insertSql, Connection connection,
+                                            String dbType,Boolean mergeFiles) throws Exception {
+        if ("hive".equals(dbType)) {
+            executeHiveBatchInsert(connection, tableName, insertSql, mergeFiles);
+        } else {
+            log.error("batchInsertHiveBySql executed but datasource type not support");
+            throw new Exception("batchInsertHiveBySql executed but datasource type not support");
+        }
+    }
     /***
      * 传入数据库连接信息，表名，字段名，json字符串，批量插入数据库
      * @param tableName
@@ -22,20 +40,17 @@ public class DbOperateUtils {
     public static void batchInsert(String tableName, List<FieldInfo> fields,
                                    JSONArray jsonArray, Connection connection,
                                    String dbType) throws Exception {
-
         if (jsonArray.isEmpty()) {
-            log.info(" DbOperateUtils execute but No data to insert");
+            log.error(" DbOperateUtils execute but No data to insert");
             return;
         }
-
-        String sql = buildInsertSql(tableName, fields);
         try {
-
             // Hive特殊处理
             if ("hive".equals(dbType)) {
                 executeHiveBatchInsert(connection, tableName, fields, jsonArray);
             } else {
                 // 其他数据库使用预编译语句
+                String sql = buildInsertSql(tableName, fields);
                 try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
                     for (int i = 0; i < jsonArray.size(); i++) {
                         JSONObject jsonObj = jsonArray.getJSONObject(i);
@@ -47,7 +62,7 @@ public class DbOperateUtils {
             }
 
         } catch (SQLException e) {
-            log.info(" DbOperateUtils batchInsert error:{}", e.getMessage());
+            log.error(" DbOperateUtils batchInsert error:{}", e.getMessage());
             throw new Exception("Batch insert failed: " + e.getMessage());
         }
     }
@@ -218,8 +233,17 @@ public class DbOperateUtils {
         String sql = String.format("INSERT INTO %s (%s) VALUES %s",
                 tableName, columns, valuesClause);
 
+        executeHiveBatchInsert(conn, tableName, sql,false);
+    }
+    private static void executeHiveBatchInsert(Connection conn, String tableName, String sql, Boolean mergeFiles) throws SQLException {
+        String mergeFile = String.format("alter table %s concatenate",
+                tableName);
         try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
+            //合并小文件
+            if(mergeFiles){
+                stmt.execute(mergeFile);
+            }
         }
     }
 }

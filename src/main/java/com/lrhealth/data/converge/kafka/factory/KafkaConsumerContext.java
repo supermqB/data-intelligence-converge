@@ -25,8 +25,11 @@ import java.util.concurrent.*;
 @Slf4j
 @Component
 public class KafkaConsumerContext {
+    @Resource
+    private Executor dataSinkThreadPool;
 
-    private KafkaConsumerContext(){}
+    private KafkaConsumerContext() {
+    }
 
     /**
      * 存放所有自己创建的Kafka消费者任务
@@ -60,7 +63,7 @@ public class KafkaConsumerContext {
     /**
      * 添加一个Kafka消费者任务
      *
-     * @param topicKey    消费者主题
+     * @param topicKey 消费者主题
      * @param consumer 消费者对象
      * @param <K>      消息键类型
      * @param <V>      消息值类型
@@ -205,7 +208,7 @@ public class KafkaConsumerContext {
             } catch (Exception e) {
                 log.error("处理 Kafka 消息时发生异常: {}", e.getMessage(), e);
             }
-        }, 0, 10, TimeUnit.SECONDS);
+        }, 0, 30, TimeUnit.SECONDS);
         scheduleMap.put(topicKey, future);
     }
 
@@ -216,13 +219,16 @@ public class KafkaConsumerContext {
         if (queue.isEmpty()) return;
         List<String> dataList = new ArrayList<>(queue);
         queue.clear();
-        try {
-            activeInterfaceService.activeInterfaceHandler(topicKey, dataList);
-            log.info("提交队列批次数量: {}", dataList.size());
-        } catch (Exception e) {
-            log.error("提交队列数据失败: {}", e.getMessage());
-        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                activeInterfaceService.activeInterfaceHandler(topicKey, dataList);
+                log.info("异步入库接口采集批次数量: {}", dataList.size());
+            } catch (Exception e) {
+                log.error("异步入库接口采集数据失败: {}", e.getMessage());
+            }
+        }, dataSinkThreadPool);
     }
+
     /**
      * 提交队列中的数据并清空
      */
@@ -230,12 +236,14 @@ public class KafkaConsumerContext {
         if (queue.isEmpty()) return;
         List<String> dataList = new ArrayList<>(queue);
         queue.clear();
-        try {
-            fileCollectService.fileDataHandler(topicKey, dataList);
-            log.info("提交队列批次数量: {}", dataList.size());
-        } catch (Exception e) {
-            log.error("提交队列数据失败: {}", e.getMessage());
-        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                fileCollectService.fileDataHandler(topicKey, dataList);
+                log.info("异步提交文件采集批次数量: {}", dataList.size());
+            } catch (Exception e) {
+                log.error("异步提交文件采集数据失败: {}", e.getMessage());
+            }
+        }, dataSinkThreadPool);
     }
 
 
