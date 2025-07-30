@@ -258,6 +258,7 @@ public class FeNodeServiceImpl implements FeNodeService {
             if (resultInfoDto == null) {
                 continue;
             }
+            resultInfoDto.setTaskId(convTask.getId());
             this.saveOrUpdateInterface(resultInfoDto, convTask);
         }
     }
