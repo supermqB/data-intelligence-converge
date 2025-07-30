@@ -24,6 +24,10 @@ public class TunnelMessageDTO {
      * 管道名称
      */
     private String name;
+    /**
+     * 采集范围（读库的表名称）
+     */
+    private String collectRange;
 
     /**
      * 系统编码
