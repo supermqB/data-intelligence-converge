@@ -113,7 +113,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
                 .dbDriver(datasourceConfig.getDsDriverName())
                 .build();
         Connection conn = dbConnectionManager.getConnection(connection);
-        DbOperateUtils.batchInsertHiveBySql(table, insertSql, conn, datasourceConfig.getDbIp(), true);
+        DbOperateUtils.batchInsertHiveBySql(table, insertSql, conn, datasourceConfig.getDbType(), false);
     }
 
     private String assemblyInsertSql(List<StdOriginalModelColumn> tableColumns, String table, List<String> dataList) {

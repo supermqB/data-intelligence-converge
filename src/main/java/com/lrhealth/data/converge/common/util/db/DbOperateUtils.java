@@ -21,7 +21,7 @@ public class DbOperateUtils {
      */
     public static void batchInsertHiveBySql(String tableName,String  insertSql, Connection connection,
                                             String dbType,Boolean mergeFiles) throws Exception {
-        if ("hive".equals(dbType)) {
+        if ("hive".equalsIgnoreCase(dbType)) {
             executeHiveBatchInsert(connection, tableName, insertSql, mergeFiles);
         } else {
             log.error("batchInsertHiveBySql executed but datasource type not support");
