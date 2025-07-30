@@ -213,6 +213,7 @@ public class FeNodeServiceImpl implements FeNodeService {
             return taskResult;
         }
         BeanUtils.copyProperties(resultInfoDto, convTaskResultInterface);
+        convTaskResultInterface.setUpdateTime(LocalDateTime.now());
         convTaskResultInterfaceService.saveOrUpdate(convTaskResultInterface, new LambdaQueryWrapper<ConvTaskResultInterface>()
                 .eq(ConvTaskResultInterface::getTaskId, convTask.getId()));
         return taskResult;
@@ -257,7 +258,7 @@ public class FeNodeServiceImpl implements FeNodeService {
             if (resultInfoDto == null) {
                 continue;
             }
-            ConvTaskResultInterface result = this.saveOrUpdateInterface(resultInfoDto, convTask);
+            this.saveOrUpdateInterface(resultInfoDto, convTask);
         }
     }
 

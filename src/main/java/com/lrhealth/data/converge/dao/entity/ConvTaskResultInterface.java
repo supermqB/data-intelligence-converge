@@ -41,11 +41,21 @@ public class ConvTaskResultInterface implements Serializable {
 
     private String createBy;
 
-    private String createTime;
+    /**
+     * 创建时间
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
 
     private String updateBy;
 
-    private String updateTime;
+    /**
+     * 更新时间
+     */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 
+    @TableField(fill = FieldFill.INSERT)
+    @TableLogic
     private Integer delFlag;
 }
