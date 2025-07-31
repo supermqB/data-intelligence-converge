@@ -53,6 +53,6 @@ public class ConvFileCollect implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     @TableLogic
     private Integer delFlag;
-
+    private String extractExpression;
 
 }
