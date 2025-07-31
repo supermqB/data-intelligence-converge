@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+
+    environment {
+        PROJECT_CODE = 'lr-rd-rdcp-data-converge'
+        PROJECT_NAME = '数智健康平台汇聚程序'
+        DEPLOY_IP = '172.16.29.51'
+        BUILD_REPO_DIR = '/mnt/data/distribution/data-intelligence/converge/build'
+    }
+
+    stages {
+
+        stage('build') {
+            steps {
+                echo "packaging ..."
+                script {
+                    begin = new Date()
+                    DATE_STR = begin.format("yyyyMMdd")
+                    TAG = 0 + "." + begin.format("M") + ".${BUILD_NUMBER}." + begin.format("yyyyMMdd")
+                    echo "build tag: ${TAG}"
+                    sh """
+                        source /etc/profile
+                        mvn clean -U package -DskipTests
+                        cp ./target/${PROJECT_CODE}.jar ${BUILD_REPO_DIR}/latest/
+                        mkdir -p ${BUILD_REPO_DIR}/${DATE_STR}
+                        cp ./target/${PROJECT_CODE}.jar ${BUILD_REPO_DIR}/${DATE_STR}/${PROJECT_CODE}-${TAG}.jar
+                    """
+                }
+            }
+        }
+
+        stage('deploy') {
+            steps {
+                echo "deploying to ${DEPLOY_IP} ..."
+                sh """
+                    scp -P 29022 ./target/${PROJECT_CODE}.jar root@${DEPLOY_IP}:/data/app/lr-rd-rdcp-data-converge/
+                    ssh -p 29022 root@${DEPLOY_IP} "source /etc/profile;cd /data/app/lr-rd-rdcp-data-converge;./startup.sh restart"
+                """
+            }
+        }
+    }
+}
