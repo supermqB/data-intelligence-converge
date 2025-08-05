@@ -62,9 +62,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
 
     @Value("${file-collect.structure-type}")
     private String structureTypeStr;
+
     @Override
     public void kafkaUpdateFepStatus(String key, String msgBody) {
-        if (CharSequenceUtil.isBlank(key)) return;
+        if (CharSequenceUtil.isBlank(key))
+            return;
         log.info("kafkaUpdateFepStatus,key={}", key);
         switch (key) {
             case "tunnel":
@@ -77,7 +79,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                         .eq(ConvTask::getFedTaskId, taskInfoKafkaDto.getTaskId())
                         .eq(ConvTask::getTunnelId, taskInfoKafkaDto.getTunnelId()), false);
                 ConvTunnel tunnel = tunnelService.getById(taskInfoKafkaDto.getTunnelId());
-                //更新 task
+                // 更新 task
                 ConvTask convTask = feNodeService.saveOrUpdateTask(taskInfoKafkaDto, tunnel, oldTask);
                 convergeService.sendDsKafka(convTask, oldTask, tunnel.getId());
                 break;
@@ -86,7 +88,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 ConvTask task = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
                         .eq(ConvTask::getFedTaskId, resultViewInfoDto.getTaskId())
                         .eq(ConvTask::getTunnelId, resultViewInfoDto.getTunnelId()));
-                feNodeService.updateTaskResultView(DownloadFileTask.taskDeque, Lists.newArrayList(resultViewInfoDto), task);
+                feNodeService.updateTaskResultView(DownloadFileTask.taskDeque, Lists.newArrayList(resultViewInfoDto),
+                        task);
                 break;
             case "taskResultInterface":
                 ResultInterfaceDTO resultInterfaceDTO = JSON.parseObject(msgBody, ResultInterfaceDTO.class);
@@ -100,7 +103,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 ConvTask fileTask = taskService.getOne(new LambdaQueryWrapper<ConvTask>()
                         .eq(ConvTask::getFedTaskId, resultFileInfoDto.getTaskId())
                         .eq(ConvTask::getTunnelId, resultFileInfoDto.getTunnelId()));
-                feNodeService.updateTaskResultFile(DownloadFileTask.taskDeque, Lists.newArrayList(resultFileInfoDto), fileTask);
+                feNodeService.updateTaskResultFile(DownloadFileTask.taskDeque, Lists.newArrayList(resultFileInfoDto),
+                        fileTask);
                 break;
             case "taskLog":
                 TaskLogDto taskLogDto = JSON.parseObject(msgBody, TaskLogDto.class);
@@ -142,8 +146,9 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
     private void tunnelInterfaceMessage(ConvTunnel tunnel, TunnelMessageDTO tunnelMessageDTO) {
-        ConvActiveInterfaceConfig config =  activeInterfaceConfigService.getOne(new LambdaQueryWrapper<ConvActiveInterfaceConfig>()
-                .eq(ConvActiveInterfaceConfig::getTunnelId, tunnel.getId()));
+        ConvActiveInterfaceConfig config = activeInterfaceConfigService
+                .getOne(new LambdaQueryWrapper<ConvActiveInterfaceConfig>()
+                        .eq(ConvActiveInterfaceConfig::getTunnelId, tunnel.getId()));
         tunnelMessageDTO.setActiveInterfaceDTO(ActiveInterfaceDTO.builder().requestBody(config.getRequestBody())
                 .authentication(config.getAuthentication())
                 .requestMethod(config.getRequestMethod())
@@ -192,8 +197,9 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
     private void tunnelFileMessage(ConvTunnel tunnel, TunnelMessageDTO tunnelMessageDTO) {
-        ConvFileCollect fileCollect = fileCollectService.getOne(new LambdaQueryWrapper<ConvFileCollect>().eq(ConvFileCollect::getTunnelId, tunnel.getId()));
-        if(ObjectUtil.isNull(fileCollect)){
+        ConvFileCollect fileCollect = fileCollectService
+                .getOne(new LambdaQueryWrapper<ConvFileCollect>().eq(ConvFileCollect::getTunnelId, tunnel.getId()));
+        if (ObjectUtil.isNull(fileCollect)) {
             return;
         }
         FileCollectInfoDto fileCollectInfoDto = new FileCollectInfoDto();
@@ -223,19 +229,18 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         tunnelMessageDTO.setFileCollectInfoDto(fileCollectInfoDto);
     }
 
-
     private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, String writeDbType) {
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
 
         // 采集配置
         List<ConvCollectField> collectFieldList = collectFieldService.getTunnelTableConfigs(tunnel.getId());
-        for (ConvCollectField collectField : collectFieldList){
+        for (ConvCollectField collectField : collectFieldList) {
             TableInfoDto tableInfoDto = new TableInfoDto();
             if ("HDFS".equals(writeDbType)) {
                 // 设置hdfs的一些配置
                 setHdfsCollectConfig(collectField, tableInfoDto);
-            }else {
+            } else {
                 tableInfoDto.setWriterColumns(collectField.getColumnField());
             }
             tableInfoDto.setTableName(collectField.getTableName());
@@ -253,19 +258,20 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         jdbcInfoDto.setTableInfoDtoList(tableInfoDtoList);
     }
 
-    private List<IncrColumnDTO> getIncrConfigList(String conditionField, Long tunnelId, String tableName){
+    private List<IncrColumnDTO> getIncrConfigList(String conditionField, Long tunnelId, String tableName) {
         List<IncrColumnDTO> incrConfigList = new ArrayList<>();
         String[] incrFields = conditionField.split(",");
-        for (String incrField : incrFields){
+        for (String incrField : incrFields) {
             IncrColumnDTO incrConfig = getIncrConfig(tunnelId, incrField, tableName);
             incrConfigList.add(incrConfig);
         }
         return incrConfigList;
     }
 
-    private void setHdfsCollectConfig(ConvCollectField collectField, TableInfoDto tableInfoDto){
+    private void setHdfsCollectConfig(ConvCollectField collectField, TableInfoDto tableInfoDto) {
         // 获取原始模型
-        List<StdOriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(), collectField.getSystemCode());
+        List<StdOriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(),
+                collectField.getSystemCode());
         Long modelId = modelColumns.get(0).getModelId();
         StdOriginalModel stdModel = odsModelService.getModel(modelId);
         // 设置hdfs写入路径
@@ -275,10 +281,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
 
         // 查询其他hive配置
         ModelConfig modelConfig = modelConfigService.getModelConfig(modelId);
-        if(ObjectUtil.isNotNull(modelConfig)){
+        if (ObjectUtil.isNotNull(modelConfig)) {
             tableInfoDto.setHiveFileType(modelConfig.getTableType());
             DbConfigColumnDTO dto = JSON.parseObject(modelConfig.getDbConfig(), DbConfigColumnDTO.class);
-            tableInfoDto.setHivePartitionColumn(CollUtil.isEmpty(dto.getPartitionKey()) ? null : dto.getPartitionKey().get(0));
+            tableInfoDto.setHivePartitionColumn(
+                    CollUtil.isEmpty(dto.getPartitionKey()) ? null : dto.getPartitionKey().get(0));
         }
     }
 
@@ -297,7 +304,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                     .collect(Collectors.toList());
         }
         StringBuilder sb = new StringBuilder();
-        //dataType=1为采集标准数据 write全部转换为varchar
+        // dataType=1为采集标准数据 write全部转换为varchar
         for (StdOriginalModelColumn modelColumn : modelColumnList) {
             String dataType = transformDataType(modelColumn.getFieldType());
             sb.append("{\"name\":\"").append(modelColumn.getNameEn())
@@ -311,9 +318,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 .concat("\",\"type\":\"" + "BIGINT" + "\"}")
                 .concat(",\n")
                 .concat("{\"name\":\"" + "load_time")
-                .concat("\",\"type\":\"" + "TIMESTAMP"  + "\"}");
+                .concat("\",\"type\":\"" + "TIMESTAMP" + "\"}");
     }
 
+    // @TODO, 根据业务元数据类型转换。
     private String transformDataType(String fieldType) {
         fieldType = fieldType.toLowerCase();
         String transformStr;
@@ -351,10 +359,9 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 transformStr = "FLOAT";
                 break;
             default:
-                if (fieldType.startsWith("timestamp")){
+                if (fieldType.startsWith("timestamp")) {
                     transformStr = "TIMESTAMP";
-                }
-                else {
+                } else {
                     transformStr = "STRING";
                 }
                 break;
@@ -362,15 +369,14 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         return transformStr.toUpperCase();
     }
 
-
     private IncrColumnDTO getIncrConfig(Long tunnelId, String column, String tableName) {
         ConvCollectIncrTime incrTime = incrTimeService.getOne(
                 new LambdaQueryWrapper<ConvCollectIncrTime>()
-                .eq(ConvCollectIncrTime::getTunnelId, tunnelId)
-                .eq(ConvCollectIncrTime::getIncrField, column)
-                .eq(ConvCollectIncrTime::getTableName, tableName));
-        if (ObjectUtil.isEmpty(incrTime)){
-            log.error("管道{}-表{}-字段{}没有增量配置",tunnelId, tableName, column);
+                        .eq(ConvCollectIncrTime::getTunnelId, tunnelId)
+                        .eq(ConvCollectIncrTime::getIncrField, column)
+                        .eq(ConvCollectIncrTime::getTableName, tableName));
+        if (ObjectUtil.isEmpty(incrTime)) {
+            log.error("管道{}-表{}-字段{}没有增量配置", tunnelId, tableName, column);
             throw new RuntimeException();
         }
         IncrColumnDTO incrColumnDTO = IncrColumnDTO.builder()
@@ -380,11 +386,13 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 .build();
         // 数字
         if (incrColumnDTO.getIncrType() == 1) {
-            incrColumnDTO.setSeqStartPoint(CharSequenceUtil.isBlank(incrTime.getLatestSeq()) ?
-                    incrTime.getSeqStartPoint() : incrTime.getLatestSeq());
+            incrColumnDTO
+                    .setSeqStartPoint(CharSequenceUtil.isBlank(incrTime.getLatestSeq()) ? incrTime.getSeqStartPoint()
+                            : incrTime.getLatestSeq());
         } else {
-           incrColumnDTO.setTimeStartPoint(CharSequenceUtil.isBlank(incrTime.getLatestTime()) ?
-                   incrTime.getTimeStartPoint() : incrTime.getLatestTime());
+            incrColumnDTO
+                    .setTimeStartPoint(CharSequenceUtil.isBlank(incrTime.getLatestTime()) ? incrTime.getTimeStartPoint()
+                            : incrTime.getLatestTime());
         }
         incrColumnDTO.setIncrMaxSql(incrTime.getMaxSql());
         return incrColumnDTO;
