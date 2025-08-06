@@ -44,6 +44,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     @Resource
     private ConvFileCollectService fileCollectService;
     @Resource
+    private ConvFieldTypeService fieldTypeService;
+    @Resource
     private ConvActiveInterfaceConfigService activeInterfaceConfigService;
     @Resource
     private ConvergeService convergeService;
@@ -229,6 +231,13 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         tunnelMessageDTO.setFileCollectInfoDto(fileCollectInfoDto);
     }
 
+    private Map<String, String> getTargetFieldTypeMapBySource(ConvTunnel tunnel) {
+        Integer readerSrcId = tunnel.getReaderDatasourceId();
+        String srcDbType = odsDatasourceConfigService.getDbType(readerSrcId);
+
+        return fieldTypeService.getFieldTypeMappingBySrc(srcDbType, "Hive");
+    }
+
     private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, String writeDbType) {
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
@@ -239,7 +248,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             TableInfoDto tableInfoDto = new TableInfoDto();
             if ("HDFS".equals(writeDbType)) {
                 // 设置hdfs的一些配置
-                setHdfsCollectConfig(collectField, tableInfoDto);
+                setHdfsCollectConfig(collectField, tableInfoDto, getTargetFieldTypeMapBySource(tunnel));
             } else {
                 tableInfoDto.setWriterColumns(collectField.getColumnField());
             }
@@ -268,7 +277,8 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         return incrConfigList;
     }
 
-    private void setHdfsCollectConfig(ConvCollectField collectField, TableInfoDto tableInfoDto) {
+    private void setHdfsCollectConfig(ConvCollectField collectField, TableInfoDto tableInfoDto,
+            Map<String, String> fieldTypeMap) {
         // 获取原始模型
         List<StdOriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(),
                 collectField.getSystemCode());
@@ -277,7 +287,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 设置hdfs写入路径
         tableInfoDto.setHdfsPath(stdModel.getStoragePath());
         // 设置datax写入字段格式
-        tableInfoDto.setWriterColumns(doGetHiveColumns(modelColumns, collectField.getColumnField()));
+        tableInfoDto.setWriterColumns(doGetHiveColumns(modelColumns, collectField.getColumnField(), fieldTypeMap));
 
         // 查询其他hive配置
         ModelConfig modelConfig = modelConfigService.getModelConfig(modelId);
@@ -289,10 +299,20 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         }
     }
 
+    private String getBeforeFirstLeftParenthesisWithRegex(String str) {
+        if (str == null || str.isEmpty()) {
+            return "";
+        }
+        int index = str.indexOf('(');
+
+        return index == -1 ? str.toLowerCase() : str.substring(0, index).trim().toLowerCase(); // 去除截取结果末尾的空格
+    }
+
     /**
      * 创建hive库columns映射关系
      */
-    private String doGetHiveColumns(List<StdOriginalModelColumn> modelColumnList, String columnField) {
+    private String doGetHiveColumns(List<StdOriginalModelColumn> modelColumnList, String columnField,
+            Map<String, String> fieldTypeMap) {
         if (CollUtil.isEmpty(modelColumnList)) {
             return null;
         }
@@ -306,7 +326,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         StringBuilder sb = new StringBuilder();
         // dataType=1为采集标准数据 write全部转换为varchar
         for (StdOriginalModelColumn modelColumn : modelColumnList) {
-            String dataType = transformDataType(modelColumn.getFieldType());
+            String fieldTypeInSrc = getBeforeFirstLeftParenthesisWithRegex(modelColumn.getFieldType());
+            String fieldTypeInHiveMapping = fieldTypeMap.get(fieldTypeInSrc);
+            String dataType = transformDataType(
+                    fieldTypeInHiveMapping == null ? fieldTypeInSrc : fieldTypeInHiveMapping);
             sb.append("{\"name\":\"").append(modelColumn.getNameEn())
                     .append("\",\"type\":\"").append(dataType)
                     .append("\"}").append(",\n");
@@ -322,7 +345,30 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
     }
 
     // @TODO, 根据业务元数据类型转换。
+    /*
+     * public enum SupportHiveDataType {
+     * TINYINT,
+     * SMALLINT,
+     * INT,
+     * BIGINT,
+     * FLOAT,
+     * DOUBLE,
+     * 
+     * TIMESTAMP,
+     * DATE,
+     * 
+     * STRING,
+     * VARCHAR,
+     * CHAR,
+     * 
+     * BOOLEAN
+     * }
+     * 
+     */
     private String transformDataType(String fieldType) {
+        if (fieldType == null) {
+            return "STRING";
+        }
         fieldType = fieldType.toLowerCase();
         String transformStr;
         switch (fieldType) {
@@ -362,7 +408,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 if (fieldType.startsWith("timestamp")) {
                     transformStr = "TIMESTAMP";
                 } else {
-                    transformStr = "STRING";
+                    transformStr = fieldType;
                 }
                 break;
         }

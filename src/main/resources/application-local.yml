@@ -1,10 +1,4 @@
 spring:
-  #数据冶理&标准使用的redis配置
-  redis:
-    host: 172.16.29.73
-    port: 6379
-    password: lr@2023
-
   datasource:
     rdcp-ext:
       type: com.zaxxer.hikari.HikariDataSource
@@ -20,6 +14,8 @@ spring:
     topic:
       xds: gove-xds-${spring.profiles.active}
       dolphinScheduler-task: dolphin-schedule-task-${spring.profiles.active}
+    consumer:
+      group-id: local-profile-12
 
 message:
   sql:
