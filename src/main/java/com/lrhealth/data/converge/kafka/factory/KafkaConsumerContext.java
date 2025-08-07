@@ -97,13 +97,6 @@ public class KafkaConsumerContext {
                 log.info("receive kafka data, topic=[{}], value=[{}]", topicName, msgBody);
                 topicBodyMap.computeIfAbsent(topicName, k -> new ArrayList<>()).add(msgBody);
             }
-            // for (Map.Entry<String, List<String>> map : topicBodyMap.entrySet()) {
-            // try {
-            // queueService.messageQueueHandle(topicKey, map.getValue());
-            // } catch (Exception e) {
-            // log.error(ExceptionUtils.getStackTrace(e));
-            // }
-            // }
             // 使用多线程处理整理后的表
             topicBodyMap.entrySet().stream().parallel()
                     .forEach(map -> queueService.messageQueueHandle(topicKey, map.getValue()));

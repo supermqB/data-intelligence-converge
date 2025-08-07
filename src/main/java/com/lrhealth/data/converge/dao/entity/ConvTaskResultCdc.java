@@ -45,22 +45,22 @@ public class ConvTaskResultCdc implements Serializable {
     /**
      * 记录条数
      */
-    private Integer dataCount;
+    private Long dataCount;
 
     /**
      * 新增条数
      */
-    private Integer addCount;
+    private Long addCount;
 
     /**
      * 删除条数
      */
-    private Integer deleteCount;
+    private Long deleteCount;
 
     /**
      * 更新条数
      */
-    private Integer updateCount;
+    private Long updateCount;
 
     private String flinkJobId;
 

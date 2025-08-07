@@ -17,21 +17,22 @@ import java.util.Properties;
 @Component
 public class KafkaDynamicConsumerFactory {
 
-
     /**
      * 创建消费者
-     * @param topic    订阅主题
-     * @param groupId  消费者组
-     * @param broker   kafka-broker地址
-     * @return         消费者对象
+     * 
+     * @param topic   订阅主题
+     * @param groupId 消费者组
+     * @param broker  kafka-broker地址
+     * @return 消费者对象
      */
-    public <K, V> KafkaConsumer<K, V> createConsumer(String topic, String groupId, String broker){
+    public <K, V> KafkaConsumer<K, V> createConsumer(String topic, String groupId, String broker) {
         Properties consumerProperties = new Properties();
         consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, broker);
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         consumerProperties.put("max.poll.records", 1000);
         consumerProperties.put("fetch.max.bytes", 128 * 1024 * 1024);
         consumerProperties.put("max.partition.fetch.bytes", 2 * 1024 * 1024);
+        consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest"); // 从最早开始消费
         consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         // 信任所有类型以反序列化
@@ -44,7 +45,7 @@ public class KafkaDynamicConsumerFactory {
         return consumer;
     }
 
-    public void cancelConsumer(String broker, String topic){
+    public void cancelConsumer(String broker, String topic) {
         Properties properties = new Properties();
         properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, broker);
         AdminClient adminClient = AdminClient.create(properties);
