@@ -1,11 +1,8 @@
 package com.lrhealth.data.converge.service;
 
-import com.lrhealth.data.converge.dao.entity.ConvTunnel;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
 
 /**
  * @author gaoshuai

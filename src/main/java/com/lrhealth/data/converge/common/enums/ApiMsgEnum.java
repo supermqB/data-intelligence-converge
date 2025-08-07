@@ -50,7 +50,7 @@ public enum ApiMsgEnum implements MsgEnum {
     }
 
     public void setMessage(String errorMsg) {
-        this.message = message;
+        this.message = errorMsg;
     }
 
     public static Map<String, String> getAll() {

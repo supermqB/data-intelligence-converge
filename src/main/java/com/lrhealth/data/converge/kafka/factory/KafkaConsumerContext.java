@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
-
 /**
  * @author jinmengyu
  * @date 2024-08-20
@@ -77,6 +76,7 @@ public class KafkaConsumerContext {
             // 每次执行拉取消息之前，先检查订阅者是否已被取消（如果订阅者不存在于订阅者列表中说明被取消了）
             // 因为Kafka消费者对象是非线程安全的，因此在这里把取消订阅的逻辑和拉取并处理消息的逻辑写在一起并放入定时器中，判断列表中是否存在消费者对象来确定是否取消任务
             if (!consumerMap.containsKey(topicKey)) {
+                log.info("kafka unsubscribe topic [{}]", topicKey);
                 // 取消订阅并关闭消费者
                 consumer.unsubscribe();
                 consumer.close();
@@ -86,6 +86,7 @@ public class KafkaConsumerContext {
                 log.info("删除定时任务: key={}", topicKey);
                 return;
             }
+            log.info("kafka polling topic [{}]", topicKey);
             // 拉取消息
             ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
             Map<String, List<String>> topicBodyMap = new HashMap<>();
@@ -96,15 +97,16 @@ public class KafkaConsumerContext {
                 log.info("receive kafka data, topic=[{}], value=[{}]", topicName, msgBody);
                 topicBodyMap.computeIfAbsent(topicName, k -> new ArrayList<>()).add(msgBody);
             }
-//            for (Map.Entry<String, List<String>> map : topicBodyMap.entrySet()) {
-//                try {
-//                    queueService.messageQueueHandle(topicKey, map.getValue());
-//                } catch (Exception e) {
-//                    log.error(ExceptionUtils.getStackTrace(e));
-//                }
-//            }
+            // for (Map.Entry<String, List<String>> map : topicBodyMap.entrySet()) {
+            // try {
+            // queueService.messageQueueHandle(topicKey, map.getValue());
+            // } catch (Exception e) {
+            // log.error(ExceptionUtils.getStackTrace(e));
+            // }
+            // }
             // 使用多线程处理整理后的表
-            topicBodyMap.entrySet().stream().parallel().forEach(map -> queueService.messageQueueHandle(topicKey, map.getValue()));
+            topicBodyMap.entrySet().stream().parallel()
+                    .forEach(map -> queueService.messageQueueHandle(topicKey, map.getValue()));
             consumer.commitSync();
         }, 0, 30, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理
@@ -161,7 +163,6 @@ public class KafkaConsumerContext {
         scheduleMap.put(topicKey, future);
     }
 
-
     public <K, V> void addFileCollectConsumerTask(String topicKey, KafkaConsumer<K, V> consumer) {
         // 存入消费者列表
         consumerMap.put(topicKey, consumer);
@@ -194,7 +195,8 @@ public class KafkaConsumerContext {
                 // 处理拉取到的消息
                 for (ConsumerRecord<K, V> record : records) {
                     String msgBody = (String) record.value();
-                    log.info("file collector receive kafka data, topic=[{}], count=[{}]", record.topic(), records.count());
+                    log.info("file collector receive kafka data, topic=[{}], count=[{}]", record.topic(),
+                            records.count());
                     try {
                         if (topicBodyQueue.size() == 1000) {
                             flushQueueData(topicKey, topicBodyQueue); // 触发处理并清空队列
@@ -216,7 +218,8 @@ public class KafkaConsumerContext {
      * 提交队列中的数据并清空
      */
     private void flushQueue(String topicKey, BlockingQueue<String> queue) {
-        if (queue.isEmpty()) return;
+        if (queue.isEmpty())
+            return;
         List<String> dataList = new ArrayList<>(queue);
         queue.clear();
         CompletableFuture.runAsync(() -> {
@@ -233,7 +236,8 @@ public class KafkaConsumerContext {
      * 提交队列中的数据并清空
      */
     private void flushQueueData(String topicKey, BlockingQueue<String> queue) {
-        if (queue.isEmpty()) return;
+        if (queue.isEmpty())
+            return;
         List<String> dataList = new ArrayList<>(queue);
         queue.clear();
         CompletableFuture.runAsync(() -> {
@@ -245,7 +249,6 @@ public class KafkaConsumerContext {
             }
         }, dataSinkThreadPool);
     }
-
 
     /**
      * 移除Kafka消费者定时任务并关闭消费者订阅

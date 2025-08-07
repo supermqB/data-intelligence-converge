@@ -89,7 +89,7 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
         in.close();
 
         Map<String, Object> map = JSONUtil.parseObj(body.toString());
-        Map<String, Object> resultMap = new HashMap(map.size());
+        Map<String, Object> resultMap = new HashMap<String, Object>(map.size());
         for (String key : map.keySet()) {
             Object val = map.get(key);
             if (map.get(key) instanceof String) {

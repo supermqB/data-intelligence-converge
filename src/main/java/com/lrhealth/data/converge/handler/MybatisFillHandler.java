@@ -9,12 +9,6 @@ import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Date;
 
-/**
- * @author zhaohui
- * @version 1.0
- * @description: TODO
- * @date 2022/8/9 9:56
- */
 @Component
 public class MybatisFillHandler implements MetaObjectHandler {
 
@@ -39,7 +33,7 @@ public class MybatisFillHandler implements MetaObjectHandler {
                 this.setFieldValByName("updateTime", LocalDateTime.now(), metaObject);
             }
         }
-        //处理delFlag
+        // 处理delFlag
         if (null != delFlag) {
             if (Integer.class == delFlag.getType()) {
                 this.setFieldValByName("delFlag", 0, metaObject);
@@ -62,4 +56,3 @@ public class MybatisFillHandler implements MetaObjectHandler {
     }
 
 }
-

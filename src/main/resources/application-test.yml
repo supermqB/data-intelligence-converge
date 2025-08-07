@@ -40,7 +40,7 @@ message:
     deleteOp: d
     manageOp: management
   sql:
-    path: /data/app/rdcp/lr-rd-rdcp-data-converge/sql.properties
+    path: /data/app/lr-rd-rdcp-data-converge/sql.properties
     ## sql插入的后缀
     insertSuf: insert
     ## sql更新的后缀

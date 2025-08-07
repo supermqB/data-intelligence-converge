@@ -6,7 +6,7 @@ package com.lrhealth.data.converge.common.enums;
  * @param <E>
  * @author admin
  */
-public interface MsgEnum<E extends Enum<E>> {
+public interface MsgEnum {
     String getCode();
 
     void setCode(String code);

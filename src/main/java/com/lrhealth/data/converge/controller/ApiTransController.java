@@ -21,6 +21,7 @@ import java.util.Map;
 
 /**
  * 接口传输
+ * 
  * @author zhuanning
  * @date 2024-07-27
  */
@@ -36,27 +37,27 @@ public class ApiTransController {
     @Resource
     private ConvTunnelService convTunnelService;
 
-
     @PostMapping("/upload")
-    public ResultBase upload(HttpServletRequest request, @RequestBody Map<String,Object> paramMap){
+    public ResultBase upload(HttpServletRequest request, @RequestBody Map<String, Object> paramMap) {
         String token = request.getHeader("token");
-        if (!TokenUtil.validateToken(token)){
+        if (!TokenUtil.validateToken(token)) {
             return ResultBase.fail("token校验失败");
         }
         String tunnelId = TokenUtil.parseJwtSubject(token);
-        if (CharSequenceUtil.isEmpty(tunnelId)){
+        if (CharSequenceUtil.isEmpty(tunnelId)) {
             return ResultBase.fail("tunnelId不存在");
         }
         ConvTunnel convTunnel = convTunnelService.getTunnelWithoutDelFlag(Long.valueOf(tunnelId));
-        if (convTunnel == null){
+        if (convTunnel == null) {
             return ResultBase.fail("汇聚管道任务不存在!");
         }
         try {
             ConvTask convTask = convTaskService.createTask(convTunnel, false);
             boolean uploadFlag = apiTransService.upload(convTunnel, paramMap);
-            convTaskService.updateTaskStatus(convTask.getId(),uploadFlag ? TaskStatusEnum.DONE : TaskStatusEnum.FAILED);
+            convTaskService.updateTaskStatus(convTask.getId(),
+                    uploadFlag ? TaskStatusEnum.DONE : TaskStatusEnum.FAILED);
         } catch (Exception e) {
-            log.info("异常信息 {}",e.getMessage());
+            log.info("异常信息 {}", e.getMessage());
         }
         return ResultBase.success();
     }

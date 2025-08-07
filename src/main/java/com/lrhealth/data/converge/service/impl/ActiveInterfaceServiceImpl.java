@@ -1,7 +1,16 @@
 package com.lrhealth.data.converge.service.impl;
 
-import cn.hutool.core.text.CharPool;
-import cn.hutool.core.text.StrPool;
+import java.sql.Connection;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lrhealth.data.converge.common.db.DbConnection;
@@ -10,26 +19,24 @@ import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
 import com.lrhealth.data.converge.common.util.db.DbOperateUtils;
 import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
-import com.lrhealth.data.converge.dao.entity.*;
-import com.lrhealth.data.converge.dao.service.*;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
+import com.lrhealth.data.converge.dao.entity.ConvTask;
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.dao.entity.StdOriginalModelColumn;
+import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
+import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;
+import com.lrhealth.data.converge.dao.service.ConvTaskService;
+import com.lrhealth.data.converge.dao.service.ConvTunnelService;
+import com.lrhealth.data.converge.dao.service.StdOriginalModelColumnService;
 import com.lrhealth.data.converge.kafka.factory.KafkaConsumerContext;
 import com.lrhealth.data.converge.kafka.factory.KafkaDynamicConsumerFactory;
 import com.lrhealth.data.converge.model.dto.OriginalTableModelDto;
 import com.lrhealth.data.converge.service.ActiveInterfaceService;
+
+import cn.hutool.core.text.CharPool;
+import cn.hutool.core.text.StrPool;
 import io.jsonwebtoken.lang.Collections;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.sql.Connection;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
-
 
 @Service
 @Slf4j
@@ -70,7 +77,8 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
     }
 
     private void startConsumer(String broker, String topic, String topicKey) {
-        KafkaConsumer<Object, Object> consumer = dynamicConsumerFactory.createConsumer(topic, ACTIVE_INTERFACE_GROUP_ID, broker);
+        KafkaConsumer<Object, Object> consumer = dynamicConsumerFactory.createConsumer(topic, ACTIVE_INTERFACE_GROUP_ID,
+                broker);
         log.info("主动接口采集kafka消费者创建成功！, consumer={}", consumer);
         consumerContext.addActiveInterfaceConsumerTask(topicKey, consumer);
     }
@@ -82,23 +90,22 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
             return;
         }
 
-        long tunnelId = Long.parseLong(topicKey.substring(topicKey.
-                lastIndexOf(StrPool.DASHED) + 1));
+        long tunnelId = Long.parseLong(topicKey.substring(topicKey.lastIndexOf(StrPool.DASHED) + 1));
         ConvTunnel tunnel = tunnelService.getById(tunnelId);
-        //获取采集表，获取ods数据源id
+        // 获取采集表，获取ods数据源id
         String table = tunnel.getCollectRange();
         OriginalTableModelDto tableModelRel = originalTableService.getTableModelRel(table, tunnel.getSysCode());
         log.info("获取到接口采集的表字段信息:{}", tableModelRel);
-        List<StdOriginalModelColumn> tableColumns = stdOriginalModelColumnService.list
-                (new LambdaQueryWrapper<StdOriginalModelColumn>()
+        List<StdOriginalModelColumn> tableColumns = stdOriginalModelColumnService
+                .list(new LambdaQueryWrapper<StdOriginalModelColumn>()
                         .eq(StdOriginalModelColumn::getModelId, tableModelRel.getModelId())
                         .eq(StdOriginalModelColumn::getDelFlag, 0));
         ConvDsConfig datasourceConfig = dsConfigService.getById(tunnel.getWriterDatasourceId());
-        //根据字段列表，组装insert语句
+        // 根据字段列表，组装insert语句
         String insertSql = assemblyInsertSql(tableColumns, table, values);
         log.info("接口采集拼接的最终insertSql={}", insertSql);
         try {
-            //保存数据并，合并小文件。
+            // 保存数据并，合并小文件。
             interfaceDataSave(table, datasourceConfig, insertSql);
         } catch (Exception e) {
             log.error("接口采集数据保存失败：{}", e.getMessage());
@@ -120,7 +127,8 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
         String templateSql = "insert into %s (%s)  values %s";
         StringBuilder execSql = new StringBuilder();
         String fields = tableColumns.stream().map(StdOriginalModelColumn::getNameEn).collect(Collectors.joining(","));
-        List<JSONObject> data = dataList.stream().map(item -> JSONObject.parseObject(item, JSONObject.class)).collect(Collectors.toList());
+        List<JSONObject> data = dataList.stream().map(item -> JSONObject.parseObject(item, JSONObject.class))
+                .collect(Collectors.toList());
         for (JSONObject item : data) {
             StringBuilder value = new StringBuilder();
             value.append("(");
@@ -135,7 +143,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
             }
             value.deleteCharAt(value.length() - 1);
             value.append(")");
-            //校验字段和参数的个数是否一致
+            // 校验字段和参数的个数是否一致
             if (tableColumns.size() != value.toString().split(",").length) {
                 log.error("字段和参数个数不一致！:{}", value);
             } else {
@@ -154,7 +162,7 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
     @Override
     public void initInterfaceDataConsumer(ConvTunnel tunnel) {
         String topic = getTopic(tunnel);
-        //创建唯一的topic，启动消费者监听
+        // 创建唯一的topic，启动消费者监听
         String topicKey = TOPIC_KEY + topic;
         Integer status = tunnel.getStatus();
         switch (status) {

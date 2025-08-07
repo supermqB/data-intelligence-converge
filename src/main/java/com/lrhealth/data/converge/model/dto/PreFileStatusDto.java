@@ -4,12 +4,6 @@ import lombok.Data;
 
 import java.util.HashMap;
 
-/**
- * @author zhaohui
- * @version 1.0
- * @description: TODO
- * @date 2023/9/14 10:10
- */
 @Data
 public class PreFileStatusDto {
 
@@ -19,7 +13,7 @@ public class PreFileStatusDto {
 
     private String path;
 
-    private HashMap<String,Integer> partFileMap;
+    private HashMap<String, Integer> partFileMap;
 
     public PreFileStatusDto(String status, String oriFileName, String path, HashMap<String, Integer> partFileMap) {
         this.status = status;

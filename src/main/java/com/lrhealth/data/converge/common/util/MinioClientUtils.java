@@ -19,6 +19,7 @@ import java.io.OutputStream;
 
 /**
  * 对象存储MinIO客户端：管理桶、管理文件对象
+ * 
  * @author jinmengyu
  * @date 2024-03-27
  */
@@ -38,7 +39,7 @@ public class MinioClientUtils {
      */
     public String upload(MultipartFile file) {
         String originalFilename = file.getOriginalFilename();
-        if (CharSequenceUtil.isBlank(originalFilename)){
+        if (CharSequenceUtil.isBlank(originalFilename)) {
             throw new CommonException("文件名为空");
         }
         String fileName = IdUtil.randomUUID() + originalFilename.substring(originalFilename.lastIndexOf("."));
@@ -46,7 +47,7 @@ public class MinioClientUtils {
         try {
             PutObjectArgs objectArgs = PutObjectArgs.builder().bucket(prop.getBucketName()).object(objectName)
                     .stream(file.getInputStream(), file.getSize(), -1).contentType(file.getContentType()).build();
-            //文件名称相同会覆盖
+            // 文件名称相同会覆盖
             minioClient.putObject(objectArgs);
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,9 +56,9 @@ public class MinioClientUtils {
         return objectName;
     }
 
-
     /**
      * 文件下载
+     * 
      * @param fileName 文件名称
      */
     public boolean download(String objectStroagePath, String fileName, String fileStoragePath) {
@@ -65,8 +66,9 @@ public class MinioClientUtils {
         builder.bucket(prop.getBucketName());
         builder.object(objectStroagePath);
 
-        GetObjectArgs objectArgs = builder.build();
-        try {
+        GetObjectArgs objectArgs = builder.build(); // Create the file
+        File file = new File(fileStoragePath + fileName);
+        try (OutputStream outputStream = new FileOutputStream(file);) {
             GetObjectResponse response = minioClient.getObject(objectArgs);
 
             // Read the byte stream of data
@@ -78,24 +80,20 @@ public class MinioClientUtils {
             }
             fbaos.flush();
 
-            // Create the file
-            File file = new File(fileStoragePath + fileName);
             if (!file.exists()) {
                 String path = file.getParent();
                 File pathFile = new File(path);
-                if (!pathFile.exists()){
+                if (!pathFile.exists()) {
                     pathFile.mkdirs();
                 }
                 file.createNewFile();
             }
 
-            // Write the file
-            OutputStream outputStream = new FileOutputStream(file);
             outputStream.write(fbaos.toByteArray());
             outputStream.flush();
             fbaos.close();
 
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("文件[{}]下载失败: {}", fileName, ExceptionUtils.getStackTrace(e));
         }
         return true;

@@ -1,13 +1,9 @@
 package com.lrhealth.data.converge.dao.mapper;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Constants;
-import com.lrhealth.data.converge.dao.entity.Xds;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.lrhealth.data.converge.dao.entity.Xds;
 
 /**
  * <p>
@@ -26,5 +22,6 @@ public interface XdsMapper extends BaseMapper<Xds> {
      * @param wrapper 动态查询条件
      * @return 分页对象列表
      */
-//    IPage<Xds> selectByPage(IPage<Xds> page, @Param(Constants.WRAPPER) Wrapper<Xds> wrapper);
+    // IPage<Xds> selectByPage(IPage<Xds> page, @Param(Constants.WRAPPER)
+    // Wrapper<Xds> wrapper);
 }

@@ -19,5 +19,5 @@ spring:
 
 message:
   sql:
-    path: D:\sql.properties
+    path: /Users/yinwenbao/gitlab/lr-rd-rdcp-data-converge/script/sql.properties
 
