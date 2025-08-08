@@ -253,6 +253,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         String topicKey = tunnel.getId().toString() + CharPool.DASHED + topic;
         // 消费者启动
         startConsumer(kafkaBootStrap, topic, topicKey, CDC_GROUP_ID);
+        consumerContext.addTableMergeTask(tunnel);
     }
 
     @PostConstruct
@@ -312,8 +313,8 @@ public class MessageQueueServiceImpl implements MessageQueueService {
             OriginalTableModelDto tableModelRel, ConvDsConfig writerDs) {
         String sqlTemplate = getExecSql(tableModelRel);
         // 填充对应sql模板
-        return sqlValueFill(sqlTemplate, getValueMap(parseDtoList.get(0)), tableModelRel.getModelName(),
-                writerDs.getDbName());
+        return sqlTemplateFill(sqlTemplate, writerDs.getDbName(), tableModelRel.getModelName(),
+                getValueMap(parseDtoList.get(0)));
     }
 
     @SuppressWarnings("null")
@@ -347,17 +348,20 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         return CharSequenceUtil.isBlank(template) ? basicTemplate(sqlTemplateProp) : template;
     }
 
-    private String sqlValueFill(String sqlTemplate, Map<String, Object> sampleData, String tableName, String dbName) {
-        List<String> columns = new LinkedList<>();
+    private String sqlTemplateFill(String sqlTemplate, String dbName, String tableName,
+            Map<String, Object> sampleData) {
         Map<String, String> columnMap = new HashMap<>();
-        List<String> values = new LinkedList<>();
-        for (Map.Entry<String, Object> entry : sampleData.entrySet()) {
-            String key = entry.getKey();
-            columns.add(key);
-            values.add("?");
+        if (sampleData != null) {
+            List<String> columns = new LinkedList<>();
+            List<String> values = new LinkedList<>();
+            for (Map.Entry<String, Object> entry : sampleData.entrySet()) {
+                String key = entry.getKey();
+                columns.add(key);
+                values.add("?");
+            }
+            columnMap.put("columns", CharSequenceUtil.join(",", columns));
+            columnMap.put("value", CharSequenceUtil.join(",", values));
         }
-        columnMap.put("columns", CharSequenceUtil.join(",", columns));
-        columnMap.put("value", CharSequenceUtil.join(",", values));
         columnMap.put("db", dbName);
         columnMap.put("table", tableName);
         // freemarker 填充
@@ -375,9 +379,16 @@ public class MessageQueueServiceImpl implements MessageQueueService {
      * dsId-odstablename.insert 数据源id+ods表名确定的sql语句
      */
     private String spTemplate(Properties prop, OriginalTableModelDto tableModelRel) {
+        return spTemplate(prop, tableModelRel, null);
+    }
+
+    private String spTemplate(Properties prop, OriginalTableModelDto tableModelRel, String action) {
         // 12-t_ds_co
         String dsTableId = tableModelRel.getModelDsConfigId().toString() + CharPool.DASHED
                 + tableModelRel.getModelName();
+        if (action != null) {
+            dsTableId = dsTableId + CharPool.DOT + action;
+        }
 
         log.info("looking for SQL script of {}.", tableModelRel.getModelName());
         if (prop.containsKey(dsTableId)) {
@@ -477,6 +488,41 @@ public class MessageQueueServiceImpl implements MessageQueueService {
                 return "delete";
             default:
                 return "update";
+        }
+    }
+
+    @Override
+    public void consolidateQueue(ConvTunnel tunnel) {
+        // sql
+        OriginalTableModelDto tableModelRel = originalTableService.getTableModelRel(tunnel.getCollectRange(),
+                tunnel.getSysCode());
+        ConvDsConfig writerDs = dsConfigService.getById(tunnel.getWriterDatasourceId());
+
+        String sqlTemplate = this.spTemplate(sqlTemplateProp, tableModelRel, "merge");
+        if (sqlTemplate == null) {
+            log.error("Can't find sql template for merge action of table {}", tunnel.getCollectRange());
+        }
+        String sql = this.sqlTemplateFill(sqlTemplate, writerDs.getDbName(), tableModelRel.getModelName(), null);
+
+        // execute
+        this.executeSql(sql, writerDs);
+    }
+
+    private void executeSql(String sql, ConvDsConfig ds) {
+
+        Connection conn = dbConnectionManager.getConnection(ds);
+
+        log.info("executing sql script: {}", sql);
+
+        String[] individualSqls = sql.split(";");
+
+        for (String str : individualSqls) {
+            try (Statement stmt = conn.createStatement();) {
+                stmt.execute(str);
+            } catch (Exception e) {
+                log.error("sql execute failed, [sql]={}, message:{}", str, e.getMessage());
+                break;
+            }
         }
     }
 

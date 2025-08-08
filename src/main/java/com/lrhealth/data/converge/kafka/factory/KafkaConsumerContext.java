@@ -1,21 +1,35 @@
 package com.lrhealth.data.converge.kafka.factory;
 
-import com.lrhealth.data.converge.service.ActiveInterfaceService;
-import com.lrhealth.data.converge.service.FileCollectService;
-import com.lrhealth.data.converge.service.MessageQueueService;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Resource;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.service.ActiveInterfaceService;
+import com.lrhealth.data.converge.service.FileCollectService;
+import com.lrhealth.data.converge.service.MessageQueueService;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author jinmengyu
@@ -104,6 +118,21 @@ public class KafkaConsumerContext {
         }, 0, 30, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理
         scheduleMap.put(topicKey, future);
+    }
+
+    private Map<Long, ConvTunnel> waitDataMergeTunnels = new LinkedHashMap<>();
+
+    public void addTableMergeTask(ConvTunnel tunnel) {
+        waitDataMergeTunnels.put(tunnel.getId(), tunnel);
+    }
+
+    @Scheduled(cron = "0 * * * * ?") // 每日凌晨1点
+    public void dailyTaskDataMergeTask() {
+        log.info("dailyTaskDataMergeTask is starting...");
+        waitDataMergeTunnels.forEach((tid, t) -> {
+            log.info("start consolidate tunnel {}", tid);
+            queueService.consolidateQueue(t);
+        });
     }
 
     public <K, V> void addActiveInterfaceConsumerTask(String topicKey, KafkaConsumer<K, V> consumer) {

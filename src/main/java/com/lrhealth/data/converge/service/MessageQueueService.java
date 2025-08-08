@@ -8,10 +8,11 @@ import java.util.List;
  * @author jinmengyu
  * @date 2024-08-21
  */
-public interface   MessageQueueService {
+public interface MessageQueueService {
 
     /**
      * 消息队列采集消费者创建
+     * 
      * @param tunnel
      */
     void queueModeCollect(ConvTunnel tunnel);
@@ -25,4 +26,6 @@ public interface   MessageQueueService {
      * CDC 同步的队列落库
      */
     void cdcDbSaveQueue(ConvTunnel tunnel);
+
+    void consolidateQueue(ConvTunnel tunnel);
 }
