@@ -115,7 +115,7 @@ public class KafkaConsumerContext {
             topicBodyMap.entrySet().stream().parallel()
                     .forEach(map -> queueService.messageQueueHandle(topicKey, map.getValue()));
             consumer.commitSync();
-        }, 0, 30, TimeUnit.SECONDS);
+        }, 60, 60, TimeUnit.SECONDS);
         // 将任务存入对应的列表以后续管理
         scheduleMap.put(topicKey, future);
     }
@@ -126,7 +126,7 @@ public class KafkaConsumerContext {
         waitDataMergeTunnels.put(tunnel.getId(), tunnel);
     }
 
-    @Scheduled(cron = "0 * * * * ?") // 每日凌晨1点
+    @Scheduled(cron = "${message.merge.schedule}") // 每日凌晨1点
     public void dailyTaskDataMergeTask() {
         log.info("dailyTaskDataMergeTask is starting...");
         waitDataMergeTunnels.forEach((tid, t) -> {

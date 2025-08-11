@@ -32,7 +32,7 @@ public class KafkaDynamicConsumerFactory {
         consumerProperties.put("max.poll.records", 1000);
         consumerProperties.put("fetch.max.bytes", 128 * 1024 * 1024);
         consumerProperties.put("max.partition.fetch.bytes", 2 * 1024 * 1024);
-        consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest"); // 从最早开始消费
+        consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         // 信任所有类型以反序列化

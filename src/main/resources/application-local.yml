@@ -20,4 +20,6 @@ spring:
 message:
   sql:
     path: /Users/yinwenbao/gitlab/lr-rd-rdcp-data-converge/script/sql.properties
+  merge:
+    schedule: 0 */5 * * * ?
 

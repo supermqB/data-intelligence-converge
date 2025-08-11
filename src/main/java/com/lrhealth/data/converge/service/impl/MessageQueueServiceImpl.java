@@ -63,7 +63,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
 
     private static final String QUEUE_GROUP_ID = "queue_collect";
 
-    private static final String CDC_GROUP_ID = "metrics";
+    private static final String CDC_GROUP_ID = "cdc_collect";
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String kafkaBootStrap;
@@ -253,6 +253,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         String topicKey = tunnel.getId().toString() + CharPool.DASHED + topic;
         // 消费者启动
         startConsumer(kafkaBootStrap, topic, topicKey, CDC_GROUP_ID);
+        // add data fragement merge for CDC tunnel
         consumerContext.addTableMergeTask(tunnel);
     }
 
@@ -397,8 +398,11 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         return null;
     }
 
-    private String basicTemplate(Properties prop) {
+    private String basicTemplate(Properties prop, String action) {
         String prefix = "basic";
+        if (action != null) {
+            prefix = prefix + CharPool.DOT + action;
+        }
         if (prop.containsKey(prefix)) {
             return (String) prop.get(prefix);
         }
@@ -501,6 +505,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         String sqlTemplate = this.spTemplate(sqlTemplateProp, tableModelRel, "merge");
         if (sqlTemplate == null) {
             log.error("Can't find sql template for merge action of table {}", tunnel.getCollectRange());
+            sqlTemplate = this.basicTemplate(sqlTemplateProp, "merge");
         }
         String sql = this.sqlTemplateFill(sqlTemplate, writerDs.getDbName(), tableModelRel.getModelName(), null);
 

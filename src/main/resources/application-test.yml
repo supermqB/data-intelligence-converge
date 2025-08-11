@@ -41,11 +41,5 @@ message:
     manageOp: management
   sql:
     path: /data/app/lr-rd-rdcp-data-converge/sql.properties
-    ## sql插入的后缀
-    insertSuf: insert
-    ## sql更新的后缀
-    updateSuf: update
-    ## sql删除的后缀
-    deleteSuf: delete
-    ## sql治理的后缀
-    manageSuf: management
+  merge:
+    schedule: 0 0 1 * * ?
