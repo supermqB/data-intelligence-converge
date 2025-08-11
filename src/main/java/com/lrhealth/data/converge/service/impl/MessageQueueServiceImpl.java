@@ -398,6 +398,10 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         return null;
     }
 
+    private String basicTemplate(Properties prop) {
+        return basicTemplate(prop, null);
+    }
+
     private String basicTemplate(Properties prop, String action) {
         String prefix = "basic";
         if (action != null) {
