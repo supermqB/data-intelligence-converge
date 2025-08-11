@@ -1,39 +1,5 @@
 package com.lrhealth.data.converge.service.impl;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.text.CharPool;
-import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.text.StrPool;
-import cn.hutool.core.util.ObjectUtil;
-import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lrhealth.data.converge.common.db.DbConnection;
-import com.lrhealth.data.converge.common.db.DbConnectionManager;
-import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
-import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
-import com.lrhealth.data.converge.common.exception.CommonException;
-import com.lrhealth.data.converge.common.util.TemplateMakerUtil;
-import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
-import com.lrhealth.data.converge.dao.entity.*;
-import com.lrhealth.data.converge.dao.service.*;
-import com.lrhealth.data.converge.kafka.factory.KafkaConsumerContext;
-import com.lrhealth.data.converge.kafka.factory.KafkaDynamicConsumerFactory;
-import com.lrhealth.data.converge.model.MessageParseFormat;
-import com.lrhealth.data.converge.model.MessageSqlFormat;
-import com.lrhealth.data.converge.model.dto.MessageParseDto;
-import com.lrhealth.data.converge.model.dto.OpSqlDto;
-import com.lrhealth.data.converge.model.dto.OriginalTableModelDto;
-import com.lrhealth.data.converge.service.MessageQueueService;
-import freemarker.template.TemplateException;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,8 +10,58 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lrhealth.data.converge.common.db.DbConnection;
+import com.lrhealth.data.converge.common.db.DbConnectionManager;
+import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
+import com.lrhealth.data.converge.common.enums.TunnelStatusEnum;
+import com.lrhealth.data.converge.common.exception.CommonException;
+import com.lrhealth.data.converge.common.util.TemplateMakerUtil;
+import com.lrhealth.data.converge.common.util.thread.AsyncFactory;
+import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
+import com.lrhealth.data.converge.dao.entity.ConvMessageQueueConfig;
+import com.lrhealth.data.converge.dao.entity.ConvTask;
+import com.lrhealth.data.converge.dao.entity.ConvTaskResultCdc;
+import com.lrhealth.data.converge.dao.entity.ConvTunnel;
+import com.lrhealth.data.converge.dao.service.ConvMessageQueueConfigService;
+import com.lrhealth.data.converge.dao.service.ConvOdsDatasourceConfigService;
+import com.lrhealth.data.converge.dao.service.ConvOriginalTableService;
+import com.lrhealth.data.converge.dao.service.ConvTaskResultCdcService;
+import com.lrhealth.data.converge.dao.service.ConvTaskService;
+import com.lrhealth.data.converge.dao.service.ConvTunnelService;
+import com.lrhealth.data.converge.kafka.factory.KafkaConsumerContext;
+import com.lrhealth.data.converge.kafka.factory.KafkaDynamicConsumerFactory;
+import com.lrhealth.data.converge.model.MessageParseFormat;
+import com.lrhealth.data.converge.model.MessageSqlFormat;
+import com.lrhealth.data.converge.model.dto.MessageParseDto;
+import com.lrhealth.data.converge.model.dto.OriginalTableModelDto;
+import com.lrhealth.data.converge.service.MessageQueueService;
+
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.text.CharPool;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.text.StrPool;
+import cn.hutool.core.util.ObjectUtil;
+import freemarker.template.TemplateException;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author jinmengyu
@@ -119,6 +135,7 @@ public class MessageQueueServiceImpl implements MessageQueueService {
             case 1:
                 ConvTask task = taskService.createTask(tunnel, false);
                 startConsumer(queueConfig.getKafkaBroker(), topic, topicKey, QUEUE_GROUP_ID);
+                consumerContext.addTableMergeTask(tunnel);
                 AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
                 break;
             case 2:
@@ -184,7 +201,6 @@ public class MessageQueueServiceImpl implements MessageQueueService {
 
         // sql准备, 按照operation区分
         String preparedStatment = prepareSqlForInsert(parseDtoList, tableModelRel, datasourceConfig);
-        Map<String, Integer> operationCount = new HashMap<>();
         StringBuilder operLog = new StringBuilder();
 
         Map<String, Long> opCountMap = parseDtoList.stream()

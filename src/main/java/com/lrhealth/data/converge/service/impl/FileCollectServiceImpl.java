@@ -102,6 +102,7 @@ public class FileCollectServiceImpl implements FileCollectService {
             case 1:
                 ConvTask task = taskService.createTask(tunnel, false);
                 startConsumer(bootstrapServers, topic, topicKey);
+                consumerContext.addTableMergeTask(tunnel);
                 AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
                 break;
             case 2:
