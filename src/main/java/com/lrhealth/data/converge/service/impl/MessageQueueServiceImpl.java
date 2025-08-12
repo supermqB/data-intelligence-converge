@@ -524,7 +524,8 @@ public class MessageQueueServiceImpl implements MessageQueueService {
 
         String sqlTemplate = this.spTemplate(sqlTemplateProp, tableModelRel, "merge");
         if (sqlTemplate == null) {
-            log.error("Can't find sql template for merge action of table {}", tunnel.getCollectRange());
+            log.error("Can't find sql template for merge action of table {}, using default script instead.",
+                    tunnel.getCollectRange());
             sqlTemplate = this.basicTemplate(sqlTemplateProp, "merge");
         }
         String sql = this.sqlTemplateFill(sqlTemplate, writerDs.getDbName(), tableModelRel.getModelName(), null);

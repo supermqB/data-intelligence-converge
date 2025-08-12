@@ -49,7 +49,6 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     @Resource
     private ConvOriginalProbeService originalProbeService;
 
-
     @Override
     public void importPlatformDataType(DataSourceInfoDto dto) {
         List<DbTypeDto> fieldList = new ArrayList<>();
@@ -59,22 +58,23 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 .dbPassword(dto.getPassword())
                 .dbDriver(dto.getDriverName())
                 .build();
-        try (Connection connection = dbConnectionManager.getConnection(dbConnection)){
+        try (Connection connection = dbConnectionManager.getConnection(dbConnection)) {
             DatabaseMetaData metaData = connection.getMetaData();
             ResultSet typeInfo = metaData.getTypeInfo();
-            while (typeInfo.next()){
+            while (typeInfo.next()) {
                 String typeName = typeInfo.getString("TYPE_NAME");
                 String dataType = typeInfo.getString("DATA_TYPE");
                 String precision = typeInfo.getString("PRECISION");
                 log.info("获取到数据类型={}，编号={}，精度={}", typeName, dataType, precision);
-                if (fieldList.stream().noneMatch(field -> field.getTypeName().equals(typeName) && field.getDataType().equals(dataType))) {
+                if (fieldList.stream().noneMatch(
+                        field -> field.getTypeName().equals(typeName) && field.getDataType().equals(dataType))) {
                     fieldList.add(DbTypeDto.builder()
                             .dataType(dataType)
                             .typeName(typeName)
                             .precision(precision).build());
                 }
             }
-        }catch (SQLException e){
+        } catch (SQLException e) {
             log.error("get data type error, {}", ExceptionUtils.getStackTrace(e));
         }
         fieldTypeService.saveFieldType(fieldList, dto.getDbType());
@@ -103,10 +103,10 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
     public void originalTableProbe(OriDataProbeDTO probeDTO) {
         List<ConvOriginalTable> originalTableList = originalTableService.list(
                 new LambdaQueryWrapper<ConvOriginalTable>()
-                .eq(ConvOriginalTable::getSysCode, probeDTO.getSysCode())
-                .eq(ConvOriginalTable::getConvDsConfId, probeDTO.getDsConfId()));
+                        .eq(ConvOriginalTable::getSysCode, probeDTO.getSysCode())
+                        .eq(ConvOriginalTable::getConvDsConfId, probeDTO.getDsConfId()));
         for (ConvOriginalTable originalTable : originalTableList) {
-            if (!probeDTO.getTableName().equalsIgnoreCase(originalTable.getNameEn())){
+            if (!probeDTO.getTableName().equalsIgnoreCase(originalTable.getNameEn())) {
                 continue;
             }
             ConvOriginalTable table = ConvOriginalTable.builder()
@@ -130,7 +130,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             // 空值率
             List<ColumnNullableDTO> nullableList = probeDTO.getNullableList();
             List<ConvOriginalProbe> probeList = new ArrayList<>();
-            for (ColumnNullableDTO nullableDTO : nullableList){
+            for (ColumnNullableDTO nullableDTO : nullableList) {
                 ConvOriginalProbe probe = ConvOriginalProbe.builder()
                         .probeModel(ProbeModelEnum.COLUMN_NULLABLE.getCode())
                         .tableId(originalTable.getId())
@@ -150,12 +150,12 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                 .eq(ConvOriginalTable::getSysCode, structureDto.getSysCode())
                 .eq(ConvOriginalTable::getConvDsConfId, structureDto.getDsConfId())
                 .orderByDesc(ConvOriginalTable::getCreateTime));
-        for (OriginalTableDto tableDto : structureDto.getOriginalTables()){
+        for (OriginalTableDto tableDto : structureDto.getOriginalTables()) {
             List<ConvOriginalTable> tables = storedTables.stream()
                     .filter(storeTable -> storeTable.getNameEn().equals(tableDto.getTableName()))
                     .collect(Collectors.toList());
             ConvOriginalTable originalTable;
-            if (CollUtil.isNotEmpty(tables)){
+            if (CollUtil.isNotEmpty(tables)) {
                 // 已存在的进行更新
                 originalTable = ConvOriginalTable.builder()
                         .id(tables.get(0).getId())
@@ -164,7 +164,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                         .createTime(saveTime)
                         .updateTime(saveTime)
                         .build();
-            }else {
+            } else {
                 originalTable = ConvOriginalTable.builder()
                         .nameEn(tableDto.getTableName())
                         .nameCn(tableDto.getTableRemarks())
@@ -184,11 +184,13 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         originalTableService.saveOrUpdateBatch(convOriginalTableList);
     }
 
-    private void processOriginalColumn(List<OriginalTableDto> tableList, String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
-        List<ConvOriginalTable> originalTableList = originalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
-                .eq(CharSequenceUtil.isNotBlank(sysCode), ConvOriginalTable::getSysCode, sysCode)
-                .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
-                .eq(ConvOriginalTable::getCreateTime, saveTime));
+    private void processOriginalColumn(List<OriginalTableDto> tableList, String orgCode, String sysCode,
+            Integer dsConfigId, LocalDateTime saveTime) {
+        List<ConvOriginalTable> originalTableList = originalTableService
+                .list(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
+                        .eq(CharSequenceUtil.isNotBlank(sysCode), ConvOriginalTable::getSysCode, sysCode)
+                        .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
+                        .eq(ConvOriginalTable::getCreateTime, saveTime));
         Map<String, Long> tableNameIdMapping = originalTableList.stream()
                 .collect(Collectors.toMap(ConvOriginalTable::getNameEn, ConvOriginalTable::getId));
 
@@ -206,16 +208,17 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
             }
             List<ConvOriginalColumn> convOriginalColumns = originalColumnService.list(
                     new LambdaQueryWrapper<ConvOriginalColumn>()
-                    .eq(ConvOriginalColumn::getTableId, tableId));
+                            .eq(ConvOriginalColumn::getTableId, tableId));
             List<ColumnInfoDTO> columnInfoDTOS = tableDto.getColumnInfoDTOS();
             int i = 1;
             for (ColumnInfoDTO columnInfoDTO : columnInfoDTOS) {
                 List<ConvOriginalColumn> storedSameNameList = convOriginalColumns.stream()
-                        .filter(column -> column.getColumnName().equals(columnInfoDTO.getColumnName()))
+                        .filter(column -> columnInfoDTO.getColumnName().equals(column.getNameEn())
+                                || columnInfoDTO.getColumnName().equals(column.getColumnName()))
                         .collect(Collectors.toList());
                 ConvOriginalColumn convOriginalColumn;
                 Integer dataType = getDataType(columnInfoDTO.getDataType(), columnInfoDTO.getColumnTypeName());
-                if (CollUtil.isNotEmpty(storedSameNameList)){
+                if (CollUtil.isNotEmpty(storedSameNameList)) {
                     convOriginalColumn = ConvOriginalColumn.builder()
                             .id(storedSameNameList.get(0).getId())
                             .nameCn(columnInfoDTO.getRemark())
@@ -228,8 +231,8 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                             .elementType(getElementType(dataType))
                             .elementFormat(getElementFormat(dataType, columnInfoDTO.getColumnLength()))
                             .build();
-                }else {
-                     convOriginalColumn = ConvOriginalColumn.builder()
+                } else {
+                    convOriginalColumn = ConvOriginalColumn.builder()
                             .tableId(tableId)
                             .nameCn(columnInfoDTO.getRemark())
                             .nameEn(columnInfoDTO.getColumnName())
@@ -240,9 +243,9 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
                             .fieldType(columnInfoDTO.getColumnTypeName())
                             .fieldTypeLength(columnInfoDTO.getColumnLength())
                             .createTime(saveTime)
-                             .dataType(columnInfoDTO.getDataType())
-                             .elementType(getElementType(dataType))
-                             .elementFormat(getElementFormat(dataType, columnInfoDTO.getColumnLength()))
+                            .dataType(columnInfoDTO.getDataType())
+                            .elementType(getElementType(dataType))
+                            .elementFormat(getElementFormat(dataType, columnInfoDTO.getColumnLength()))
                             .build();
                 }
                 i++;
@@ -251,7 +254,7 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
 
                 if (CharSequenceUtil.isNotBlank(columnInfoDTO.getDataType()) && fieldList.stream()
                         .noneMatch(field -> field.getDataType().equals(columnInfoDTO.getDataType())
-                        && field.getTypeName().equals(columnInfoDTO.getColumnTypeName()))){
+                                && field.getTypeName().equals(columnInfoDTO.getColumnTypeName()))) {
                     fieldList.add(DbTypeDto.builder()
                             .dataType(columnInfoDTO.getDataType())
                             .typeName(columnInfoDTO.getColumnTypeName())
@@ -265,28 +268,27 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         fieldTypeService.saveFieldType(fieldList, dsConfigId);
     }
 
-    private String getElementType(Integer dataType){
+    private String getElementType(Integer dataType) {
         return ElementFormatUtil.getElement(dataType);
     }
 
-    private String getElementFormat(Integer dataType, Integer length){
+    private String getElementFormat(Integer dataType, Integer length) {
         return ElementFormatUtil.getElementFormat(dataType, length);
     }
 
-    private Integer getDataType(String dataType, String fieldType){
-        if (CharSequenceUtil.isBlank(dataType)){
+    private Integer getDataType(String dataType, String fieldType) {
+        if (CharSequenceUtil.isBlank(dataType)) {
             return DatabaseTypeUtil.getJavaTypeName(fieldType);
         }
         return Integer.valueOf(dataType);
     }
 
-
-    private void boundModel(ConvOriginalTable originalTable){
+    private void boundModel(ConvOriginalTable originalTable) {
         List<StdOriginalModel> modelList = stdModelService.list(new LambdaQueryWrapper<StdOriginalModel>()
                 .eq(StdOriginalModel::getNameEn, originalTable.getNameEn())
                 .eq(StdOriginalModel::getSysCode, originalTable.getSysCode())
                 .orderByDesc(StdOriginalModel::getCreateTime));
-        if (CollUtil.isEmpty(modelList)){
+        if (CollUtil.isEmpty(modelList)) {
             return;
         }
         StdOriginalModel existModel = modelList.get(0);
@@ -295,14 +297,16 @@ public class ImportOriginalServiceImpl implements ImportOriginalService {
         originalTable.setModelDescription(existModel.getDescription());
     }
 
-    private void backFillModel(String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime){
-        List<ConvOriginalTable> originalTableList = originalTableService.list(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
-                .eq(CharSequenceUtil.isNotBlank(sysCode), ConvOriginalTable::getSysCode, sysCode)
-                .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
-                .eq(ConvOriginalTable::getCreateTime, saveTime));
-        List<ConvOriginalTable> convOriginalTables = originalTableList.stream().filter(orgTable -> orgTable.getModelId() != null).collect(Collectors.toList());
-        for(ConvOriginalTable convOriginalTable : convOriginalTables){
-            Long modelId =convOriginalTable.getModelId();
+    private void backFillModel(String orgCode, String sysCode, Integer dsConfigId, LocalDateTime saveTime) {
+        List<ConvOriginalTable> originalTableList = originalTableService
+                .list(new LambdaQueryWrapper<ConvOriginalTable>().eq(ConvOriginalTable::getOrgCode, orgCode)
+                        .eq(CharSequenceUtil.isNotBlank(sysCode), ConvOriginalTable::getSysCode, sysCode)
+                        .eq(ConvOriginalTable::getConvDsConfId, dsConfigId)
+                        .eq(ConvOriginalTable::getCreateTime, saveTime));
+        List<ConvOriginalTable> convOriginalTables = originalTableList.stream()
+                .filter(orgTable -> orgTable.getModelId() != null).collect(Collectors.toList());
+        for (ConvOriginalTable convOriginalTable : convOriginalTables) {
+            Long modelId = convOriginalTable.getModelId();
             stdModelService.updateById(StdOriginalModel.builder()
                     .id(modelId)
                     .originalId(convOriginalTable.getId())

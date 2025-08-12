@@ -42,11 +42,12 @@ public class ElementFormatUtil {
         ELEMENT_FORMAT_MAP.put(BINARY_ELEMENT, STRING_ELEMENT_FORMAT);
     }
 
-    private ElementFormatUtil(){
+    private ElementFormatUtil() {
     }
+
     static {
         Field[] declaredFields = Types.class.getDeclaredFields();
-        for (Field field : declaredFields){
+        for (Field field : declaredFields) {
             try {
                 Integer dataType = (Integer) field.get(Types.class);
                 FIELD_FORMAT_MAP.put(dataType, new FieldType(dataType));
@@ -56,9 +57,8 @@ public class ElementFormatUtil {
         }
     }
 
-
-    public static String getElement(Integer dataType){
-        switch (dataType){
+    public static String getElement(Integer dataType) {
+        switch (dataType) {
             case Types.BIT:
             case Types.TINYINT:
             case Types.SMALLINT:
@@ -99,12 +99,12 @@ public class ElementFormatUtil {
         }
     }
 
-    public static String getElementFormat(Integer dataType, Integer length){
+    public static String getElementFormat(Integer dataType, Integer length) {
         FieldType fieldType = FIELD_FORMAT_MAP.get(dataType);
         String elementFormat = fieldType.getElementFormat();
         String replaced = elementFormat.replace("{LENGTH}", length.toString());
-        if (NUMBER_ELEMENT.equals(fieldType.getElementType())){
-            switch (dataType){
+        if (NUMBER_ELEMENT.equals(fieldType.getElementType())) {
+            switch (dataType) {
                 case Types.FLOAT:
                 case Types.REAL:
                     return replaced.replace("{DECIMAL}", CharPool.COMMA + "2");
@@ -120,18 +120,18 @@ public class ElementFormatUtil {
     }
 
     @Data
-    private static class FieldType{
+    private static class FieldType {
         private Integer sqlDataType;
         private String javaFieldType;
         private String elementType;
         private String elementFormat;
-        public FieldType(Integer sqlDataType){
+
+        public FieldType(Integer sqlDataType) {
             this.sqlDataType = sqlDataType;
             this.javaFieldType = DatabaseTypeUtil.getJavaType(sqlDataType);
             this.elementType = getElement(sqlDataType);
             this.elementFormat = ELEMENT_FORMAT_MAP.get(elementType);
         }
     }
-
 
 }

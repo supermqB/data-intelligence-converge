@@ -131,7 +131,11 @@ public class KafkaConsumerContext {
         log.info("dailyTaskDataMergeTask is starting...");
         waitDataMergeTunnels.forEach((tid, t) -> {
             log.info("start consolidate tunnel {}", tid);
-            queueService.consolidateQueue(t);
+            try {
+                queueService.consolidateQueue(t);
+            } catch (Exception e) {
+                log.error("table [{}], data merge error:{},", t.getCollectRange(), e.getMessage());
+            }
         });
     }
 

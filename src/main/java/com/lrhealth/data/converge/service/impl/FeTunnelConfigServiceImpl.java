@@ -12,6 +12,7 @@ import com.lrhealth.data.converge.common.enums.LibraryTableModelEnum;
 import com.lrhealth.data.converge.common.enums.TunnelCMEnum;
 import com.lrhealth.data.converge.common.enums.TunnelColTypeEnum;
 import com.lrhealth.data.converge.common.exception.CommonException;
+import com.lrhealth.data.converge.common.util.db.HiveType;
 import com.lrhealth.data.converge.dao.entity.*;
 import com.lrhealth.data.converge.dao.service.*;
 import com.lrhealth.data.converge.model.dto.*;
@@ -38,13 +39,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
 
     @Resource
     private ConvTunnelService tunnelService;
-
     @Resource
     private ConvCollectFieldService collectFieldService;
     @Resource
     private ConvFileCollectService fileCollectService;
-    @Resource
-    private ConvFieldTypeService fieldTypeService;
     @Resource
     private ConvActiveInterfaceConfigService activeInterfaceConfigService;
     @Resource
@@ -231,13 +229,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         tunnelMessageDTO.setFileCollectInfoDto(fileCollectInfoDto);
     }
 
-    private Map<String, String> getTargetFieldTypeMapBySource(ConvTunnel tunnel) {
-        Integer readerSrcId = tunnel.getReaderDatasourceId();
-        String srcDbType = odsDatasourceConfigService.getDbType(readerSrcId);
-
-        return fieldTypeService.getFieldTypeMappingBySrc(srcDbType, "Hive");
-    }
-
     private void assembleTableInfoMessage(ConvTunnel tunnel, JdbcInfoDto jdbcInfoDto, String writeDbType) {
         // 库表采集范围和sql查询语句
         List<TableInfoDto> tableInfoDtoList = new ArrayList<>();
@@ -248,7 +239,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
             TableInfoDto tableInfoDto = new TableInfoDto();
             if ("HDFS".equals(writeDbType)) {
                 // 设置hdfs的一些配置
-                setHdfsCollectConfig(collectField, tableInfoDto, getTargetFieldTypeMapBySource(tunnel));
+                setHdfsCollectConfig(collectField, tableInfoDto);
             } else {
                 tableInfoDto.setWriterColumns(collectField.getColumnField());
             }
@@ -277,8 +268,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         return incrConfigList;
     }
 
-    private void setHdfsCollectConfig(ConvCollectField collectField, TableInfoDto tableInfoDto,
-            Map<String, String> fieldTypeMap) {
+    private void setHdfsCollectConfig(ConvCollectField collectField, TableInfoDto tableInfoDto) {
         // 获取原始模型
         List<StdOriginalModelColumn> modelColumns = odsModelService.getColumnList(collectField.getTableName(),
                 collectField.getSystemCode());
@@ -287,7 +277,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         // 设置hdfs写入路径
         tableInfoDto.setHdfsPath(stdModel.getStoragePath());
         // 设置datax写入字段格式
-        tableInfoDto.setWriterColumns(doGetHiveColumns(modelColumns, collectField.getColumnField(), fieldTypeMap));
+        tableInfoDto.setWriterColumns(doGetHiveColumns(modelColumns, collectField.getColumnField()));
 
         // 查询其他hive配置
         ModelConfig modelConfig = modelConfigService.getModelConfig(modelId);
@@ -299,20 +289,10 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         }
     }
 
-    private String getBeforeFirstLeftParenthesisWithRegex(String str) {
-        if (str == null || str.isEmpty()) {
-            return "";
-        }
-        int index = str.indexOf('(');
-
-        return index == -1 ? str.toLowerCase() : str.substring(0, index).trim().toLowerCase(); // 去除截取结果末尾的空格
-    }
-
     /**
      * 创建hive库columns映射关系
      */
-    private String doGetHiveColumns(List<StdOriginalModelColumn> modelColumnList, String columnField,
-            Map<String, String> fieldTypeMap) {
+    private String doGetHiveColumns(List<StdOriginalModelColumn> modelColumnList, String columnField) {
         if (CollUtil.isEmpty(modelColumnList)) {
             return null;
         }
@@ -324,12 +304,11 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                     .collect(Collectors.toList());
         }
         StringBuilder sb = new StringBuilder();
-        // dataType=1为采集标准数据 write全部转换为varchar
+        HiveType ht = new HiveType();
         for (StdOriginalModelColumn modelColumn : modelColumnList) {
-            String fieldTypeInSrc = getBeforeFirstLeftParenthesisWithRegex(modelColumn.getFieldType());
-            String fieldTypeInHiveMapping = fieldTypeMap.get(fieldTypeInSrc);
-            String dataType = transformDataType(
-                    fieldTypeInHiveMapping == null ? fieldTypeInSrc : fieldTypeInHiveMapping);
+            modelColumn.getElementFormat();
+
+            String dataType = ht.process(modelColumn.getElementFormat());
             sb.append("{\"name\":\"").append(modelColumn.getNameEn())
                     .append("\",\"type\":\"").append(dataType)
                     .append("\"}").append(",\n");
@@ -342,77 +321,6 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
                 .concat(",\n")
                 .concat("{\"name\":\"" + "load_time")
                 .concat("\",\"type\":\"" + "TIMESTAMP" + "\"}");
-    }
-
-    // @TODO, 根据业务元数据类型转换。
-    /*
-     * public enum SupportHiveDataType {
-     * TINYINT,
-     * SMALLINT,
-     * INT,
-     * BIGINT,
-     * FLOAT,
-     * DOUBLE,
-     * 
-     * TIMESTAMP,
-     * DATE,
-     * 
-     * STRING,
-     * VARCHAR,
-     * CHAR,
-     * 
-     * BOOLEAN
-     * }
-     * 
-     */
-    private String transformDataType(String fieldType) {
-        if (fieldType == null) {
-            return "STRING";
-        }
-        fieldType = fieldType.toLowerCase();
-        String transformStr;
-        switch (fieldType) {
-            case "varchar":
-            case "varchar2":
-            case "json":
-                transformStr = "VARCHAR";
-                break;
-            case "text":
-            case "blob":
-            case "clob":
-                transformStr = "STRING";
-                break;
-            case "int2":
-            case "int4":
-                transformStr = "INT";
-                break;
-            case "int8":
-                transformStr = "BIGINT";
-                break;
-            case "date":
-                transformStr = "DATE";
-                break;
-            case "datetime":
-            case "timestamp":
-            case "timestampz":
-                transformStr = "TIMESTAMP";
-                break;
-            case "numeric":
-            case "number":
-                transformStr = "DOUBLE";
-                break;
-            case "float8":
-                transformStr = "FLOAT";
-                break;
-            default:
-                if (fieldType.startsWith("timestamp")) {
-                    transformStr = "TIMESTAMP";
-                } else {
-                    transformStr = fieldType;
-                }
-                break;
-        }
-        return transformStr.toUpperCase();
     }
 
     private IncrColumnDTO getIncrConfig(Long tunnelId, String column, String tableName) {

@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import com.lrhealth.data.converge.dao.entity.ConvDsConfig;
 
+import jline.internal.Log;
+
 /**
  * @author jinmengyu
  * @date 2024-11-11
@@ -60,7 +62,13 @@ public class DbConnectionManager {
         dataSource.setUrl(config.getDbUrl());
         dataSource.setUsername(config.getDbUserName());
         dataSource.setPassword(config.getDbPassword());
-        dataSource.setDriverClassName(config.getDbDriver());
+        String driverClass = config.getDbDriver();
+        if (driverClass != null) {
+            dataSource.setDriverClassName(driverClass);
+        } else {
+            Log.info("DB connection was not set properly.");
+            Log.info(config);
+        }
         return dataSource;
     }
 
