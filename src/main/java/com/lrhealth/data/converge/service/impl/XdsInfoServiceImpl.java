@@ -136,8 +136,10 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
     @Override
     public Boolean fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
         long dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
-        DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
-        long avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
+        //DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
+        //long avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
+        /* @TODO，假定一张表的行大小是1024个字节*/
+        long avgRowLength=1024;
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = avgRowLength * dataCount;
         List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>()
