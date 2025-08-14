@@ -46,45 +46,48 @@ public class IncrTimeServiceImpl implements IncrTimeService {
     @Async
     @Override
     public void updateTableLatestTime(Long xdsId, List<IncrConfigDTO> incrConfigDTOList) {
-        if (CollUtil.isEmpty(incrConfigDTOList)){
+        if (CollUtil.isEmpty(incrConfigDTOList)) {
             log.error("[{}]没有endIndex!!!!", xdsId);
             return;
         }
         log.info("<<<开始更新xds[{}]的最新采集时间！>>>", xdsId);
         Xds xds = xdsService.getById(xdsId);
         ConvTask convTask = taskService.getById(xds.getConvTaskId());
-        if (ObjectUtil.isNull(convTask)){
+        if (ObjectUtil.isNull(convTask)) {
             return;
         }
         ConvTunnel tunnel = tunnelService.getById(convTask.getTunnelId());
         ConvOriginalTable table = originalTableService.getOne(new LambdaQueryWrapper<ConvOriginalTable>()
                 .eq(ConvOriginalTable::getNameEn, xds.getOdsTableName())
                 .eq(ConvOriginalTable::getSysCode, xds.getSysCode()));
-        if (ObjectUtil.isEmpty(table)){
+        if (ObjectUtil.isEmpty(table)) {
             log.error("[{}]原始表不存在！", xds.getOdsTableName());
             return;
         }
-        List<ConvOriginalColumn> convOriginalColumns = originalColumnService.list(new LambdaQueryWrapper<ConvOriginalColumn>()
-                .eq(ConvOriginalColumn::getTableId, table.getId())
-                .ne(ConvOriginalColumn::getIncrFlag, "0"));
-        if (CollUtil.isEmpty(convOriginalColumns)){
+        List<ConvOriginalColumn> convOriginalColumns = originalColumnService
+                .list(new LambdaQueryWrapper<ConvOriginalColumn>()
+                        .eq(ConvOriginalColumn::getTableId, table.getId())
+                        .ne(ConvOriginalColumn::getIncrFlag, "0"));
+        if (CollUtil.isEmpty(convOriginalColumns)) {
             return;
         }
         convOriginalColumns.forEach(column -> updateCollectIncrTime(tunnel, xds, column, incrConfigDTOList));
     }
 
-    private void updateCollectIncrTime(ConvTunnel tunnel, Xds xds, ConvOriginalColumn column, List<IncrConfigDTO> incrConfigDTOList){
+    private void updateCollectIncrTime(ConvTunnel tunnel, Xds xds, ConvOriginalColumn column,
+            List<IncrConfigDTO> incrConfigDTOList) {
         List<IncrConfigDTO> configDTOS = incrConfigDTOList.stream()
                 .filter(incrConfigDTO -> column.getNameEn().equalsIgnoreCase(incrConfigDTO.getSeqField()))
                 .collect(Collectors.toList());
-        if (configDTOS.size() != 1){
+        if (configDTOS.size() != 1) {
             log.error("modelId={}的字段{}的增量值上传错误", column.getTableId(), column.getNameEn());
         }
         IncrConfigDTO incrConfig = configDTOS.get(0);
-        ConvCollectIncrTime collectIncrTime = convCollectIncrTimeService.getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
-                .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
-                .eq(ConvCollectIncrTime::getTableName, xds.getOdsTableName())
-                .eq(ConvCollectIncrTime::getIncrField, column.getNameEn()));
+        ConvCollectIncrTime collectIncrTime = convCollectIncrTimeService
+                .getOne(new LambdaQueryWrapper<ConvCollectIncrTime>()
+                        .eq(ConvCollectIncrTime::getTunnelId, tunnel.getId())
+                        .eq(ConvCollectIncrTime::getTableName, xds.getOdsTableName())
+                        .eq(ConvCollectIncrTime::getIncrField, column.getNameEn()));
         String incrType = column.getIncrFlag();
         if (ObjectUtil.isNotNull(collectIncrTime)) {
             ConvCollectIncrTime update = ConvCollectIncrTime.builder()
@@ -94,14 +97,14 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                     .incrField(collectIncrTime.getIncrField())
                     .updateTime(LocalDateTime.now())
                     .build();
-            if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
+            if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)) {
                 update.setLatestTime(incrConfig.getIncrTime());
-            }else {
-                update.setLatestSeq(incrConfig.getIncrTime());
+            } else {
+                update.setLatestSeq(incrConfig.getEndIndex());
             }
             convCollectIncrTimeService.updateById(update);
             // 给前置机更新最新采集时间
-            sendLastedIncrTimeToFep(update,incrType,tunnel);
+            sendLastedIncrTimeToFep(update, incrType, tunnel);
             return;
         }
         ConvCollectIncrTime build = ConvCollectIncrTime.builder()
@@ -113,25 +116,26 @@ public class IncrTimeServiceImpl implements IncrTimeService {
                 .orgCode(xds.getOrgCode())
                 .sysCode(xds.getSysCode())
                 .build();
-        if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)){
+        if (SeqFieldTypeEnum.TIME.getValue().equals(incrType)) {
             build.setLatestTime(incrConfig.getIncrTime());
-        }else {
+        } else {
             build.setLatestSeq(incrConfig.getIncrTime());
         }
         convCollectIncrTimeService.saveOrUpdate(build);
         // 给前置机更新最新采集时间
-        sendLastedIncrTimeToFep(build,incrType,tunnel);
+        sendLastedIncrTimeToFep(build, incrType, tunnel);
     }
 
     /**
      * 给前置机更新最新采集时间/最大序列号
      */
-    private void sendLastedIncrTimeToFep(ConvCollectIncrTime build,String incrType,ConvTunnel tunnel){
+    private void sendLastedIncrTimeToFep(ConvCollectIncrTime build, String incrType, ConvTunnel tunnel) {
         IncrSequenceDto incrSequenceDto = IncrSequenceDto.builder()
                 .tunnelId(build.getTunnelId())
                 .tableName(build.getTableName())
                 .seqField(build.getIncrField())
-                .incrSequence(SeqFieldTypeEnum.TIME.getValue().equals(incrType) ? build.getLatestTime() : build.getLatestSeq())
+                .incrSequence(SeqFieldTypeEnum.TIME.getValue().equals(incrType) ? build.getLatestTime()
+                        : build.getLatestSeq())
                 .build();
         kafkaService.updateFepIncrSequence(incrSequenceDto, tunnel);
     }

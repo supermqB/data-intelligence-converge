@@ -130,7 +130,7 @@ public class XdsInfoServiceImpl extends ServiceImpl<XdsMapper, Xds> implements X
                 .dsConfigId(dbXdsMessageDto.getDsConfigId())
                 .xdsId(dbXdsMessageDto.getXdsId())
                 .build();
-        return xdsService.save(xds);
+        return xdsService.saveOrUpdate(xds);
     }
 
     @Override

@@ -9,10 +9,9 @@ package com.lrhealth.data.converge.common.enums;
 public enum SeqFieldTypeEnum {
 
     /**
-     *直接调度/重新调度
+     * 数字/时间序列
      */
-    SEQ("2")
-    , TIME("1");
+    SEQ("1"), TIME("2");
 
     /**
      * 变量分类对应值
