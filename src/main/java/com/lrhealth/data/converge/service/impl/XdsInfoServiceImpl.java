@@ -45,7 +45,7 @@ import static cn.hutool.core.text.CharSequenceUtil.format;
  * @since 2023/7/19 11:44
  */
 @Service
-public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements XdsInfoService {
+public class XdsInfoServiceImpl extends ServiceImpl<XdsMapper, Xds> implements XdsInfoService {
     @Resource
     private XdsService xdsService;
     @Resource
@@ -65,13 +65,11 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
     @Value("${xds.switch-on}")
     private boolean xdsSendToGove;
 
-
     @Override
     public Xds updateKafkaSent(Xds xds) {
         xds.setKafkaSendFlag(KafkaSendFlagEnum.SENT.getCode());
         return updateXds(xds);
     }
-
 
     @Override
     public Xds getById(Long id) {
@@ -107,12 +105,14 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
 
     @Override
     public Boolean fepCreateXds(DbXdsMessageDto dbXdsMessageDto) {
-        String dataType = dataTypeService.getTableDataType(dbXdsMessageDto.getOdsModelName(), dbXdsMessageDto.getSysCode());
+        String dataType = dataTypeService.getTableDataType(dbXdsMessageDto.getOdsModelName(),
+                dbXdsMessageDto.getSysCode());
         if (CharSequenceUtil.isBlank(dataType)) {
             dataType = CollectDataTypeEnum.BUSINESS.getCode();
         }
-        List<System> systemList = systemService.list(new LambdaQueryWrapper<System>().eq(System::getSystemCode, dbXdsMessageDto.getSysCode())
-                .eq(System::getDelFlag, 0));
+        List<System> systemList = systemService
+                .list(new LambdaQueryWrapper<System>().eq(System::getSystemCode, dbXdsMessageDto.getSysCode())
+                        .eq(System::getDelFlag, 0));
         if (CollUtil.isEmpty(systemList)) {
             return false;
         }
@@ -136,10 +136,15 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
     @Override
     public Boolean fepUpdateXds(DbXdsMessageDto dbXdsMessageDto) {
         long dataCount = dbXdsMessageDto.getDataCount() == null ? 0 : dbXdsMessageDto.getDataCount();
-        //DataSourceDto dataSourceDto = tunnelService.getWriterDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
-        //long avgRowLength = dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(), dataSourceDto, dbXdsMessageDto.getOdsModelName());
-        /* @TODO，假定一张表的行大小是1024个字节*/
-        long avgRowLength=1024;
+        /*
+         * DataSourceDto dataSourceDto =
+         * tunnelService.getWriterDataSourceByTunnel(dbXdsMessageDto.getTunnelId());
+         * long avgRowLength =
+         * dbSqlService.getAvgRowLength(dbXdsMessageDto.getOdsTableName(),
+         * dataSourceDto, dbXdsMessageDto.getOdsModelName());
+         */
+        /* @TODO，假定一张表的行大小是1024个字节，前序comment是之前的逻辑，不具备通用型，且在hdfs中一直不工作。 */
+        long avgRowLength = 1024;
         // 文件中的数据写入后消耗的数据库容量
         long dataSize = avgRowLength * dataCount;
         List<ConvTask> convTasks = taskService.list(new LambdaQueryWrapper<ConvTask>()
@@ -147,7 +152,7 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
                 .eq(ConvTask::getFedTaskId, dbXdsMessageDto.getConvTaskId())
                 .orderByDesc(ConvTask::getCreateTime));
         ConvTunnel tunnel = tunnelService.getById(dbXdsMessageDto.getTunnelId());
-        if (CollUtil.isEmpty(convTasks) || ObjectUtil.isNull(tunnel)){
+        if (CollUtil.isEmpty(convTasks) || ObjectUtil.isNull(tunnel)) {
             return false;
         }
         Xds updateXds = Xds.builder()
@@ -166,8 +171,10 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
         if (xdsSendToGove) {
             kafkaService.xdsSendKafka(updateXds);
         }
-        // 更新最新采集时间
-        incrTimeService.updateTableLatestTime(dbXdsMessageDto.getId(), dbXdsMessageDto.getIncrConfigDTOList());
+        // 更新增量采集的最新时间，由于没有传递colType作为采集的全/增量标记，现在用IncrConfigDTOList是否为空作为判断依据
+        if (dbXdsMessageDto.getIncrConfigDTOList() != null) {
+            incrTimeService.updateTableLatestTime(dbXdsMessageDto.getId(), dbXdsMessageDto.getIncrConfigDTOList());
+        }
         return true;
     }
 
@@ -198,6 +205,5 @@ public class XdsInfoServiceImpl  extends ServiceImpl<XdsMapper, Xds> implements 
         }
         return xds;
     }
-
 
 }
