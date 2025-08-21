@@ -99,7 +99,8 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
         List<StdOriginalModelColumn> tableColumns = stdOriginalModelColumnService
                 .list(new LambdaQueryWrapper<StdOriginalModelColumn>()
                         .eq(StdOriginalModelColumn::getModelId, tableModelRel.getModelId())
-                        .eq(StdOriginalModelColumn::getDelFlag, 0));
+                        .eq(StdOriginalModelColumn::getDelFlag, 0)
+                        .orderByAsc(StdOriginalModelColumn::getSeqNo));
         ConvDsConfig datasourceConfig = dsConfigService.getById(tunnel.getWriterDatasourceId());
         // 根据字段列表，组装insert语句
         String insertSql = assemblyInsertSql(tableColumns, table, values);
