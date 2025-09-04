@@ -49,4 +49,8 @@ public class FileCollectInfoDto {
      */
 
     private Integer incrFlag;
+    /**
+     * 取值路径
+     */
+    private String extractExpression;
 }

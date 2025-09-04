@@ -209,6 +209,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         fileCollectInfoDto.setFileCollectRange(fileCollect.getFileCollectRange());
         fileCollectInfoDto.setFileStorageMode(fileCollect.getFileStorageMode());
         fileCollectInfoDto.setStructuredDataFlag(fileCollect.getStructuredDataFlag());
+        fileCollectInfoDto.setExtractExpression(fileCollect.getExtractExpression());
         List<String> fileSuffixList = new ArrayList<>();
         Integer fileStorageMode = fileCollect.getFileStorageMode();
         FileStorageTypeEnum type = FileStorageTypeEnum.of(fileStorageMode);
