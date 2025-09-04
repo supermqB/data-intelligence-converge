@@ -5,6 +5,7 @@ pipeline {
         PROJECT_CODE = 'lr-rd-rdcp-data-converge'
         PROJECT_NAME = '数智健康平台汇聚程序'
         DEPLOY_IP = '172.16.29.51'
+        PUB_REPO_ADDRESS = '172.16.29.76:/mnt/data/ftp_files/pkgs/di_pkg_latest/'
         BUILD_REPO_DIR = '/mnt/data/distribution/data-intelligence/converge/build'
     }
 
@@ -31,9 +32,10 @@ pipeline {
 
         stage('deploy') {
             steps {
-                echo "deploying to ${DEPLOY_IP} ..."
+                echo "deploying to ${DEPLOY_IP} , publish package to ${PUB_REPO_ADDRESS}"
                 sh """
                     scp -P 29022 ./target/${PROJECT_CODE}.jar root@${DEPLOY_IP}:/data/app/lr-rd-rdcp-data-converge/
+                    scp -P 29022 ./target/${PROJECT_CODE}.jar root@${PUB_REPO_ADDRESS}
                     ssh -p 29022 root@${DEPLOY_IP} "source /etc/profile;cd /data/app/lr-rd-rdcp-data-converge;./startup.sh restart"
                 """
             }
