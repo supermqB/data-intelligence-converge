@@ -144,13 +144,9 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
             }
             value.deleteCharAt(value.length() - 1);
             value.append(")");
-            // 校验字段和参数的个数是否一致
-            if (tableColumns.size() != value.toString().split(",").length) {
-                log.error("字段和参数个数不一致！:{}", value);
-            } else {
-                execSql.append(value);
-                execSql.append(",");
-            }
+            execSql.append(value);
+            execSql.append(",");
+
         }
         execSql.deleteCharAt(execSql.length() - 1);
         return String.format(templateSql, table, fields, execSql);
