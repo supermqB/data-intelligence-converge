@@ -69,9 +69,9 @@ public class ThreadPoolConfig
     public ThreadPoolTaskExecutor dataSinkThreadPool() {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         //核心线程数量
-        threadPoolTaskExecutor.setCorePoolSize(24);
+        threadPoolTaskExecutor.setCorePoolSize(48);
         //最大线程数量
-        threadPoolTaskExecutor.setMaxPoolSize(48);
+        threadPoolTaskExecutor.setMaxPoolSize(200);
         //队列中最大任务数
         threadPoolTaskExecutor.setQueueCapacity(1024);
         //线程名称前缀

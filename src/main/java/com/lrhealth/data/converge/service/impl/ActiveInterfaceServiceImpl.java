@@ -164,10 +164,9 @@ public class ActiveInterfaceServiceImpl implements ActiveInterfaceService {
         Integer status = tunnel.getStatus();
         switch (status) {
             case 1:
-                ConvTask task = taskService.createTask(tunnel, false);
                 startConsumer(bootstrapServers, topic, topicKey);
                 consumerContext.addTableMergeTask(tunnel);
-                AsyncFactory.convTaskLog(task.getId(), "消费者创建成功！");
+                log.info("接口采集消费者创建成功！");
                 break;
             case 2:
                 log.info("接口采集[{}]正在执行中，不重复添加创建！", tunnel.getId());

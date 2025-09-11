@@ -159,7 +159,7 @@ public class KafkaConsumerContext {
             }
             try {
                 // 拉取消息，最多等待1秒钟，配置最多一次拉取1000条
-                ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(1000));
+                ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(5000));
 
                 // 如果本次无新消息，但队列中仍有数据，则触发一次处理
                 if (records.isEmpty()) {
