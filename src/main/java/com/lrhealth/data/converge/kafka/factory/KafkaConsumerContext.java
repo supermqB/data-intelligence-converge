@@ -62,7 +62,7 @@ public class KafkaConsumerContext {
      * 任务调度器，用于定时任务
      */
     private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(24);
-    private static final ScheduledExecutorService activeExecutor = Executors.newScheduledThreadPool(24);
+    private static final ScheduledExecutorService activeExecutor = Executors.newScheduledThreadPool(100);
 
     @Resource
     private MessageQueueService queueService;
@@ -185,7 +185,7 @@ public class KafkaConsumerContext {
             } catch (Exception e) {
                 log.error("处理 Kafka 消息时发生异常: {}", e.getMessage(), e);
             }
-        }, 0, 10, TimeUnit.SECONDS);
+        }, 0, 20, TimeUnit.SECONDS);
         scheduleMap.put(topicKey, future);
     }
 

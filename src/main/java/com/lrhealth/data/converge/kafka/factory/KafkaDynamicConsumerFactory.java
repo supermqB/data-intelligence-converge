@@ -31,6 +31,12 @@ public class KafkaDynamicConsumerFactory {
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         consumerProperties.put("max.poll.records", 1000);
         consumerProperties.put("fetch.max.bytes", 128 * 1024 * 1024);
+        // 关键：调整心跳和会话超时参数
+        consumerProperties.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 60000);
+        consumerProperties.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 180000);
+
+        // 若处理消息耗时极长，还需调整 poll 间隔（默认 5 分钟）
+        consumerProperties.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000);
         consumerProperties.put("max.partition.fetch.bytes", 2 * 1024 * 1024);
         consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
