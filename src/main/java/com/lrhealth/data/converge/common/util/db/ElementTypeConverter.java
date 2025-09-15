@@ -1,39 +1,64 @@
 package com.lrhealth.data.converge.common.util.db;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public abstract class ElementTypeConverter {
+    private static Map<String, ElementTypeConverter> converters = new HashMap<>();
+    static {
+        converters.put("hive", new HiveType());
+        converters.put("default", new HiveType());
+        // @TODO, add other platform support.
+    }
 
-    protected String INT = "INT";
-    protected String BIGINT = "BIGINT";
-    protected String DOUBLE = "DOUBLE";
-    protected String TIMESTAMP = "TIMESTAMP";
-    protected String DATE = "DATE";
-    protected String STRING = "STRING";
+    public static ElementTypeConverter type(String dbType) {
+        if (dbType == null) {
+            log.error(
+                    "Please provide proper db type while retrieving a DB type converter.default Hive converter is used this time.");
+            dbType = "default";
+        }
+        return converters.get(dbType.toLowerCase());
+    }
 
-    public String process(String format) {
+    private String INT = "INT";
+    private String BIGINT = "BIGINT";
+    private String DOUBLE = "DOUBLE";
+    private String TIMESTAMP = "TIMESTAMP";
+    private String DATE = "DATE";
+    private String STRING = "STRING";
+    private String BOOLEAN = "BOOLEAN";
+
+    public String process(String format, String elemType) {
+        if (isBoolean(elemType)) {
+            return this.BOOLEAN;
+        }
+
         if (isFLoat(format)) {
-            return DOUBLE;
+            return this.DOUBLE;
         }
 
         if (isBigInt(format)) {
-            return BIGINT;
+            return this.BIGINT;
         }
 
         if (isInt(format)) {
-            return INT;
+            return this.INT;
         }
 
         if (isDateTime(format)) {
-            return TIMESTAMP;
+            return this.TIMESTAMP;
         }
 
         if (isDate(format)) {
-            return DATE;
+            return this.DATE;
         }
 
-        return STRING;
+        return this.STRING;
     }
 
     protected boolean isBigInt(String format) {
@@ -60,7 +85,7 @@ public abstract class ElementTypeConverter {
         Matcher matcher = pattern.matcher(format);
         if (matcher.find()) {
             String numPart = matcher.group();
-            return Integer.parseInt(numPart) < 9;
+            return Integer.parseInt(numPart) <= 9;
         } else {
             return true;
         }
@@ -69,6 +94,10 @@ public abstract class ElementTypeConverter {
     protected boolean isFLoat(String format) {
         // 同时满足：以 'N' 开头，且包含逗号
         return format.startsWith("N") && format.contains(",");
+    }
+
+    protected boolean isBoolean(String elemType) {
+        return "L".equals(elemType);
     }
 
     protected boolean isDateTime(String format) {
