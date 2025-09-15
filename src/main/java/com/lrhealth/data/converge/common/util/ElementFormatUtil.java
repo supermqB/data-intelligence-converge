@@ -28,6 +28,8 @@ public class ElementFormatUtil {
     public static final String TIME_ELEMENT = "T";
     public static final String TIME_ELEMENT_FORMAT = "T6";
     public static final String BINARY_ELEMENT = "BY";
+    public static final String LOGIC_ELEMENT = "L";
+    public static final String LOGIC_ELEMENT_FORMAT = "N1";
 
     private static final Map<String, String> ELEMENT_FORMAT_MAP = new HashMap<>();
     private static final Map<Integer, FieldType> FIELD_FORMAT_MAP = new HashMap<>();
@@ -40,6 +42,7 @@ public class ElementFormatUtil {
         ELEMENT_FORMAT_MAP.put(DATETIME_ELEMENT, DATETIME_ELEMENT_FORMAT);
         ELEMENT_FORMAT_MAP.put(TIME_ELEMENT, TIME_ELEMENT_FORMAT);
         ELEMENT_FORMAT_MAP.put(BINARY_ELEMENT, STRING_ELEMENT_FORMAT);
+        ELEMENT_FORMAT_MAP.put(LOGIC_ELEMENT, LOGIC_ELEMENT_FORMAT);
     }
 
     private ElementFormatUtil() {
@@ -60,6 +63,8 @@ public class ElementFormatUtil {
     public static String getElement(Integer dataType) {
         switch (dataType) {
             case Types.BIT:
+            case Types.BOOLEAN:
+                return LOGIC_ELEMENT;
             case Types.TINYINT:
             case Types.SMALLINT:
             case Types.INTEGER:
@@ -77,7 +82,6 @@ public class ElementFormatUtil {
             case Types.NCHAR:
             case Types.NVARCHAR:
             case Types.LONGNVARCHAR:
-            case Types.BOOLEAN:
                 return STRING_ELEMENT;
             case Types.DATE:
                 return DATE_ELEMENT;
