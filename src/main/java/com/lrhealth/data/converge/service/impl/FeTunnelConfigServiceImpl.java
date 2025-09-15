@@ -309,7 +309,7 @@ public class FeTunnelConfigServiceImpl implements FeTunnelConfigService {
         for (StdOriginalModelColumn modelColumn : modelColumnList) {
             modelColumn.getElementFormat();
 
-            String dataType = ht.process(modelColumn.getElementFormat());
+            String dataType = ht.process(modelColumn.getElementFormat(), modelColumn.getElementType());
             sb.append("{\"name\":\"").append(modelColumn.getNameEn())
                     .append("\",\"type\":\"").append(dataType)
                     .append("\"}").append(",\n");
