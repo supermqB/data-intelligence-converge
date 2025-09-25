@@ -5,6 +5,7 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -16,6 +17,10 @@ import java.util.Properties;
  */
 @Component
 public class KafkaDynamicConsumerFactory {
+    @Value("${data-consumer.kafka.group-id-suffix}")
+    private String groupIdSuffix;
+    @Value("${data-consumer.kafka.offset-reset}")
+    private String kafkaOffsetReset;
 
     /**
      * 创建消费者
@@ -28,7 +33,7 @@ public class KafkaDynamicConsumerFactory {
     public <K, V> KafkaConsumer<K, V> createConsumer(String topic, String groupId, String broker) {
         Properties consumerProperties = new Properties();
         consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, broker);
-        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId + groupIdSuffix);
         consumerProperties.put("max.poll.records", 1000);
         consumerProperties.put("fetch.max.bytes", 128 * 1024 * 1024);
         // 关键：调整心跳和会话超时参数
@@ -38,7 +43,7 @@ public class KafkaDynamicConsumerFactory {
         // 若处理消息耗时极长，还需调整 poll 间隔（默认 5 分钟）
         consumerProperties.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000);
         consumerProperties.put("max.partition.fetch.bytes", 2 * 1024 * 1024);
-        consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, kafkaOffsetReset);
         consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         // 信任所有类型以反序列化

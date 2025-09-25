@@ -172,3 +172,7 @@ file-collect:
 xds:
   switch-on: true
 
+data-consumer:
+  kafka:
+    group-id-suffix:
+    offset-reset: earliest
